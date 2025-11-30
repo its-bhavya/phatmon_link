@@ -7,3 +7,4 @@ aiosqlite==0.19.0
 hypothesis==6.92.1
 pytest==7.4.3
 pytest-asyncio==0.21.1
+httpx==0.25.2

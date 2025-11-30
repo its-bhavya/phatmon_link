@@ -65,7 +65,12 @@
   - **Property 6: Welcome message contains required information**
   - **Validates: Requirements 2.5**
 
-- [ ] 4. Create authentication HTTP endpoints
+- [x] 4. Create authentication HTTP endpoints
+
+
+
+
+
   - Create main.py with FastAPI app initialization
   - Implement POST /api/auth/register endpoint
   - Implement POST /api/auth/login endpoint
