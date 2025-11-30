@@ -13,7 +13,12 @@
   - Set up .gitignore for Python and environment files
   - _Requirements: All_
 
-- [ ] 2. Implement database models and connection
+- [x] 2. Implement database models and connection
+
+
+
+
+
   - Create database.py with SQLAlchemy setup for SQLite
   - Define User model with id, username, password_hash, created_at, last_login fields
   - Define Session model with id, user_id, token, created_at, expires_at fields
