@@ -304,7 +304,12 @@
   - Format messages as "[HH:MM:SS] <username> message"
   - _Requirements: 5.3, 7.4, 9.2, 9.4, 9.5_
 
-- [ ] 14. Implement WebSocket client
+- [x] 14. Implement WebSocket client
+
+
+
+
+
   - Create frontend/js/websocket.js
   - Implement WebSocketClient class
   - Implement connect() with JWT token from localStorage

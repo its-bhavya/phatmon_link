@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #33ff33;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #33ff33;
+            text-shadow: 0 0 5px #33ff33;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #33ff33;
+        }
+        button {
+            background: #000;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        button:hover {
+            background: #33ff33;
+            color: #000;
+        }
+        #log {
+            background: #001100;
+            padding: 10px;
+            margin-top: 10px;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #33ff33;
+        }
+        .log-entry {
+            margin: 2px 0;
+        }
+        .log-info { color: #33ff33; }
+        .log-error { color: #ff3333; }
+        .log-message { color: #3399ff; }
+        input {
+            background: #000;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 5px;
+            font-family: monospace;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Client Test</h1>
+    
+    <div class="test-section">
+        <h2>Connection Control</h2>
+        <button onclick="testConnect()">Connect</button>
+        <button onclick="testDisconnect()">Disconnect</button>
+        <button onclick="testReconnect()">Reconnect</button>
+        <button onclick="testGetState()">Get State</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Send Message</h2>
+        <input type="text" id="messageInput" placeholder="Enter message">
+        <button onclick="testSendMessage()">Send Chat Message</button>
+        <button onclick="testSendCommand()">Send Command</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Token Management</h2>
+        <input type="text" id="tokenInput" placeholder="Enter JWT token">
+        <button onclick="setToken()">Set Token</button>
+        <button onclick="clearToken()">Clear Token</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Log</h2>
+        <div id="log"></div>
+    </div>
+
+    <script src="websocket.js"></script>
+    <script>
+        let wsClient = null;
+        const logDiv = document.getElementById('log');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            logDiv.innerHTML = '';
+        }
+        
+        function initClient() {
+            if (!wsClient) {
+                // Use ws://localhost:8000/ws for local testing
+                wsClient = new WebSocketClient('ws://localhost:8000/ws');
+                
+                // Register callbacks
+                wsClient.onConnect(() => {
+                    log('Connected to server', 'info');
+                });
+                
+                wsClient.onDisconnect((event) => {
+                    log(`Disconnected: ${event.code} - ${event.reason}`, 'info');
+                });
+                
+                wsClient.onMessage((message) => {
+                    log(`Received: ${JSON.stringify(message)}`, 'message');
+                });
+                
+                // Listen for status events
+                window.addEventListener('ws-status', (event) => {
+                    const { message, type } = event.detail;
+                    log(`Status: ${message}`, type);
+                });
+                
+                log('WebSocket client initialized', 'info');
+            }
+        }
+        
+        function testConnect() {
+            initClient();
+            log('Attempting to connect...', 'info');
+            wsClient.connect();
+        }
+        
+        function testDisconnect() {
+            if (!wsClient) {
+                log('Client not initialized', 'error');
+                return;
+            }
+            log('Disconnecting...', 'info');
+            wsClient.disconnect();
+        }
+        
+        function testReconnect() {
+            if (!wsClient) {
+                log('Client not initialized', 'error');
+                return;
+            }
+            log('Reconnecting...', 'info');
+            wsClient.reconnect();
+        }
+        
+        function testGetState() {
+            if (!wsClient) {
+                log('Client not initialized', 'error');
+                return;
+            }
+            const state = wsClient.getState();
+            const isConnected = wsClient.isConnected();
+            log(`State: ${state}, Connected: ${isConnected}`, 'info');
+        }
+        
+        function testSendMessage() {
+            if (!wsClient) {
+                log('Client not initialized', 'error');
+                return;
+            }
+            const input = document.getElementById('messageInput');
+            const content = input.value || 'Test message';
+            const message = {
+                type: 'chat_message',
+                content: content,
+                room: 'lobby'
+            };
+            log(`Sending: ${JSON.stringify(message)}`, 'info');
+            const success = wsClient.send(message);
+            if (success) {
+                input.value = '';
+            }
+        }
+        
+        function testSendCommand() {
+            if (!wsClient) {
+                log('Client not initialized', 'error');
+                return;
+            }
+            const input = document.getElementById('messageInput');
+            const command = input.value || 'help';
+            const message = {
+                type: 'command',
+                command: command
+            };
+            log(`Sending command: ${JSON.stringify(message)}`, 'info');
+            const success = wsClient.send(message);
+            if (success) {
+                input.value = '';
+            }
+        }
+        
+        function setToken() {
+            const input = document.getElementById('tokenInput');
+            const token = input.value;
+            if (token) {
+                localStorage.setItem('jwt_token', token);
+                log(`Token set: ${token.substring(0, 20)}...`, 'info');
+            } else {
+                log('No token provided', 'error');
+            }
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('jwt_token');
+            log('Token cleared', 'info');
+        }
+        
+        // Initialize on load
+        log('Test page loaded. Click "Connect" to start.', 'info');
+        log('Note: Make sure to set a JWT token first if testing with a real server.', 'info');
+    </script>
+</body>
+</html>
