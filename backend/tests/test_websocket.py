@@ -17,6 +17,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from contextlib import asynccontextmanager
 import asyncio
 import os
@@ -33,11 +34,12 @@ from backend.main import (
 )
 
 
-# Create test database
-TEST_DATABASE_URL = "sqlite:///:memory:"
+# Create test database with shared cache to ensure same database across connections
+TEST_DATABASE_URL = "sqlite:///:memory:?cache=shared"
 engine = create_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool  # Use StaticPool to maintain single connection
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -96,21 +98,27 @@ test_app.websocket("/ws")(websocket_endpoint)
 test_app.dependency_overrides[get_db] = override_get_db
 
 
-@pytest.fixture(autouse=True)
-def setup_database():
-    """Create tables before each test and drop after."""
-    # Create tables in test database
-    Base.metadata.create_all(bind=engine)
-    yield
-    # Drop tables after test
-    Base.metadata.drop_all(bind=engine)
-
-
 @pytest.fixture
-def client(setup_database):
+def client():
     """Create test client with WebSocket support."""
-    with TestClient(test_app) as test_client:
-        yield test_client
+    # Create tables in test database BEFORE creating the client
+    Base.metadata.create_all(bind=engine)
+    
+    # Manually initialize app state since lifespan may not run in tests
+    test_app.state.room_service = RoomService()
+    test_app.state.room_service.create_default_rooms()
+    test_app.state.websocket_manager = WebSocketManager()
+    test_app.state.command_handler = CommandHandler(
+        test_app.state.room_service,
+        test_app.state.websocket_manager
+    )
+    
+    try:
+        with TestClient(test_app) as test_client:
+            yield test_client
+    finally:
+        # Drop tables after test
+        Base.metadata.drop_all(bind=engine)
 
 
 def register_and_get_token(client):

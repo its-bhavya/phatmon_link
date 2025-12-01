@@ -253,6 +253,36 @@ async def auth():
     return FileResponse("frontend/auth.html")
 
 
+@app.get("/auth.html")
+async def auth_html():
+    """
+    Serve the authentication page at /auth.html path.
+    
+    Requirements: All (infrastructure)
+    """
+    return FileResponse("frontend/auth.html")
+
+
+@app.get("/index.html")
+async def index():
+    """
+    Serve the main terminal interface.
+    
+    Requirements: All (infrastructure)
+    """
+    return FileResponse("frontend/index.html")
+
+
+@app.get("/index.html")
+async def index():
+    """
+    Serve the main chat interface page.
+    
+    Requirements: All (infrastructure)
+    """
+    return FileResponse("frontend/index.html")
+
+
 @app.get("/api")
 async def api_root():
     """API health check endpoint."""

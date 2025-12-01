@@ -397,7 +397,7 @@
 
                 if (response.ok) {
                     // Store JWT token in localStorage
-                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('jwt_token', data.token);
                     
                     // Show success message
                     errorDiv.textContent = 'LOGIN SUCCESSFUL. REDIRECTING...';
@@ -457,7 +457,7 @@
 
                 if (response.ok) {
                     // Store JWT token in localStorage
-                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('jwt_token', data.token);
                     
                     // Show success message
                     errorDiv.textContent = 'REGISTRATION SUCCESSFUL. REDIRECTING...';

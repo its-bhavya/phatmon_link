@@ -13,6 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from contextlib import asynccontextmanager
 
 from backend.main import failed_login_attempts
@@ -29,11 +30,12 @@ from backend.main import (
 )
 
 
-# Create test database
-TEST_DATABASE_URL = "sqlite:///:memory:"
+# Create test database with shared cache to ensure same database across connections
+TEST_DATABASE_URL = "sqlite:///:memory:?cache=shared"
 engine = create_engine(
     TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool  # Use StaticPool to maintain single connection
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -96,24 +98,21 @@ app.post("/api/auth/login", response_model=AuthResponse)(login)
 app.dependency_overrides[get_db] = override_get_db
 
 
-@pytest.fixture(autouse=True)
-def setup_database():
-    """Create tables before each test and drop after."""
-    # Create tables in test database
-    Base.metadata.create_all(bind=engine)
-    yield
-    # Drop tables after test
-    Base.metadata.drop_all(bind=engine)
-    # Clear failed login attempts
-    failed_login_attempts.clear()
-
-
 @pytest.fixture
-def client(setup_database):
+def client():
     """Create test client for each test."""
-    # Use raise_server_exceptions=True to see actual errors during development
-    with TestClient(app, raise_server_exceptions=True) as test_client:
-        yield test_client
+    # Create tables in test database BEFORE creating the client
+    Base.metadata.create_all(bind=engine)
+    
+    try:
+        # Use raise_server_exceptions=True to see actual errors during development
+        with TestClient(app, raise_server_exceptions=True) as test_client:
+            yield test_client
+    finally:
+        # Drop tables after test
+        Base.metadata.drop_all(bind=engine)
+        # Clear failed login attempts
+        failed_login_attempts.clear()
 
 
 def test_root_endpoint(client):
