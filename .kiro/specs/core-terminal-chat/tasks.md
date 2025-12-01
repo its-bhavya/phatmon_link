@@ -235,7 +235,12 @@
 
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. Create frontend HTML structure
+- [x] 10. Create frontend HTML structure
+
+
+
+
+
   - Create frontend/index.html with semantic structure
   - Add meta tags for charset and viewport
   - Create terminal-screen container div

@@ -3,9 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phantom Link BBS</title>
+    <title>Phantom Link BBS - Terminal</title>
+    
+    <!-- Optional Tailwind CSS for layout utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Terminal CSS -->
+    <link rel="stylesheet" href="/static/css/terminal.css">
+    
+    <style>
+        /* Base layout styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #33ff33;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        /* Terminal screen container */
+        .terminal-screen {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            background-color: #000;
+            position: relative;
+        }
+        
+        /* Chat display area */
+        .chat-display {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            scrollbar-width: thin;
+            scrollbar-color: #33ff33 #000;
+        }
+        
+        .chat-display::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-display::-webkit-scrollbar-track {
+            background: #000;
+        }
+        
+        .chat-display::-webkit-scrollbar-thumb {
+            background: #33ff33;
+            border-radius: 4px;
+        }
+        
+        /* Command line bar at bottom */
+        .command-line-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #000;
+            border-top: 2px solid #33ff33;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .command-prompt {
+            color: #33ff33;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            outline: none;
+            caret-color: #33ff33;
+        }
+        
+        /* Blinking cursor */
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: #33ff33;
+            margin-left: 2px;
+            animation: blink 1s step-end infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% {
+                opacity: 1;
+            }
+            51%, 100% {
+                opacity: 0;
+            }
+        }
+        
+        /* Message styles */
+        .message {
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+        
+        .message.system {
+            color: #ffff33;
+        }
+        
+        .message.error {
+            color: #ff3333;
+        }
+        
+        .timestamp {
+            color: #00aa00;
+        }
+        
+        .username {
+            color: #33ff33;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <!-- Terminal UI will be implemented in later tasks -->
+    <!-- Main terminal screen container -->
+    <div class="terminal-screen">
+        <!-- Chat display area for messages -->
+        <div class="chat-display" id="chatDisplay">
+            <!-- Messages will be dynamically added here -->
+            <div class="message system">
+                <span class="timestamp">[--:--:--]</span>
+                <span>* SYSTEM: Connecting to Phantom Link BBS...</span>
+            </div>
+        </div>
+        
+        <!-- Command line bar section at bottom -->
+        <div class="command-line-bar">
+            <span class="command-prompt">&gt;</span>
+            <input 
+                type="text" 
+                class="command-input" 
+                id="commandInput" 
+                placeholder="Type a message or /help for commands"
+                autocomplete="off"
+                spellcheck="false"
+            />
+            <span class="cursor"></span>
+        </div>
+    </div>
+    
+    <!-- JavaScript modules will be loaded here -->
+    <script type="module" src="/static/js/main.js"></script>
 </body>
 </html>
