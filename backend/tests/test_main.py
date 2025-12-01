@@ -117,12 +117,11 @@ def client(setup_database):
 
 
 def test_root_endpoint(client):
-    """Test root endpoint returns service information."""
+    """Test root endpoint serves auth.html."""
     response = client.get("/")
     assert response.status_code == 200
-    data = response.json()
-    assert data["service"] == "Phantom Link BBS"
-    assert data["status"] == "online"
+    # Root now serves HTML file, not JSON
+    assert response.headers["content-type"].startswith("text/html")
 
 
 def test_register_success(client):

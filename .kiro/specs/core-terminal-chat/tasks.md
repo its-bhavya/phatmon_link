@@ -381,14 +381,23 @@
   - Disconnect user on persistent abuse
   - _Requirements: 5.1_
 
-- [ ] 18. Add CORS configuration
+- [x] 18. Add CORS configuration
+
+
+
+
+
   - Configure CORS middleware in FastAPI
   - Allow origins from environment variable
   - Allow credentials for WebSocket connections
   - Set appropriate headers for development and production
   - _Requirements: All (infrastructure)_
 
-- [ ] 19. Create static file serving
+- [x] 19. Create static file serving
+
+
+
+
   - Configure FastAPI to serve static files from frontend directory
   - Mount /static route for CSS, JS, and assets
   - Serve index.html at root path /

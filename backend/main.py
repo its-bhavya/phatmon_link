@@ -98,9 +98,13 @@ app.add_middleware(
 )
 
 # Mount static files for frontend
+# Mount individual directories for direct access
 app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
 app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
 app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
+
+# Mount /static route for general static file serving
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 # Track failed login attempts per connection
 # Key: client IP address, Value: number of failed attempts
@@ -230,19 +234,21 @@ def clear_failed_attempts(client_ip: str) -> None:
 
 @app.get("/")
 async def root():
-    """Serve the authentication page as the entry point."""
+    """
+    Serve the authentication page as the entry point.
+    
+    Requirements: All (infrastructure)
+    """
     return FileResponse("frontend/auth.html")
 
 
-@app.get("/index.html")
-async def index():
-    """Serve the main terminal UI."""
-    return FileResponse("frontend/index.html")
-
-
-@app.get("/auth.html")
+@app.get("/auth")
 async def auth():
-    """Serve the authentication page."""
+    """
+    Serve the authentication page at /auth path.
+    
+    Requirements: All (infrastructure)
+    """
     return FileResponse("frontend/auth.html")
 
 
