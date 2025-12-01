@@ -1,5 +1,5 @@
 /**
- * WebSocket Client for Phantom Link BBS
+ * WebSocket Client for GATEKEEPER BBS
  * Manages WebSocket connection with automatic reconnection and exponential backoff
  */
 class WebSocketClient {
@@ -60,7 +60,7 @@ class WebSocketClient {
     this.isManualDisconnect = false;
     
     // Notify connection status
-    this.notifyStatus('Connected to Phantom Link BBS');
+    this.notifyStatus('Connected to GATEKEEPER');
     
     // Call connect callbacks
     this.connectCallbacks.forEach(callback => {

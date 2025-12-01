@@ -1,5 +1,5 @@
 /**
- * Main Application Logic for Phantom Link BBS
+ * Main Application Logic for GATEKEEPER BBS
  * Integrates WebSocketClient, CommandLineBar, ChatDisplay, and SidePanel
  * Requirements: 5.1, 5.2, 5.3, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.5, 9.3
  */
@@ -16,24 +16,22 @@ let sidePanel = null;
 let currentRoom = 'Lobby';
 let activeUsers = [];
 
+// Authentication state
+let authState = {
+    isAuthenticated: false,
+    mode: null, // 'login' or 'register'
+    username: null,
+    awaitingPassword: false
+};
+
 /**
  * Initialize the application
  */
 function init() {
-    // Check if user is authenticated
-    const token = localStorage.getItem('jwt_token');
-    
-    if (!token) {
-        // Redirect to auth page if no token
-        window.location.href = '/auth.html';
-        return;
-    }
-    
     // Initialize ChatDisplay
     chatDisplay = new ChatDisplay('chatDisplay');
     
-    // Clear the initial connecting message
-    chatDisplay.clear();
+    // DON'T clear - keep the initial login prompt
     
     // Initialize CommandLineBar with message and command handlers
     commandBar = new CommandLineBar(
@@ -44,6 +42,105 @@ function init() {
     // Initialize SidePanel with room click handler (Requirement 4.3, 6.3, 6.4)
     sidePanel = new SidePanel('sidePanel', handleSidePanelRoomClick);
     
+    // Check if user is authenticated
+    const token = localStorage.getItem('jwt_token');
+    
+    if (!token) {
+        // User not authenticated - they'll see the login prompt already in HTML
+        // No need to show dial-up sequence yet
+        return;
+    }
+    
+    // User has token, show welcome back message and dial-up
+    authState.isAuthenticated = true;
+    chatDisplay.clear();
+    
+    chatDisplay.addMessage({
+        type: 'system',
+        content: '✓ Session restored'
+    });
+    
+    chatDisplay.addMessage({
+        type: 'system',
+        content: ''
+    });
+    
+    setTimeout(() => {
+        startDialUpSequence();
+        // connectToServer will be called after dial-up sequence
+        setTimeout(() => {
+            connectToServer();
+        }, 6000);
+    }, 1000);
+}
+
+/**
+ * Start dial-up connection sequence
+ */
+function startDialUpSequence() {
+    const dialUpLines = [
+        '  ██████   █████  ████████ ███████ ██   ██ ███████ ███████ ██████  ███████ ██████  ',
+        ' ██       ██   ██    ██    ██      ██  ██  ██      ██      ██   ██ ██      ██   ██ ',
+        ' ██   ███ ███████    ██    █████   █████   █████   █████   ██████  █████   ██████  ',
+        ' ██    ██ ██   ██    ██    ██      ██  ██  ██      ██      ██      ██      ██   ██ ',
+        '  ██████  ██   ██    ██    ███████ ██   ██ ███████ ███████ ██      ███████ ██   ██ ',
+        '═══════════════════════════════════════════════════════════════════',
+        'INITIALIZING MODEM...',
+        'ATZ',
+        'OK',
+        'ATDT 555-GATEKEEPER',
+        '♪♫♪ DIALING... ♪♫♪',
+        'CONNECTING...',
+        '.',
+        '..',
+        '...',
+        '....',
+        '✓ CARRIER DETECTED',
+        '✓ NEGOTIATING PROTOCOL...',
+        '✓ HANDSHAKE COMPLETE',
+        'CONNECTED AT 14400 BAUD',
+        '═══════════════════════════════════════════════════════════════════',
+        '  ██████   ██████  ████████ ████████ ██   ██ ████████ ████████ ██████  ████████ ██████  ',
+        ' ██       ██    ██    ██    ██       ██  ██  ██       ██       ██   ██ ██       ██   ██ ',
+        ' ██   ███ ████████    ██    ██████   █████   ██████   ██████   ██████  ██████   ██████  ',
+        ' ██    ██ ██    ██    ██    ██       ██  ██  ██       ██       ██      ██       ██   ██ ',
+        '  ██████  ██    ██    ██    ████████ ██   ██ ████████ ████████ ██      ████████ ██   ██ ',
+        '                        ⚠  SECURE CONNECTION ESTABLISHED  ⚠',
+        '═══════════════════════════════════════════════════════════════════'
+    ];
+    
+    let lineIndex = 0;
+    
+    function showNextLine() {
+        if (lineIndex < dialUpLines.length) {
+            chatDisplay.addMessage({
+                type: 'system',
+                content: dialUpLines[lineIndex]
+            });
+            lineIndex++;
+            
+            const line = dialUpLines[lineIndex - 1];
+            const delay = line === '' ? 50 : 
+                         line.includes('♪') ? 800 :
+                         line === '.' ? 200 :
+                         line === '..' ? 200 :
+                         line === '...' ? 200 :
+                         line === '....' ? 400 :
+                         line.includes('═══') ? 100 :
+                         line.includes('██') ? 80 :
+                         200;
+            
+            setTimeout(showNextLine, delay);
+        }
+    }
+    
+    showNextLine();
+}
+
+/**
+ * Connect to WebSocket server
+ */
+function connectToServer() {
     // Initialize WebSocketClient
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
@@ -65,7 +162,7 @@ function init() {
     // Display connecting message
     chatDisplay.addMessage({
         type: 'system',
-        content: 'Connecting to Phantom Link BBS...'
+        content: 'Establishing secure connection...'
     });
 }
 
@@ -74,6 +171,12 @@ function init() {
  * @param {string} message - The message text
  */
 function handleMessageSubmit(message) {
+    // Handle authentication flow
+    if (!authState.isAuthenticated) {
+        handleAuthInput(message);
+        return;
+    }
+    
     if (!wsClient || !wsClient.isConnected()) {
         chatDisplay.addMessage({
             type: 'error',
@@ -88,6 +191,187 @@ function handleMessageSubmit(message) {
         content: message,
         room: currentRoom
     });
+}
+
+/**
+ * Handle authentication input
+ * @param {string} input - User input during auth flow
+ */
+async function handleAuthInput(input) {
+    const trimmed = input.trim();
+    const trimmedLower = trimmed.toLowerCase();
+    
+    // Check if user wants to register
+    if (!authState.mode && trimmedLower === 'register') {
+        authState.mode = 'register';
+        chatDisplay.addMessage({
+            type: 'system',
+            content: '> CREATE USERNAME (3-20 characters):'
+        });
+        return;
+    }
+    
+    // Collecting username (first input or after "register")
+    if (!authState.username) {
+        // Determine mode based on input
+        if (!authState.mode) {
+            authState.mode = 'login';
+        }
+        
+        authState.username = trimmed;
+        
+        if (authState.mode === 'register') {
+            // Validate username length for registration
+            if (authState.username.length < 3 || authState.username.length > 20) {
+                chatDisplay.addMessage({
+                    type: 'error',
+                    content: '✗ Username must be 3-20 characters'
+                });
+                authState.username = null;
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: '> CREATE USERNAME (3-20 characters):'
+                });
+                return;
+            }
+            chatDisplay.addMessage({
+                type: 'system',
+                content: '> CREATE PASSWORD (minimum 8 characters):'
+            });
+        } else {
+            chatDisplay.addMessage({
+                type: 'system',
+                content: '> PASSWORD:'
+            });
+        }
+        
+        authState.awaitingPassword = true;
+        return;
+    }
+    
+    // Collecting password
+    if (authState.awaitingPassword) {
+        const password = trimmed;
+        
+        // Validate password for registration
+        if (authState.mode === 'register' && password.length < 8) {
+            chatDisplay.addMessage({
+                type: 'error',
+                content: '✗ Password must be at least 8 characters'
+            });
+            chatDisplay.addMessage({
+                type: 'system',
+                content: '> CREATE PASSWORD (minimum 8 characters):'
+            });
+            return;
+        }
+        
+        // Attempt authentication
+        try {
+            const endpoint = authState.mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+            
+            chatDisplay.addMessage({
+                type: 'system',
+                content: authState.mode === 'login' 
+                    ? `Authenticating as ${authState.username}...`
+                    : `Creating account for ${authState.username}...`
+            });
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    username: authState.username, 
+                    password: password 
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Store JWT token
+                localStorage.setItem('jwt_token', data.token);
+                authState.isAuthenticated = true;
+                
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: authState.mode === 'login' 
+                        ? '✓ ACCESS GRANTED'
+                        : '✓ ACCOUNT CREATED - ACCESS GRANTED'
+                });
+                
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: ''
+                });
+                
+                // Clear screen and show dial-up sequence
+                setTimeout(() => {
+                    chatDisplay.clear();
+                    startDialUpSequence();
+                    // Connect after dial-up animation
+                    setTimeout(() => {
+                        connectToServer();
+                    }, 5000);
+                }, 1500);
+            } else {
+                // Authentication failed
+                chatDisplay.addMessage({
+                    type: 'error',
+                    content: `✗ ${data.detail || 'Authentication failed'}`
+                });
+                
+                // Reset auth state
+                authState = {
+                    isAuthenticated: false,
+                    mode: null,
+                    username: null,
+                    awaitingPassword: false
+                };
+                
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: ''
+                });
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: '> USERNAME:'
+                });
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: '  (Type "register" if you need to create an account)'
+                });
+            }
+        } catch (error) {
+            chatDisplay.addMessage({
+                type: 'error',
+                content: '✗ Connection error. Please try again.'
+            });
+            
+            // Reset auth state
+            authState = {
+                isAuthenticated: false,
+                mode: null,
+                username: null,
+                awaitingPassword: false
+            };
+            
+            chatDisplay.addMessage({
+                type: 'system',
+                content: ''
+            });
+            chatDisplay.addMessage({
+                type: 'system',
+                content: '> USERNAME:'
+            });
+            chatDisplay.addMessage({
+                type: 'system',
+                content: '  (Type "register" if you need to create an account)'
+            });
+        }
+    }
 }
 
 /**
@@ -180,6 +464,11 @@ function handleCommandSubmit(command, args, fullInput) {
                 content: 'Attempting to reconnect...'
             });
             wsClient.reconnect();
+            break;
+            
+        case 'logout':
+            // Logout and clear session
+            logout();
             break;
             
         default:
@@ -373,7 +662,12 @@ function handleSidePanelRoomClick(roomName) {
 function handleWebSocketConnect(event) {
     chatDisplay.addMessage({
         type: 'system',
-        content: 'Connected to Phantom Link BBS'
+        content: '✓ Connection established'
+    });
+    
+    chatDisplay.addMessage({
+        type: 'system',
+        content: 'Type /help for available commands'
     });
     
     // Enable command bar
@@ -421,8 +715,15 @@ function logout() {
     // Clear token
     localStorage.removeItem('jwt_token');
     
-    // Redirect to auth page
-    window.location.href = '/auth.html';
+    chatDisplay.addMessage({
+        type: 'system',
+        content: '✓ Logged out. Reloading...'
+    });
+    
+    // Reload page to show login screen
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
 }
 
 // Initialize application when DOM is ready

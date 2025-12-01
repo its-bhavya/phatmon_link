@@ -81,7 +81,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Phantom Link BBS",
+    title="Gatekeeper BBS",
     description="A modern reimagining of 1980s BBS with retro terminal aesthetics",
     version="1.0.0",
     lifespan=lifespan
@@ -236,11 +236,11 @@ def clear_failed_attempts(client_ip: str) -> None:
 @app.get("/")
 async def root():
     """
-    Serve the authentication page as the entry point.
+    Serve the main terminal interface as the entry point.
     
     Requirements: All (infrastructure)
     """
-    return FileResponse("frontend/auth.html")
+    return FileResponse("frontend/index.html")
 
 
 @app.get("/auth")
@@ -287,7 +287,7 @@ async def index():
 async def api_root():
     """API health check endpoint."""
     return {
-        "service": "Phantom Link BBS",
+        "service": "Gatekeeper",
         "status": "online",
         "version": "1.0.0"
     }
@@ -350,7 +350,7 @@ async def register(
     return AuthResponse(
         token=token,
         user=UserResponse.from_orm(user),
-        message=f"Welcome to Phantom Link BBS, {user.username}!"
+        message=f"Welcome to Gatekeeper, {user.username}!"
     )
 
 
@@ -422,7 +422,7 @@ async def login(
         last_login_str = user.last_login.strftime("%Y-%m-%d %H:%M:%S UTC")
         welcome_message = f"Welcome back, {user.username}! Last login: {last_login_str}"
     else:
-        welcome_message = f"Welcome to Phantom Link BBS, {user.username}!"
+        welcome_message = f"Welcome to Gatekeeper, {user.username}!"
     
     return AuthResponse(
         token=token,
@@ -555,9 +555,9 @@ async def websocket_endpoint(
         else:
             if user.last_login:
                 last_login_str = user.last_login.strftime("%Y-%m-%d %H:%M:%S UTC")
-                welcome_message = f"Welcome to Phantom Link BBS, {user.username}! Last login: {last_login_str}"
+                welcome_message = f"Welcome to Gatekeeper, {user.username}! Last login: {last_login_str}"
             else:
-                welcome_message = f"Welcome to Phantom Link BBS, {user.username}!"
+                welcome_message = f"Welcome to Gatekeeper, {user.username}!"
         
         await app.state.websocket_manager.send_to_user(websocket, {
             "type": "system",

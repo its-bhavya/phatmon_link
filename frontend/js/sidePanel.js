@@ -1,5 +1,5 @@
 /**
- * Side Panel Component for Phantom Link BBS
+ * Side Panel Component for GATEKEEPER BBS
  * Displays rooms and active users with real-time updates
  * Requirements: 4.3, 6.3, 6.4, 7.2, 7.3
  */

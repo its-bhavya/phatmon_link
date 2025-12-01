@@ -42,7 +42,7 @@ class RoomService:
         This method is idempotent - calling it multiple times won't create duplicates.
         """
         default_rooms = [
-            ("Lobby", "Main gathering space - Welcome to Phantom Link!"),
+            ("Lobby", "Main gathering space - Welcome to Gatekeeper!"),
             ("Techline", "Technology and programming discussions"),
             ("Arcade Hall", "Gaming and entertainment zone"),
             ("Archives", "Historical BBS content and nostalgia")

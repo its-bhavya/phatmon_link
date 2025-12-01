@@ -1,19 +1,21 @@
 /**
- * Phantom Link BBS - Terminal CSS
- * CRT Terminal Effects and Retro Styling
+ * GATEKEEPER BBS - Terminal CSS
+ * Retro Terminal Effects and Styling
  */
 
 /* Import retro terminal font */
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-/* Root variables for easy theming */
+/* Root variables - Stranger Things inspired theme */
 :root {
-    --terminal-green: #33ff33;
-    --terminal-dark-green: #00aa00;
+    --terminal-red: #ff0000;
+    --terminal-dark-red: #cc0000;
+    --terminal-orange: #ff6600;
     --terminal-bg: #000000;
-    --terminal-yellow: #ffff33;
-    --terminal-red: #ff3333;
-    --glow-intensity: 5px;
+    --terminal-yellow: #ffaa00;
+    --terminal-white: #ffffff;
+    --terminal-gray: #666666;
+    --glow-intensity: 8px;
 }
 
 /* Base terminal screen with CRT curvature */
@@ -37,27 +39,7 @@
     z-index: 1;
 }
 
-/* Scanlines overlay */
-.terminal-screen::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    /* Scanlines using linear-gradient */
-    background: repeating-linear-gradient(
-        0deg,
-        rgba(0, 0, 0, 0.15) 0px,
-        rgba(0, 0, 0, 0.15) 1px,
-        transparent 1px,
-        transparent 2px
-    );
-    pointer-events: none;
-    z-index: 10;
-    /* Flicker animation with subtle opacity changes */
-    animation: flicker 0.15s infinite alternate;
-}
+/* Removed scanlines for cleaner pixelated look */
 
 /* Flicker animation for CRT effect */
 @keyframes flicker {
@@ -79,25 +61,33 @@ body,
 .command-line-bar,
 .command-input {
     font-family: 'VT323', 'Courier New', monospace;
+    /* Pixelated rendering for retro effect */
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    /* Disable font smoothing for sharper pixelated look */
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    font-smooth: never;
 }
 
-/* Phosphor glow effect on all text */
+/* Red phosphor glow effect on all text */
 .terminal-screen,
 .chat-display,
 .command-line-bar {
-    color: var(--terminal-green);
-    /* Phosphor glow using text-shadow */
+    color: var(--terminal-red);
+    /* Red phosphor glow using text-shadow */
     text-shadow: 
-        0 0 var(--glow-intensity) var(--terminal-green),
-        0 0 calc(var(--glow-intensity) * 2) var(--terminal-green);
+        0 0 var(--glow-intensity) var(--terminal-red),
+        0 0 calc(var(--glow-intensity) * 2) var(--terminal-red);
 }
 
 /* Enhanced glow for chat display text */
 .chat-display {
     text-shadow: 
-        0 0 5px var(--terminal-green),
-        0 0 10px var(--terminal-green),
-        0 0 15px rgba(51, 255, 51, 0.5);
+        0 0 5px var(--terminal-red),
+        0 0 10px var(--terminal-red),
+        0 0 15px rgba(255, 0, 0, 0.5);
 }
 
 /* Command line bar with fixed bottom position */
@@ -107,26 +97,26 @@ body,
     left: 0;
     right: 0;
     background-color: var(--terminal-bg);
-    border-top: 2px solid var(--terminal-green);
+    border-top: 2px solid var(--terminal-red);
     padding: 15px 20px;
     display: flex;
     align-items: center;
     z-index: 100;
     /* Add glow to border */
     box-shadow: 
-        0 -2px 10px rgba(51, 255, 51, 0.3),
-        inset 0 0 20px rgba(51, 255, 51, 0.05);
+        0 -2px 10px rgba(255, 0, 0, 0.4),
+        inset 0 0 20px rgba(255, 0, 0, 0.05);
 }
 
 /* Command prompt symbol */
 .command-prompt {
-    color: var(--terminal-green);
+    color: var(--terminal-red);
     margin-right: 10px;
     font-weight: bold;
-    font-size: 18px;
+    font-size: 19px;
     text-shadow: 
-        0 0 5px var(--terminal-green),
-        0 0 10px var(--terminal-green);
+        0 0 5px var(--terminal-red),
+        0 0 10px var(--terminal-red);
 }
 
 /* Command input field */
@@ -134,18 +124,18 @@ body,
     flex: 1;
     background: transparent;
     border: none;
-    color: var(--terminal-green);
+    color: var(--terminal-red);
     font-family: 'VT323', 'Courier New', monospace;
-    font-size: 18px;
+    font-size: 19px;
     outline: none;
-    caret-color: var(--terminal-green);
+    caret-color: var(--terminal-red);
     text-shadow: 
-        0 0 5px var(--terminal-green),
-        0 0 10px var(--terminal-green);
+        0 0 5px var(--terminal-red),
+        0 0 10px var(--terminal-red);
 }
 
 .command-input::placeholder {
-    color: var(--terminal-dark-green);
+    color: var(--terminal-dark-red);
     opacity: 0.6;
 }
 
@@ -154,13 +144,13 @@ body,
     display: inline-block;
     width: 10px;
     height: 20px;
-    background-color: var(--terminal-green);
+    background-color: var(--terminal-red);
     margin-left: 2px;
     /* Blinking cursor with smooth animation */
     animation: cursor-blink 1s step-end infinite;
     box-shadow: 
-        0 0 5px var(--terminal-green),
-        0 0 10px var(--terminal-green);
+        0 0 5px var(--terminal-red),
+        0 0 10px var(--terminal-red);
 }
 
 @keyframes cursor-blink {
@@ -177,40 +167,40 @@ body,
     margin-bottom: 8px;
     word-wrap: break-word;
     line-height: 1.4;
-    font-size: 16px;
+    font-size: 17px;
 }
 
-/* System messages in yellow with glow */
+/* System messages in orange with glow */
 .message.system {
-    color: var(--terminal-yellow);
+    color: var(--terminal-orange);
     text-shadow: 
-        0 0 5px var(--terminal-yellow),
-        0 0 10px var(--terminal-yellow);
+        0 0 5px var(--terminal-orange),
+        0 0 10px var(--terminal-orange);
 }
 
-/* Error messages in red with glow */
+/* Error messages in bright red with glow */
 .message.error {
-    color: var(--terminal-red);
+    color: #ff3333;
     text-shadow: 
-        0 0 5px var(--terminal-red),
-        0 0 10px var(--terminal-red);
+        0 0 5px #ff3333,
+        0 0 10px #ff3333;
 }
 
 /* Timestamp styling */
 .timestamp {
-    color: var(--terminal-dark-green);
+    color: var(--terminal-gray);
     text-shadow: 
-        0 0 3px var(--terminal-dark-green),
-        0 0 6px var(--terminal-dark-green);
+        0 0 3px var(--terminal-gray),
+        0 0 6px var(--terminal-gray);
 }
 
 /* Username styling */
 .username {
-    color: var(--terminal-green);
+    color: var(--terminal-yellow);
     font-weight: bold;
     text-shadow: 
-        0 0 5px var(--terminal-green),
-        0 0 10px var(--terminal-green);
+        0 0 5px var(--terminal-yellow),
+        0 0 10px var(--terminal-yellow);
 }
 
 /* Screen glow effect - outer glow around entire terminal */
@@ -218,7 +208,7 @@ body {
     background-color: #0a0a0a;
     background-image: radial-gradient(
         ellipse at center,
-        rgba(51, 255, 51, 0.1) 0%,
+        rgba(255, 0, 0, 0.15) 0%,
         rgba(0, 0, 0, 1) 70%
     );
 }
@@ -236,28 +226,28 @@ body {
 
 .chat-display::-webkit-scrollbar-track {
     background: var(--terminal-bg);
-    border-left: 1px solid var(--terminal-dark-green);
+    border-left: 1px solid var(--terminal-dark-red);
 }
 
 .chat-display::-webkit-scrollbar-thumb {
-    background: var(--terminal-green);
+    background: var(--terminal-red);
     border-radius: 4px;
     box-shadow: 
-        0 0 5px var(--terminal-green),
-        inset 0 0 5px rgba(51, 255, 51, 0.5);
+        0 0 5px var(--terminal-red),
+        inset 0 0 5px rgba(255, 0, 0, 0.5);
 }
 
 .chat-display::-webkit-scrollbar-thumb:hover {
-    background: var(--terminal-green);
+    background: var(--terminal-red);
     box-shadow: 
-        0 0 10px var(--terminal-green),
-        inset 0 0 10px rgba(51, 255, 51, 0.7);
+        0 0 10px var(--terminal-red),
+        inset 0 0 10px rgba(255, 0, 0, 0.7);
 }
 
 /* Firefox scrollbar */
 .chat-display {
     scrollbar-width: thin;
-    scrollbar-color: var(--terminal-green) var(--terminal-bg);
+    scrollbar-color: var(--terminal-red) var(--terminal-bg);
 }
 
 /* Screen flicker on hover (subtle interaction) */
@@ -268,15 +258,15 @@ body {
 /* Responsive font sizing */
 @media (max-width: 768px) {
     .chat-display {
-        font-size: 14px;
+        font-size: 15px;
     }
     
     .command-input {
-        font-size: 16px;
+        font-size: 17px;
     }
     
     .message {
-        font-size: 14px;
+        font-size: 15px;
     }
 }
 
@@ -311,17 +301,17 @@ body {
 .side-panel {
     width: 280px;
     background-color: var(--terminal-bg);
-    border-left: 2px solid var(--terminal-green);
+    border-left: 2px solid var(--terminal-red);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
     position: relative;
     z-index: 50;
-    /* Add phosphor glow to border */
+    /* Add red phosphor glow to border */
     box-shadow: 
-        -2px 0 10px rgba(51, 255, 51, 0.3),
-        inset 0 0 20px rgba(51, 255, 51, 0.05);
+        -2px 0 10px rgba(255, 0, 0, 0.4),
+        inset 0 0 20px rgba(255, 0, 0, 0.05);
 }
 
 /* Collapsed state */
@@ -336,45 +326,45 @@ body {
 /* Panel header with title and toggle */
 .panel-header {
     padding: 15px;
-    border-bottom: 2px solid var(--terminal-green);
+    border-bottom: 2px solid var(--terminal-red);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: rgba(0, 17, 0, 0.8);
+    background-color: rgba(17, 0, 0, 0.8);
     box-shadow: 
-        0 2px 10px rgba(51, 255, 51, 0.2),
-        inset 0 0 15px rgba(51, 255, 51, 0.05);
+        0 2px 10px rgba(255, 0, 0, 0.3),
+        inset 0 0 15px rgba(255, 0, 0, 0.05);
 }
 
 .panel-title {
-    color: var(--terminal-green);
+    color: var(--terminal-red);
     font-weight: bold;
-    font-size: 18px;
+    font-size: 21px;
     text-shadow: 
-        0 0 5px var(--terminal-green),
-        0 0 10px var(--terminal-green);
-    letter-spacing: 2px;
+        0 0 5px var(--terminal-red),
+        0 0 10px var(--terminal-red);
+    letter-spacing: 3px;
 }
 
 /* Toggle button */
 .panel-toggle {
     background: transparent;
-    border: 1px solid var(--terminal-green);
-    color: var(--terminal-green);
+    border: 1px solid var(--terminal-red);
+    color: var(--terminal-red);
     padding: 5px 10px;
     cursor: pointer;
     font-family: 'VT323', 'Courier New', monospace;
-    font-size: 16px;
+    font-size: 17px;
     transition: all 0.2s ease;
-    text-shadow: 0 0 3px var(--terminal-green);
+    text-shadow: 0 0 3px var(--terminal-red);
 }
 
 .panel-toggle:hover {
-    background-color: var(--terminal-green);
+    background-color: var(--terminal-red);
     color: var(--terminal-bg);
     box-shadow: 
-        0 0 10px var(--terminal-green),
-        0 0 20px rgba(51, 255, 51, 0.5);
+        0 0 10px var(--terminal-red),
+        0 0 20px rgba(255, 0, 0, 0.5);
     transform: scale(1.05);
 }
 
@@ -394,28 +384,28 @@ body {
 /* Panel sections */
 .panel-section {
     padding: 15px;
-    border-bottom: 1px solid rgba(51, 255, 51, 0.2);
+    border-bottom: 1px solid rgba(255, 0, 0, 0.2);
 }
 
 .section-header {
-    color: var(--terminal-green);
+    color: var(--terminal-orange);
     font-weight: bold;
     margin-bottom: 12px;
     text-align: center;
     text-shadow: 
-        0 0 5px var(--terminal-green),
-        0 0 10px var(--terminal-green);
-    font-size: 16px;
-    letter-spacing: 1px;
+        0 0 5px var(--terminal-orange),
+        0 0 10px var(--terminal-orange);
+    font-size: 19px;
+    letter-spacing: 2px;
 }
 
 .panel-separator {
-    color: var(--terminal-green);
+    color: var(--terminal-red);
     text-align: center;
     padding: 10px 0;
     opacity: 0.4;
-    font-size: 14px;
-    text-shadow: 0 0 3px var(--terminal-green);
+    font-size: 17px;
+    text-shadow: 0 0 3px var(--terminal-red);
 }
 
 /* Rooms list */
@@ -427,43 +417,43 @@ body {
 
 .room-item {
     padding: 10px 12px;
-    border: 1px solid var(--terminal-green);
+    border: 1px solid var(--terminal-red);
     cursor: pointer;
     transition: all 0.2s ease;
-    color: var(--terminal-green);
-    font-size: 15px;
+    color: var(--terminal-red);
+    font-size: 19px;
     background-color: rgba(0, 0, 0, 0.5);
-    text-shadow: 0 0 3px var(--terminal-green);
+    text-shadow: 0 0 3px var(--terminal-red);
 }
 
 /* Hover effect for rooms */
 .room-item:hover {
-    background-color: rgba(0, 26, 0, 0.8);
+    background-color: rgba(26, 0, 0, 0.8);
     box-shadow: 
-        0 0 10px rgba(51, 255, 51, 0.4),
-        inset 0 0 10px rgba(51, 255, 51, 0.1);
-    border-color: var(--terminal-green);
+        0 0 10px rgba(255, 0, 0, 0.4),
+        inset 0 0 10px rgba(255, 0, 0, 0.1);
+    border-color: var(--terminal-orange);
     transform: translateX(-2px);
 }
 
 /* Active/current room highlight */
 .room-item.active {
-    background-color: var(--terminal-green);
+    background-color: var(--terminal-red);
     color: var(--terminal-bg);
     font-weight: bold;
     box-shadow: 
-        0 0 15px var(--terminal-green),
-        0 0 25px rgba(51, 255, 51, 0.5),
+        0 0 15px var(--terminal-red),
+        0 0 25px rgba(255, 0, 0, 0.5),
         inset 0 0 10px rgba(0, 0, 0, 0.3);
-    border-color: var(--terminal-green);
+    border-color: var(--terminal-red);
     text-shadow: none;
 }
 
 .room-item.active:hover {
     transform: translateX(-2px);
     box-shadow: 
-        0 0 20px var(--terminal-green),
-        0 0 30px rgba(51, 255, 51, 0.6),
+        0 0 20px var(--terminal-red),
+        0 0 30px rgba(255, 0, 0, 0.6),
         inset 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -489,7 +479,7 @@ body {
 }
 
 .room-count {
-    font-size: 13px;
+    font-size: 16px;
     opacity: 0.8;
     margin-left: 8px;
     font-style: italic;
@@ -506,17 +496,17 @@ body {
 
 .user-item {
     padding: 8px 12px;
-    color: var(--terminal-green);
-    font-size: 14px;
+    color: var(--terminal-red);
+    font-size: 19px;
     border-left: 3px solid transparent;
     transition: all 0.2s ease;
     background-color: rgba(0, 0, 0, 0.3);
-    text-shadow: 0 0 3px var(--terminal-green);
+    text-shadow: 0 0 3px var(--terminal-red);
 }
 
 .user-item:hover {
-    border-left-color: var(--terminal-green);
-    background-color: rgba(0, 26, 0, 0.5);
+    border-left-color: var(--terminal-orange);
+    background-color: rgba(26, 0, 0, 0.5);
     padding-left: 15px;
 }
 
@@ -531,10 +521,10 @@ body {
 }
 
 .user-room {
-    font-size: 12px;
+    font-size: 15px;
     opacity: 0.7;
     margin-left: 8px;
-    color: var(--terminal-dark-green);
+    color: var(--terminal-gray);
     font-style: italic;
 }
 
@@ -545,28 +535,28 @@ body {
 
 .side-panel::-webkit-scrollbar-track {
     background: var(--terminal-bg);
-    border-left: 1px solid rgba(51, 255, 51, 0.2);
+    border-left: 1px solid rgba(255, 0, 0, 0.2);
 }
 
 .side-panel::-webkit-scrollbar-thumb {
-    background: var(--terminal-green);
+    background: var(--terminal-red);
     border-radius: 3px;
     box-shadow: 
-        0 0 5px var(--terminal-green),
-        inset 0 0 3px rgba(51, 255, 51, 0.5);
+        0 0 5px var(--terminal-red),
+        inset 0 0 3px rgba(255, 0, 0, 0.5);
 }
 
 .side-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--terminal-green);
+    background: var(--terminal-red);
     box-shadow: 
-        0 0 10px var(--terminal-green),
-        inset 0 0 5px rgba(51, 255, 51, 0.7);
+        0 0 10px var(--terminal-red),
+        inset 0 0 5px rgba(255, 0, 0, 0.7);
 }
 
 /* Firefox scrollbar */
 .side-panel {
     scrollbar-width: thin;
-    scrollbar-color: var(--terminal-green) var(--terminal-bg);
+    scrollbar-color: var(--terminal-red) var(--terminal-bg);
 }
 
 .users-list::-webkit-scrollbar {
@@ -578,7 +568,7 @@ body {
 }
 
 .users-list::-webkit-scrollbar-thumb {
-    background: var(--terminal-dark-green);
+    background: var(--terminal-dark-red);
     border-radius: 2px;
 }
 
@@ -593,7 +583,7 @@ body {
         z-index: 150;
         box-shadow: 
             -5px 0 20px rgba(0, 0, 0, 0.8),
-            -2px 0 10px rgba(51, 255, 51, 0.3);
+            -2px 0 10px rgba(255, 0, 0, 0.4);
     }
     
     .side-panel.collapsed {
@@ -601,12 +591,12 @@ body {
     }
     
     .panel-title {
-        font-size: 16px;
+        font-size: 17px;
     }
     
     .room-item,
     .user-item {
-        font-size: 13px;
+        font-size: 14px;
     }
 }
 

@@ -116,7 +116,7 @@ def client():
 
 
 def test_root_endpoint(client):
-    """Test root endpoint serves auth.html."""
+    """Test root endpoint serves index.html."""
     response = client.get("/")
     assert response.status_code == 200
     # Root now serves HTML file, not JSON
