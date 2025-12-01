@@ -250,7 +250,12 @@
   - Include optional Tailwind CSS via CDN if needed for layout
   - _Requirements: 3.3, 7.4, 9.1_
 
-- [ ] 11. Implement CSS for CRT terminal effects
+- [x] 11. Implement CSS for CRT terminal effects
+
+
+
+
+
   - Create frontend/css/terminal.css
   - Implement CRT curvature using perspective transform
   - Implement scanlines using linear-gradient overlay

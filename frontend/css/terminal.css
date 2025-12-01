@@ -1,0 +1,304 @@
+/**
+ * Phantom Link BBS - Terminal CSS
+ * CRT Terminal Effects and Retro Styling
+ */
+
+/* Import retro terminal font */
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+/* Root variables for easy theming */
+:root {
+    --terminal-green: #33ff33;
+    --terminal-dark-green: #00aa00;
+    --terminal-bg: #000000;
+    --terminal-yellow: #ffff33;
+    --terminal-red: #ff3333;
+    --glow-intensity: 5px;
+}
+
+/* Base terminal screen with CRT curvature */
+.terminal-screen {
+    /* CRT curvature using perspective transform */
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+.terminal-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Subtle curvature effect */
+    transform: rotateX(1deg);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Scanlines overlay */
+.terminal-screen::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Scanlines using linear-gradient */
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 2px
+    );
+    pointer-events: none;
+    z-index: 10;
+    /* Flicker animation with subtle opacity changes */
+    animation: flicker 0.15s infinite alternate;
+}
+
+/* Flicker animation for CRT effect */
+@keyframes flicker {
+    0% {
+        opacity: 0.97;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.98;
+    }
+}
+
+/* Apply retro terminal font globally */
+body,
+.terminal-screen,
+.chat-display,
+.command-line-bar,
+.command-input {
+    font-family: 'VT323', 'Courier New', monospace;
+}
+
+/* Phosphor glow effect on all text */
+.terminal-screen,
+.chat-display,
+.command-line-bar {
+    color: var(--terminal-green);
+    /* Phosphor glow using text-shadow */
+    text-shadow: 
+        0 0 var(--glow-intensity) var(--terminal-green),
+        0 0 calc(var(--glow-intensity) * 2) var(--terminal-green);
+}
+
+/* Enhanced glow for chat display text */
+.chat-display {
+    text-shadow: 
+        0 0 5px var(--terminal-green),
+        0 0 10px var(--terminal-green),
+        0 0 15px rgba(51, 255, 51, 0.5);
+}
+
+/* Command line bar with fixed bottom position */
+.command-line-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--terminal-bg);
+    border-top: 2px solid var(--terminal-green);
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    z-index: 100;
+    /* Add glow to border */
+    box-shadow: 
+        0 -2px 10px rgba(51, 255, 51, 0.3),
+        inset 0 0 20px rgba(51, 255, 51, 0.05);
+}
+
+/* Command prompt symbol */
+.command-prompt {
+    color: var(--terminal-green);
+    margin-right: 10px;
+    font-weight: bold;
+    font-size: 18px;
+    text-shadow: 
+        0 0 5px var(--terminal-green),
+        0 0 10px var(--terminal-green);
+}
+
+/* Command input field */
+.command-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--terminal-green);
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 18px;
+    outline: none;
+    caret-color: var(--terminal-green);
+    text-shadow: 
+        0 0 5px var(--terminal-green),
+        0 0 10px var(--terminal-green);
+}
+
+.command-input::placeholder {
+    color: var(--terminal-dark-green);
+    opacity: 0.6;
+}
+
+/* Blinking cursor animation */
+.cursor {
+    display: inline-block;
+    width: 10px;
+    height: 20px;
+    background-color: var(--terminal-green);
+    margin-left: 2px;
+    /* Blinking cursor with smooth animation */
+    animation: cursor-blink 1s step-end infinite;
+    box-shadow: 
+        0 0 5px var(--terminal-green),
+        0 0 10px var(--terminal-green);
+}
+
+@keyframes cursor-blink {
+    0%, 50% {
+        opacity: 1;
+    }
+    51%, 100% {
+        opacity: 0;
+    }
+}
+
+/* Message styling with phosphor glow */
+.message {
+    margin-bottom: 8px;
+    word-wrap: break-word;
+    line-height: 1.4;
+    font-size: 16px;
+}
+
+/* System messages in yellow with glow */
+.message.system {
+    color: var(--terminal-yellow);
+    text-shadow: 
+        0 0 5px var(--terminal-yellow),
+        0 0 10px var(--terminal-yellow);
+}
+
+/* Error messages in red with glow */
+.message.error {
+    color: var(--terminal-red);
+    text-shadow: 
+        0 0 5px var(--terminal-red),
+        0 0 10px var(--terminal-red);
+}
+
+/* Timestamp styling */
+.timestamp {
+    color: var(--terminal-dark-green);
+    text-shadow: 
+        0 0 3px var(--terminal-dark-green),
+        0 0 6px var(--terminal-dark-green);
+}
+
+/* Username styling */
+.username {
+    color: var(--terminal-green);
+    font-weight: bold;
+    text-shadow: 
+        0 0 5px var(--terminal-green),
+        0 0 10px var(--terminal-green);
+}
+
+/* Screen glow effect - outer glow around entire terminal */
+body {
+    background-color: #0a0a0a;
+    background-image: radial-gradient(
+        ellipse at center,
+        rgba(51, 255, 51, 0.1) 0%,
+        rgba(0, 0, 0, 1) 70%
+    );
+}
+
+/* Additional CRT effects */
+.terminal-screen {
+    /* Slight vignette effect */
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
+}
+
+/* Scrollbar styling for terminal aesthetic */
+.chat-display::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-display::-webkit-scrollbar-track {
+    background: var(--terminal-bg);
+    border-left: 1px solid var(--terminal-dark-green);
+}
+
+.chat-display::-webkit-scrollbar-thumb {
+    background: var(--terminal-green);
+    border-radius: 4px;
+    box-shadow: 
+        0 0 5px var(--terminal-green),
+        inset 0 0 5px rgba(51, 255, 51, 0.5);
+}
+
+.chat-display::-webkit-scrollbar-thumb:hover {
+    background: var(--terminal-green);
+    box-shadow: 
+        0 0 10px var(--terminal-green),
+        inset 0 0 10px rgba(51, 255, 51, 0.7);
+}
+
+/* Firefox scrollbar */
+.chat-display {
+    scrollbar-width: thin;
+    scrollbar-color: var(--terminal-green) var(--terminal-bg);
+}
+
+/* Screen flicker on hover (subtle interaction) */
+.terminal-screen:hover::after {
+    animation: flicker 0.1s infinite alternate;
+}
+
+/* Responsive font sizing */
+@media (max-width: 768px) {
+    .chat-display {
+        font-size: 14px;
+    }
+    
+    .command-input {
+        font-size: 16px;
+    }
+    
+    .message {
+        font-size: 14px;
+    }
+}
+
+/* High contrast mode for accessibility */
+@media (prefers-contrast: high) {
+    :root {
+        --glow-intensity: 2px;
+    }
+    
+    .terminal-screen::after {
+        opacity: 0.5;
+    }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .terminal-screen::after,
+    .cursor {
+        animation: none;
+    }
+    
+    .cursor {
+        opacity: 1;
+    }
+}
