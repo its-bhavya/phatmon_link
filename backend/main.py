@@ -475,6 +475,20 @@ async def cleanup_expired_sessions(app: FastAPI):
                         "type": "user_list",
                         "users": active_users
                     })
+                    
+                    # Broadcast updated room list
+                    rooms = app.state.room_service.get_rooms()
+                    await app.state.websocket_manager.broadcast_to_all({
+                        "type": "room_list",
+                        "rooms": [
+                            {
+                                "name": room.name,
+                                "count": app.state.room_service.get_room_count(room.name),
+                                "description": room.description
+                            }
+                            for room in rooms
+                        ]
+                    })
         
         except asyncio.CancelledError:
             break
@@ -573,6 +587,20 @@ async def websocket_endpoint(
         await app.state.websocket_manager.broadcast_to_all({
             "type": "user_list",
             "users": active_users
+        })
+        
+        # Send room list to the connected user (for side panel)
+        rooms = app.state.room_service.get_rooms()
+        await app.state.websocket_manager.send_to_user(websocket, {
+            "type": "room_list",
+            "rooms": [
+                {
+                    "name": room.name,
+                    "count": app.state.room_service.get_room_count(room.name),
+                    "description": room.description
+                }
+                for room in rooms
+            ]
         })
         
         # Message handling loop
@@ -730,6 +758,27 @@ async def websocket_endpoint(
                     "type": "user_list",
                     "users": active_users
                 })
+                
+                # Broadcast updated room list (for side panel room counts)
+                rooms = app.state.room_service.get_rooms()
+                await app.state.websocket_manager.broadcast_to_all({
+                    "type": "room_list",
+                    "rooms": [
+                        {
+                            "name": room.name,
+                            "count": app.state.room_service.get_room_count(room.name),
+                            "description": room.description
+                        }
+                        for room in rooms
+                    ]
+                })
+                
+                # Send room_change message to user
+                await app.state.websocket_manager.send_to_user(websocket, {
+                    "type": "room_change",
+                    "room": new_room,
+                    "content": f"You are now in: {new_room}"
+                })
     
     except WebSocketDisconnect:
         print(f"WebSocket disconnected for user: {user.username if user else 'unknown'}")
@@ -772,6 +821,20 @@ async def websocket_endpoint(
             await app.state.websocket_manager.broadcast_to_all({
                 "type": "user_list",
                 "users": active_users
+            })
+            
+            # Broadcast updated room list
+            rooms = app.state.room_service.get_rooms()
+            await app.state.websocket_manager.broadcast_to_all({
+                "type": "room_list",
+                "rooms": [
+                    {
+                        "name": room.name,
+                        "count": app.state.room_service.get_room_count(room.name),
+                        "description": room.description
+                    }
+                    for room in rooms
+                ]
             })
 
 

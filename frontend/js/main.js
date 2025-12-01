@@ -1,16 +1,18 @@
 /**
  * Main Application Logic for Phantom Link BBS
- * Integrates WebSocketClient, CommandLineBar, and ChatDisplay
- * Requirements: 5.1, 5.2, 5.3, 6.3, 6.4, 7.1, 7.2, 7.3, 7.5, 9.3
+ * Integrates WebSocketClient, CommandLineBar, ChatDisplay, and SidePanel
+ * Requirements: 5.1, 5.2, 5.3, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.5, 9.3
  */
 
 import { CommandLineBar } from './commandBar.js';
 import { ChatDisplay } from './chatDisplay.js';
+import { SidePanel } from './sidePanel.js';
 
 // Application state
 let wsClient = null;
 let commandBar = null;
 let chatDisplay = null;
+let sidePanel = null;
 let currentRoom = 'Lobby';
 let activeUsers = [];
 
@@ -38,6 +40,9 @@ function init() {
         handleMessageSubmit,
         handleCommandSubmit
     );
+    
+    // Initialize SidePanel with room click handler (Requirement 4.3, 6.3, 6.4)
+    sidePanel = new SidePanel('sidePanel', handleSidePanelRoomClick);
     
     // Initialize WebSocketClient
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -105,6 +110,18 @@ function handleCommandSubmit(command, args, fullInput) {
         case 'clear':
             // Clear the terminal display (Requirement 7.4)
             chatDisplay.clear();
+            break;
+            
+        case 'panel':
+            // Toggle side panel visibility
+            if (sidePanel) {
+                sidePanel.toggle();
+                const status = sidePanel.isHidden() ? 'hidden' : 'visible';
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: `Side panel ${status}`
+                });
+            }
             break;
             
         case 'help':
@@ -261,15 +278,18 @@ function handleErrorMessage(message) {
 function handleUserList(message) {
     activeUsers = message.users || [];
     
-    // Display active users list
-    const userListText = activeUsers.map(user => 
-        `  ${user.username} (${user.room})`
-    ).join('\n');
+    // Update side panel with active users (Requirement 6.3, 6.4)
+    if (sidePanel) {
+        sidePanel.updateUsers(activeUsers);
+    }
     
-    chatDisplay.addMessage({
-        type: 'system',
-        content: `Active Users (${activeUsers.length}):\n${userListText || '  No users online'}`
-    });
+    // Display active users list in chat if content is provided
+    if (message.content) {
+        chatDisplay.addMessage({
+            type: 'system',
+            content: message.content
+        });
+    }
 }
 
 /**
@@ -279,24 +299,32 @@ function handleUserList(message) {
 function handleRoomList(message) {
     const rooms = message.rooms || [];
     
-    // Display room list with user counts
-    const roomListText = rooms.map(room => 
-        `  ${room.name} - ${room.count} user${room.count !== 1 ? 's' : ''}`
-    ).join('\n');
+    // Update side panel with rooms (Requirement 7.2)
+    if (sidePanel) {
+        sidePanel.updateRooms(rooms);
+    }
     
-    chatDisplay.addMessage({
-        type: 'system',
-        content: `Available Rooms:\n${roomListText || '  No rooms available'}`
-    });
+    // Display room list with user counts in chat if content is provided
+    if (message.content) {
+        chatDisplay.addMessage({
+            type: 'system',
+            content: message.content
+        });
+    }
 }
 
 /**
- * Handle room change notification
+ * Handle room change notification (Requirement 6.5)
  * @param {Object} message - Room change message
  */
 function handleRoomChange(message) {
     if (message.room) {
         currentRoom = message.room;
+        
+        // Update side panel to highlight current room (Requirement 6.5)
+        if (sidePanel) {
+            sidePanel.highlightCurrentRoom(currentRoom);
+        }
     }
     
     chatDisplay.addMessage({
@@ -319,6 +347,26 @@ function handleHelpMessage(message) {
 }
 
 /**
+ * Handle room click from side panel (Requirement 4.3)
+ * @param {string} roomName - Name of the room to join
+ */
+function handleSidePanelRoomClick(roomName) {
+    if (!wsClient || !wsClient.isConnected()) {
+        chatDisplay.addMessage({
+            type: 'error',
+            content: 'Not connected to server. Please wait...'
+        });
+        return;
+    }
+    
+    // Send join room request via WebSocket
+    wsClient.send({
+        type: 'join_room',
+        room: roomName
+    });
+}
+
+/**
  * Handle WebSocket connection established
  * @param {Event} event - Connection event
  */
@@ -330,6 +378,8 @@ function handleWebSocketConnect(event) {
     
     // Enable command bar
     commandBar.enable();
+    
+    // Side panel will be automatically populated by server-sent room_list and user_list messages
 }
 
 /**
@@ -388,5 +438,6 @@ export {
     handleMessageSubmit,
     handleCommandSubmit,
     handleWebSocketMessage,
+    handleSidePanelRoomClick,
     logout
 };

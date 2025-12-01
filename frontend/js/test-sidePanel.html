@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Side Panel Test - Phantom Link BBS</title>
+    <link rel="stylesheet" href="/static/css/terminal.css">
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #33ff33;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #33ff33;
+        }
+        
+        .test-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #33ff33;
+            text-shadow: 0 0 5px #33ff33;
+        }
+        
+        button {
+            background: transparent;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #33ff33;
+            color: #000;
+        }
+        
+        .log {
+            background-color: #001100;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        
+        /* Side panel preview */
+        .side-panel-preview {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .preview-panel {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 style="text-align: center; margin-bottom: 30px;">Side Panel Component Test</h1>
+        
+        <!-- Test 1: Initialize Side Panel -->
+        <div class="test-section">
+            <div class="test-title">Test 1: Initialize Side Panel</div>
+            <button onclick="testInit()">Initialize Side Panel</button>
+            <div class="log" id="log1"></div>
+        </div>
+        
+        <!-- Test 2: Update Rooms -->
+        <div class="test-section">
+            <div class="test-title">Test 2: Update Rooms List</div>
+            <button onclick="testUpdateRooms()">Update with Sample Rooms</button>
+            <button onclick="testUpdateRoomsEmpty()">Update with Empty List</button>
+            <div class="log" id="log2"></div>
+        </div>
+        
+        <!-- Test 3: Update Users -->
+        <div class="test-section">
+            <div class="test-title">Test 3: Update Users List</div>
+            <button onclick="testUpdateUsers()">Update with Sample Users</button>
+            <button onclick="testUpdateUsersEmpty()">Update with Empty List</button>
+            <div class="log" id="log3"></div>
+        </div>
+        
+        <!-- Test 4: Toggle Panel -->
+        <div class="test-section">
+            <div class="test-title">Test 4: Toggle Panel Visibility</div>
+            <button onclick="testToggle()">Toggle Panel</button>
+            <button onclick="testShow()">Show Panel</button>
+            <button onclick="testHide()">Hide Panel</button>
+            <div class="log" id="log4"></div>
+        </div>
+        
+        <!-- Test 5: Highlight Current Room -->
+        <div class="test-section">
+            <div class="test-title">Test 5: Highlight Current Room</div>
+            <button onclick="testHighlightLobby()">Highlight Lobby</button>
+            <button onclick="testHighlightTechline()">Highlight Techline</button>
+            <button onclick="testHighlightArcade()">Highlight Arcade Hall</button>
+            <div class="log" id="log5"></div>
+        </div>
+        
+        <!-- Side Panel Preview -->
+        <div class="test-section">
+            <div class="test-title">Side Panel Preview</div>
+            <div class="side-panel-preview">
+                <div class="preview-panel">
+                    <div id="sidePanel" class="side-panel" style="position: relative; height: 600px;">
+                        <div class="panel-header">
+                            <span class="panel-title">[ SYSTEM INFO ]</span>
+                            <button class="panel-toggle" id="panelToggle">
+                                <span class="toggle-icon">◀</span>
+                            </button>
+                        </div>
+                        
+                        <div class="panel-section">
+                            <div class="section-header">═══ ROOMS ═══</div>
+                            <div class="rooms-list" id="roomsList">
+                                <div class="room-item loading">Loading rooms...</div>
+                            </div>
+                        </div>
+                        
+                        <div class="panel-separator">═══════════════</div>
+                        
+                        <div class="panel-section">
+                            <div class="section-header">═══ USERS ═══</div>
+                            <div class="users-list" id="usersList">
+                                <div class="user-item loading">Loading users...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { SidePanel } from '/static/js/sidePanel.js';
+        
+        let sidePanel = null;
+        
+        // Test 1: Initialize
+        window.testInit = function() {
+            try {
+                sidePanel = new SidePanel('sidePanel', (roomName) => {
+                    log('log1', `Room clicked: ${roomName}`);
+                });
+                log('log1', '✓ Side panel initialized successfully');
+            } catch (error) {
+                log('log1', `✗ Error: ${error.message}`);
+            }
+        };
+        
+        // Test 2: Update Rooms
+        window.testUpdateRooms = function() {
+            if (!sidePanel) {
+                log('log2', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            const rooms = [
+                { name: 'Lobby', count: 5, description: 'Main gathering space' },
+                { name: 'Techline', count: 2, description: 'Tech discussions' },
+                { name: 'Arcade Hall', count: 3, description: 'Gaming zone' },
+                { name: 'Archives', count: 1, description: 'BBS history' }
+            ];
+            
+            sidePanel.updateRooms(rooms);
+            log('log2', `✓ Updated rooms list with ${rooms.length} rooms`);
+        };
+        
+        window.testUpdateRoomsEmpty = function() {
+            if (!sidePanel) {
+                log('log2', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            sidePanel.updateRooms([]);
+            log('log2', '✓ Updated rooms list with empty array');
+        };
+        
+        // Test 3: Update Users
+        window.testUpdateUsers = function() {
+            if (!sidePanel) {
+                log('log3', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            const users = [
+                { username: 'alice', room: 'Lobby' },
+                { username: 'bob', room: 'Techline' },
+                { username: 'charlie', room: 'Arcade Hall' },
+                { username: 'dave', room: 'Lobby' },
+                { username: 'eve', room: 'Archives' }
+            ];
+            
+            sidePanel.updateUsers(users);
+            log('log3', `✓ Updated users list with ${users.length} users`);
+        };
+        
+        window.testUpdateUsersEmpty = function() {
+            if (!sidePanel) {
+                log('log3', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            sidePanel.updateUsers([]);
+            log('log3', '✓ Updated users list with empty array');
+        };
+        
+        // Test 4: Toggle
+        window.testToggle = function() {
+            if (!sidePanel) {
+                log('log4', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            sidePanel.toggle();
+            const status = sidePanel.isHidden() ? 'hidden' : 'visible';
+            log('log4', `✓ Panel toggled - now ${status}`);
+        };
+        
+        window.testShow = function() {
+            if (!sidePanel) {
+                log('log4', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            sidePanel.show();
+            log('log4', '✓ Panel shown');
+        };
+        
+        window.testHide = function() {
+            if (!sidePanel) {
+                log('log4', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            sidePanel.hide();
+            log('log4', '✓ Panel hidden');
+        };
+        
+        // Test 5: Highlight
+        window.testHighlightLobby = function() {
+            if (!sidePanel) {
+                log('log5', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            sidePanel.highlightCurrentRoom('Lobby');
+            log('log5', '✓ Highlighted Lobby');
+        };
+        
+        window.testHighlightTechline = function() {
+            if (!sidePanel) {
+                log('log5', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            sidePanel.highlightCurrentRoom('Techline');
+            log('log5', '✓ Highlighted Techline');
+        };
+        
+        window.testHighlightArcade = function() {
+            if (!sidePanel) {
+                log('log5', '✗ Please initialize side panel first');
+                return;
+            }
+            
+            sidePanel.highlightCurrentRoom('Arcade Hall');
+            log('log5', '✓ Highlighted Arcade Hall');
+        };
+        
+        // Helper function to log messages
+        function log(logId, message) {
+            const logDiv = document.getElementById(logId);
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Auto-initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('log1', 'Test page loaded. Click "Initialize Side Panel" to begin.');
+        });
+    </script>
+</body>
+</html>

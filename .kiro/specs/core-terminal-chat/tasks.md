@@ -1,11 +1,8 @@
 # Implementation Plan: Core Terminal Chat + Rooms
 
+## Core Implementation (Complete)
+
 - [x] 1. Set up project structure and dependencies
-
-
-
-
-
   - Create backend and frontend directory structure
   - Initialize Python virtual environment
   - Create requirements.txt with FastAPI, uvicorn, passlib, python-jose, sqlalchemy, aiosqlite, hypothesis, pytest
@@ -14,11 +11,6 @@
   - _Requirements: All_
 
 - [x] 2. Implement database models and connection
-
-
-
-
-
   - Create database.py with SQLAlchemy setup for SQLite
   - Define User model with id, username, password_hash, created_at, last_login fields
   - Define Session model with id, user_id, token, created_at, expires_at fields
@@ -26,20 +18,7 @@
   - Add indexes for username and token lookups
   - _Requirements: 1.4, 1.6, 2.2_
 
-- [ ]* 2.1 Write property test for username validation
-  - **Property 1: Username validation**
-  - **Validates: Requirements 1.4**
-
-- [ ]* 2.2 Write property test for password validation
-  - **Property 2: Password validation**
-  - **Validates: Requirements 1.5**
-
 - [x] 3. Implement authentication service
-
-
-
-
-
   - Create auth/service.py with AuthService class
   - Implement password hashing using bcrypt (cost factor 12)
   - Implement password verification
@@ -49,28 +28,7 @@
   - Implement JWT token validation
   - _Requirements: 1.4, 1.5, 1.6, 2.2, 2.3_
 
-- [ ]* 3.1 Write property test for successful registration
-  - **Property 3: Successful registration creates account and session**
-  - **Validates: Requirements 1.6**
-
-- [ ]* 3.2 Write property test for valid credentials authentication
-  - **Property 4: Valid credentials authenticate successfully**
-  - **Validates: Requirements 2.2**
-
-- [ ]* 3.3 Write property test for invalid credentials retry
-  - **Property 5: Invalid credentials allow retry**
-  - **Validates: Requirements 2.3**
-
-- [ ]* 3.4 Write property test for welcome message format
-  - **Property 6: Welcome message contains required information**
-  - **Validates: Requirements 2.5**
-
 - [x] 4. Create authentication HTTP endpoints
-
-
-
-
-
   - Create main.py with FastAPI app initialization
   - Implement POST /api/auth/register endpoint
   - Implement POST /api/auth/login endpoint
@@ -80,23 +38,7 @@
   - Track failed login attempts (max 3 per connection)
   - _Requirements: 1.4, 1.5, 1.6, 1.7, 2.2, 2.3, 2.4, 2.5_
 
-- [ ]* 4.1 Write unit tests for authentication endpoints
-  - Test successful registration flow
-  - Test duplicate username rejection
-  - Test invalid username/password validation
-  - Test successful login flow
-  - Test invalid credentials handling
-  - Test failed login attempt tracking
-  - _Requirements: 1.4, 1.5, 1.6, 1.7, 2.2, 2.3, 2.4_
-
 - [x] 5. Implement room service and models
-
-
-
-
-
-
-
   - Create rooms/service.py with RoomService class
   - Define Room model with name, description, users set
   - Implement create_default_rooms() for Lobby, Techline, Arcade Hall, Archives
@@ -107,24 +49,7 @@
   - Implement get_room_count() to count users in room
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ]* 5.1 Write property test for users starting in Lobby
-  - **Property 7: Authenticated users start in Lobby**
-  - **Validates: Requirements 4.2**
-
-- [ ]* 5.2 Write property test for room changes
-  - **Property 8: Room changes update user location**
-  - **Validates: Requirements 4.3**
-
-- [ ]* 5.3 Write property test for room entry display
-  - **Property 9: Room entry displays room information**
-  - **Validates: Requirements 4.4**
-
 - [x] 6. Implement WebSocket manager
-
-
-
-
-
   - Create websocket/manager.py with WebSocketManager class
   - Implement connect() to handle new WebSocket connections
   - Implement disconnect() to clean up closed connections
@@ -135,24 +60,7 @@
   - Maintain user_websockets dict mapping username to WebSocket
   - _Requirements: 5.1, 5.2, 6.1, 6.2, 6.3_
 
-- [ ]* 6.1 Write property test for message isolation
-  - **Property 10: Message isolation by room**
-  - **Validates: Requirements 4.5**
-
-- [ ]* 6.2 Write property test for message broadcasting
-  - **Property 11: Messages broadcast to room members**
-  - **Validates: Requirements 5.2**
-
-- [ ]* 6.3 Write property test for message format
-  - **Property 12: Message format includes required fields**
-  - **Validates: Requirements 5.3, 9.2**
-
 - [x] 7. Implement command handler
-
-
-
-
-
   - Create commands/handler.py with CommandHandler class
   - Implement handle_command() to route commands
   - Implement help_command() to return list of available commands
@@ -163,24 +71,7 @@
   - Implement error handling for invalid commands
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ]* 7.1 Write property test for rooms command
-  - **Property 20: Rooms command shows all rooms with counts**
-  - **Validates: Requirements 7.2**
-
-- [ ]* 7.2 Write property test for users command
-  - **Property 21: Users command shows active users**
-  - **Validates: Requirements 7.3**
-
-- [ ]* 7.3 Write property test for invalid commands
-  - **Property 22: Invalid commands return error**
-  - **Validates: Requirements 7.5**
-
 - [x] 8. Implement WebSocket endpoint and message handling
-
-
-
-
-
   - Create WebSocket endpoint at /ws with token authentication
   - Implement token validation on connection
   - Implement welcome message on successful connection
@@ -191,56 +82,7 @@
   - Implement reconnection logic to restore previous room
   - _Requirements: 4.2, 5.1, 5.2, 6.1, 6.2, 8.1, 8.3, 8.4, 8.5_
 
-- [ ]* 8.1 Write property test for user added to active list
-  - **Property 15: User added to active list on connection**
-  - **Validates: Requirements 6.1**
-
-- [ ]* 8.2 Write property test for user removed on disconnect
-  - **Property 16: User removed from active list on disconnection**
-  - **Validates: Requirements 6.2**
-
-- [ ]* 8.3 Write property test for active list broadcast
-  - **Property 17: Active list changes broadcast to all**
-  - **Validates: Requirements 6.3**
-
-- [ ]* 8.4 Write property test for active list format
-  - **Property 18: Active list shows username and room**
-  - **Validates: Requirements 6.4**
-
-- [ ]* 8.5 Write property test for room change updates active list
-  - **Property 19: Room changes update active list**
-  - **Validates: Requirements 6.5**
-
-- [ ]* 8.6 Write property test for welcome message on connect
-  - **Property 23: Connection sends welcome message**
-  - **Validates: Requirements 8.1**
-
-- [ ]* 8.7 Write property test for session state preservation
-  - **Property 25: Disconnection preserves session state**
-  - **Validates: Requirements 8.3**
-
-- [ ]* 8.8 Write property test for reconnection restores room
-  - **Property 26: Reconnection restores previous room**
-  - **Validates: Requirements 8.4**
-
-- [ ]* 8.9 Write property test for session expiration cleanup
-  - **Property 27: Session expiration removes user**
-  - **Validates: Requirements 8.5**
-
-- [x] 9. Checkpoint - Ensure all backend tests pass
-
-
-
-
-
-  - Ensure all tests pass, ask the user if questions arise.
-
-- [x] 10. Create frontend HTML structure
-
-
-
-
-
+- [x] 9. Create frontend HTML structure
   - Create frontend/index.html with semantic structure
   - Add meta tags for charset and viewport
   - Create terminal-screen container div
@@ -250,12 +92,7 @@
   - Include optional Tailwind CSS via CDN if needed for layout
   - _Requirements: 3.3, 7.4, 9.1_
 
-- [x] 11. Implement CSS for CRT terminal effects
-
-
-
-
-
+- [x] 10. Implement CSS for CRT terminal effects
   - Create frontend/css/terminal.css
   - Implement CRT curvature using perspective transform
   - Implement scanlines using linear-gradient overlay
@@ -267,12 +104,7 @@
   - Style blinking cursor animation
   - _Requirements: 3.1, 3.2, 3.4, 3.5_
 
-- [x] 12. Implement command line bar component
-
-
-
-
-
+- [x] 11. Implement command line bar component
   - Create frontend/js/commandBar.js
   - Implement CommandLineBar class
   - Implement input event handling
@@ -283,16 +115,7 @@
   - Distinguish between commands (starting with /) and regular messages
   - _Requirements: 3.3, 3.4, 5.4, 7.1, 7.2, 7.3, 7.4, 7.5_
 
-- [ ]* 12.1 Write property test for input cleared after send
-  - **Property 13: Message submission clears input**
-  - **Validates: Requirements 5.4**
-
-- [x] 13. Implement chat display component
-
-
-
-
-
+- [x] 12. Implement chat display component
   - Create frontend/js/chatDisplay.js
   - Implement ChatDisplay class
   - Implement addMessage() to append new messages
@@ -304,12 +127,7 @@
   - Format messages as "[HH:MM:SS] <username> message"
   - _Requirements: 5.3, 7.4, 9.2, 9.4, 9.5_
 
-- [x] 14. Implement WebSocket client
-
-
-
-
-
+- [x] 13. Implement WebSocket client
   - Create frontend/js/websocket.js
   - Implement WebSocketClient class
   - Implement connect() with JWT token from localStorage
@@ -321,20 +139,7 @@
   - Handle connection errors with retry (up to 3 times)
   - _Requirements: 5.1, 5.5, 8.2_
 
-- [ ]* 14.1 Write property test for WebSocket reconnection
-  - **Property 14: WebSocket reconnection on interruption**
-  - **Validates: Requirements 5.5**
-
-- [ ]* 14.2 Write property test for connection retry
-  - **Property 24: Connection failure triggers retry**
-  - **Validates: Requirements 8.2**
-
-- [x] 15. Implement main application logic
-
-
-
-
-
+- [x] 14. Implement main application logic
   - Create frontend/js/main.js
   - Initialize WebSocketClient with token
   - Initialize CommandLineBar with message/command handlers
@@ -348,13 +153,7 @@
   - Connect command bar submission to WebSocket send
   - _Requirements: 5.1, 5.2, 5.3, 6.3, 6.4, 7.1, 7.2, 7.3, 7.5, 9.3_
 
-- [x] 16. Create login/registration UI
-
-
-
-
-
-
+- [x] 15. Create login/registration UI
   - Create frontend/auth.html for login/registration page
   - Implement dial-up connection sequence animation with ASCII art
   - Create login form with username and password fields
@@ -367,12 +166,7 @@
   - Display error messages for failed attempts
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [x] 17. Implement rate limiting
-
-
-
-
-
+- [x] 16. Implement rate limiting
   - Add rate limiting middleware to FastAPI
   - Implement message rate limit: 10 messages per 10 seconds per user
   - Implement command rate limit: 5 commands per 5 seconds per user
@@ -381,35 +175,21 @@
   - Disconnect user on persistent abuse
   - _Requirements: 5.1_
 
-- [x] 18. Add CORS configuration
-
-
-
-
-
+- [x] 17. Add CORS configuration
   - Configure CORS middleware in FastAPI
   - Allow origins from environment variable
   - Allow credentials for WebSocket connections
   - Set appropriate headers for development and production
   - _Requirements: All (infrastructure)_
 
-- [x] 19. Create static file serving
-
-
-
-
+- [x] 18. Create static file serving
   - Configure FastAPI to serve static files from frontend directory
   - Mount /static route for CSS, JS, and assets
   - Serve index.html at root path /
   - Serve auth.html at /auth path
   - _Requirements: All (infrastructure)_
 
-- [x] 20. Implement configuration management
-
-
-
-
-
+- [x] 19. Implement configuration management
   - Create config.py for environment variable loading
   - Load DATABASE_URL, JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRATION_HOURS
   - Load CORS_ORIGINS from environment
@@ -417,48 +197,7 @@
   - Add validation for required configuration
   - _Requirements: All (infrastructure)_
 
-- [x] 21. Final checkpoint - Integration testing
-
-
-
-
-
-  - Ensure all tests pass, ask the user if questions arise.
-
-- [ ]* 21.1 Write integration test for full authentication flow
-  - Test register → login → WebSocket connect sequence
-  - Verify token generation and validation
-  - Verify user placement in Lobby
-  - _Requirements: 1.6, 2.2, 4.2, 8.1_
-
-- [ ]* 21.2 Write integration test for room switching
-  - Test joining different rooms
-  - Verify message isolation between rooms
-  - Verify active user list updates
-  - _Requirements: 4.3, 4.5, 6.5_
-
-- [ ]* 21.3 Write integration test for multi-user chat
-  - Test multiple users in same room
-  - Verify message broadcasting
-  - Verify active user list synchronization
-  - _Requirements: 5.2, 6.3_
-
-- [ ]* 21.4 Write integration test for command execution
-  - Test /help, /rooms, /users, /clear commands
-  - Verify correct responses
-  - Verify invalid command handling
-  - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
-
-- [ ]* 21.5 Write integration test for connection handling
-  - Test disconnect and reconnect flow
-  - Verify session state preservation
-  - Verify room restoration
-  - _Requirements: 8.3, 8.4, 8.5_
-
-- [-] 22. Create README documentation
-
-
-
+- [x] 20. Create README documentation
   - Document project overview and features
   - Document installation instructions
   - Document how to run the application
@@ -468,9 +207,213 @@
   - Document available commands
   - _Requirements: All (documentation)_
 
-- [ ] 23. Create example environment file
+## Remaining Tasks
+
+- [ ] 21. Create example environment file
   - Create .env.example with all required variables
   - Add comments explaining each variable
   - Provide example values for development
   - Document production considerations
   - _Requirements: All (infrastructure)_
+
+- [x] 22. Implement side panel UI for rooms and users
+
+
+
+
+- [x] 22.1 Create side panel HTML structure
+
+
+  - Add collapsible side panel container to index.html
+  - Create rooms section with clickable room list
+  - Create active users section with user list
+  - Add current room indicator/highlight
+  - Add toggle button or keyboard shortcut to show/hide panel
+  - Position panel on right or left side of terminal
+  - _Requirements: 4.1, 4.3, 6.4, 7.2, 7.3_
+
+- [x] 22.2 Style side panel with retro BBS aesthetic
+
+
+  - Apply terminal styling to side panel (green text, phosphor glow)
+  - Add borders and separators between sections
+  - Style clickable room items with hover effects
+  - Style active users list with room indicators
+  - Highlight current room in room list
+  - Add smooth collapse/expand animation
+  - Ensure panel is responsive and doesn't break terminal layout
+  - _Requirements: 3.1, 3.2, 3.4_
+
+- [x] 22.3 Implement side panel JavaScript component
+
+
+  - Create frontend/js/sidePanel.js with SidePanel class
+  - Implement updateRooms() to populate room list with counts
+  - Implement updateUsers() to populate active users list
+  - Implement room click handler to join room via WebSocket
+  - Implement toggle() to show/hide panel
+  - Implement highlightCurrentRoom() to indicate user's location
+  - Connect to WebSocket events for real-time updates
+  - _Requirements: 4.3, 6.3, 6.4, 7.2, 7.3_
+
+- [x] 22.4 Integrate side panel with main application
+
+
+  - Initialize SidePanel in main.js
+  - Update side panel when user_list messages received
+  - Update side panel when room_list messages received
+  - Update side panel when user changes rooms
+  - Add /panel command to toggle panel visibility
+  - Ensure terminal commands still work alongside panel
+  - _Requirements: 5.2, 6.3, 6.5, 7.2, 7.3_
+
+## Optional Testing Tasks
+
+The following testing tasks are marked as optional to focus on core functionality first. These can be implemented for comprehensive test coverage:
+
+- [ ]* 22.1 Write property test for username validation
+  - **Property 1: Username validation**
+  - **Validates: Requirements 1.4**
+
+- [ ]* 22.2 Write property test for password validation
+  - **Property 2: Password validation**
+  - **Validates: Requirements 1.5**
+
+- [ ]* 22.3 Write property test for successful registration
+  - **Property 3: Successful registration creates account and session**
+  - **Validates: Requirements 1.6**
+
+- [ ]* 22.4 Write property test for valid credentials authentication
+  - **Property 4: Valid credentials authenticate successfully**
+  - **Validates: Requirements 2.2**
+
+- [ ]* 22.5 Write property test for invalid credentials retry
+  - **Property 5: Invalid credentials allow retry**
+  - **Validates: Requirements 2.3**
+
+- [ ]* 22.6 Write property test for welcome message format
+  - **Property 6: Welcome message contains required information**
+  - **Validates: Requirements 2.5**
+
+- [ ]* 22.7 Write property test for users starting in Lobby
+  - **Property 7: Authenticated users start in Lobby**
+  - **Validates: Requirements 4.2**
+
+- [ ]* 22.8 Write property test for room changes
+  - **Property 8: Room changes update user location**
+  - **Validates: Requirements 4.3**
+
+- [ ]* 22.9 Write property test for room entry display
+  - **Property 9: Room entry displays room information**
+  - **Validates: Requirements 4.4**
+
+- [ ]* 22.10 Write property test for message isolation
+  - **Property 10: Message isolation by room**
+  - **Validates: Requirements 4.5**
+
+- [ ]* 22.11 Write property test for message broadcasting
+  - **Property 11: Messages broadcast to room members**
+  - **Validates: Requirements 5.2**
+
+- [ ]* 22.12 Write property test for message format
+  - **Property 12: Message format includes required fields**
+  - **Validates: Requirements 5.3, 9.2**
+
+- [ ]* 22.13 Write property test for input cleared after send
+  - **Property 13: Message submission clears input**
+  - **Validates: Requirements 5.4**
+
+- [ ]* 22.14 Write property test for WebSocket reconnection
+  - **Property 14: WebSocket reconnection on interruption**
+  - **Validates: Requirements 5.5**
+
+- [ ]* 22.15 Write property test for user added to active list
+  - **Property 15: User added to active list on connection**
+  - **Validates: Requirements 6.1**
+
+- [ ]* 22.16 Write property test for user removed on disconnect
+  - **Property 16: User removed from active list on disconnection**
+  - **Validates: Requirements 6.2**
+
+- [ ]* 22.17 Write property test for active list broadcast
+  - **Property 17: Active list changes broadcast to all**
+  - **Validates: Requirements 6.3**
+
+- [ ]* 22.18 Write property test for active list format
+  - **Property 18: Active list shows username and room**
+  - **Validates: Requirements 6.4**
+
+- [ ]* 22.19 Write property test for room change updates active list
+  - **Property 19: Room changes update active list**
+  - **Validates: Requirements 6.5**
+
+- [ ]* 22.20 Write property test for rooms command
+  - **Property 20: Rooms command shows all rooms with counts**
+  - **Validates: Requirements 7.2**
+
+- [ ]* 22.21 Write property test for users command
+  - **Property 21: Users command shows active users**
+  - **Validates: Requirements 7.3**
+
+- [ ]* 22.22 Write property test for invalid commands
+  - **Property 22: Invalid commands return error**
+  - **Validates: Requirements 7.5**
+
+- [ ]* 22.23 Write property test for welcome message on connect
+  - **Property 23: Connection sends welcome message**
+  - **Validates: Requirements 8.1**
+
+- [ ]* 22.24 Write property test for connection retry
+  - **Property 24: Connection failure triggers retry**
+  - **Validates: Requirements 8.2**
+
+- [ ]* 22.25 Write property test for session state preservation
+  - **Property 25: Disconnection preserves session state**
+  - **Validates: Requirements 8.3**
+
+- [ ]* 22.26 Write property test for reconnection restores room
+  - **Property 26: Reconnection restores previous room**
+  - **Validates: Requirements 8.4**
+
+- [ ]* 22.27 Write property test for session expiration cleanup
+  - **Property 27: Session expiration removes user**
+  - **Validates: Requirements 8.5**
+
+- [ ]* 23.1 Write unit tests for authentication endpoints
+  - Test successful registration flow
+  - Test duplicate username rejection
+  - Test invalid username/password validation
+  - Test successful login flow
+  - Test invalid credentials handling
+  - Test failed login attempt tracking
+  - _Requirements: 1.4, 1.5, 1.6, 1.7, 2.2, 2.3, 2.4_
+
+- [ ]* 23.2 Write integration test for full authentication flow
+  - Test register → login → WebSocket connect sequence
+  - Verify token generation and validation
+  - Verify user placement in Lobby
+  - _Requirements: 1.6, 2.2, 4.2, 8.1_
+
+- [ ]* 23.3 Write integration test for room switching
+  - Test joining different rooms
+  - Verify message isolation between rooms
+  - Verify active user list updates
+  - _Requirements: 4.3, 4.5, 6.5_
+
+- [ ]* 23.4 Write integration test for multi-user chat
+  - Test multiple users in same room
+  - Verify message broadcasting
+  - Verify active user list synchronization
+  - _Requirements: 5.2, 6.3_
+
+- [ ]* 23.5 Write integration test for command execution
+  - Test /help, /rooms, /users, /clear commands
+  - Verify correct responses
+  - Verify invalid command handling
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
+
+- [ ]* 23.6 Write integration test for connection handling
+  - Test disconnect and reconnect flow
+  - Verify session state preservation
+  - Verify room restoration
+  - _Requirements: 8.3, 8.4, 8.5_
