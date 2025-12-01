@@ -119,7 +119,12 @@
   - **Property 9: Room entry displays room information**
   - **Validates: Requirements 4.4**
 
-- [ ] 6. Implement WebSocket manager
+- [x] 6. Implement WebSocket manager
+
+
+
+
+
   - Create websocket/manager.py with WebSocketManager class
   - Implement connect() to handle new WebSocket connections
   - Implement disconnect() to clean up closed connections
@@ -142,7 +147,12 @@
   - **Property 12: Message format includes required fields**
   - **Validates: Requirements 5.3, 9.2**
 
-- [ ] 7. Implement command handler
+- [x] 7. Implement command handler
+
+
+
+
+
   - Create commands/handler.py with CommandHandler class
   - Implement handle_command() to route commands
   - Implement help_command() to return list of available commands
