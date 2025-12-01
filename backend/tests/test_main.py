@@ -47,11 +47,26 @@ def override_get_db():
         db.close()
 
 
-# Create a test app without lifespan
+# Create a test app with custom lifespan that uses test database
 @asynccontextmanager
-async def test_lifespan(app: FastAPI):
-    """Empty lifespan for testing - database is managed by fixtures."""
+async def app_lifespan(app: FastAPI):
+    """App lifespan - initializes services only (database managed by fixtures)."""
+    # Initialize services
+    from backend.rooms.service import RoomService
+    from backend.websocket.manager import WebSocketManager
+    from backend.commands.handler import CommandHandler
+    
+    app.state.room_service = RoomService()
+    app.state.room_service.create_default_rooms()
+    app.state.websocket_manager = WebSocketManager()
+    app.state.command_handler = CommandHandler(
+        app.state.room_service,
+        app.state.websocket_manager
+    )
+    
     yield
+    
+    # No cleanup needed - handled by fixtures
 
 
 # Create test app
@@ -59,7 +74,7 @@ app = FastAPI(
     title="Phantom Link BBS - Test",
     description="Test instance",
     version="1.0.0",
-    lifespan=test_lifespan
+    lifespan=app_lifespan
 )
 
 # Add CORS

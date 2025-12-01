@@ -10,15 +10,11 @@ This module provides authentication functionality including:
 
 from datetime import datetime, timedelta
 from typing import Optional
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from backend.database import User, Session as SessionModel
 import os
-
-
-# Password hashing configuration using bcrypt with cost factor 12
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
 
 # JWT configuration
 # These should be loaded from environment variables in production
@@ -51,17 +47,29 @@ class AuthService:
         """
         Hash a password using bcrypt with cost factor 12.
         
+        Bcrypt has a 72-byte limit, so we truncate passwords if necessary.
+        
         Args:
             password: Plain text password to hash
             
         Returns:
             Hashed password string
         """
-        return pwd_context.hash(password)
+        # Bcrypt has a 72-byte limit, truncate if necessary
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        
+        # Generate salt and hash password with cost factor 12
+        salt = bcrypt.gensalt(rounds=12)
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        return hashed.decode('utf-8')
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """
         Verify a plain password against a hashed password.
+        
+        Bcrypt has a 72-byte limit, so we truncate passwords if necessary.
         
         Args:
             plain_password: Plain text password to verify
@@ -70,7 +78,13 @@ class AuthService:
         Returns:
             True if password matches, False otherwise
         """
-        return pwd_context.verify(plain_password, hashed_password)
+        # Bcrypt has a 72-byte limit, truncate if necessary
+        password_bytes = plain_password.encode('utf-8')
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        
+        hashed_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
     
     def validate_username(self, username: str) -> tuple[bool, Optional[str]]:
         """
@@ -128,6 +142,7 @@ class AuthService:
         The token includes:
         - user_id: User's database ID
         - username: User's username
+        - iat: Issued at timestamp (with microseconds for uniqueness)
         - exp: Expiration timestamp (1 hour from creation)
         
         Args:
@@ -136,11 +151,13 @@ class AuthService:
         Returns:
             JWT token string
         """
-        expires_at = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+        now = datetime.utcnow()
+        expires_at = now + timedelta(hours=JWT_EXPIRATION_HOURS)
         
         payload = {
             "user_id": user.id,
             "username": user.username,
+            "iat": now.timestamp(),  # Include issued-at with microseconds for uniqueness
             "exp": expires_at
         }
         

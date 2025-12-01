@@ -13,16 +13,24 @@ This module tests:
 
 import pytest
 from fastapi.testclient import TestClient
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from contextlib import asynccontextmanager
 import asyncio
+import os
 
 from backend.database import Base, get_db
-from backend.main import app as main_app
 from backend.websocket.manager import WebSocketManager
 from backend.rooms.service import RoomService
 from backend.commands.handler import CommandHandler
+
+# Import the endpoints we need to test
+from backend.main import (
+    register, login, websocket_endpoint,
+    RegisterRequest, LoginRequest, AuthResponse
+)
 
 
 # Create test database
@@ -43,6 +51,51 @@ def override_get_db():
         db.close()
 
 
+# Create a test app with custom lifespan
+@asynccontextmanager
+async def app_lifespan(app: FastAPI):
+    """App lifespan - initializes services only (database managed by fixtures)."""
+    # Initialize services
+    app.state.room_service = RoomService()
+    app.state.room_service.create_default_rooms()
+    app.state.websocket_manager = WebSocketManager()
+    app.state.command_handler = CommandHandler(
+        app.state.room_service,
+        app.state.websocket_manager
+    )
+    
+    yield
+    
+    # No cleanup needed - handled by fixtures
+
+
+# Create test app
+test_app = FastAPI(
+    title="Phantom Link BBS - WebSocket Test",
+    description="Test instance for WebSocket tests",
+    version="1.0.0",
+    lifespan=app_lifespan
+)
+
+# Add CORS
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+test_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add routes
+test_app.post("/api/auth/register", response_model=AuthResponse, status_code=201)(register)
+test_app.post("/api/auth/login", response_model=AuthResponse)(login)
+test_app.websocket("/ws")(websocket_endpoint)
+
+# Override the database dependency
+test_app.dependency_overrides[get_db] = override_get_db
+
+
 @pytest.fixture(autouse=True)
 def setup_database():
     """Create tables before each test and drop after."""
@@ -56,28 +109,8 @@ def setup_database():
 @pytest.fixture
 def client(setup_database):
     """Create test client with WebSocket support."""
-    # Override database dependency
-    main_app.dependency_overrides[get_db] = override_get_db
-    
-    # Initialize services if not already done
-    if not hasattr(main_app.state, 'room_service'):
-        main_app.state.room_service = RoomService()
-        main_app.state.room_service.create_default_rooms()
-    
-    if not hasattr(main_app.state, 'websocket_manager'):
-        main_app.state.websocket_manager = WebSocketManager()
-    
-    if not hasattr(main_app.state, 'command_handler'):
-        main_app.state.command_handler = CommandHandler(
-            main_app.state.room_service,
-            main_app.state.websocket_manager
-        )
-    
-    with TestClient(main_app) as test_client:
+    with TestClient(test_app) as test_client:
         yield test_client
-    
-    # Clean up
-    main_app.dependency_overrides.clear()
 
 
 def register_and_get_token(client):

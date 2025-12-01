@@ -227,7 +227,12 @@
   - **Property 27: Session expiration removes user**
   - **Validates: Requirements 8.5**
 
-- [ ] 9. Checkpoint - Ensure all backend tests pass
+- [x] 9. Checkpoint - Ensure all backend tests pass
+
+
+
+
+
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. Create frontend HTML structure
