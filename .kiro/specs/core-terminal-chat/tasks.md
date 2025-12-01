@@ -348,7 +348,13 @@
   - Connect command bar submission to WebSocket send
   - _Requirements: 5.1, 5.2, 5.3, 6.3, 6.4, 7.1, 7.2, 7.3, 7.5, 9.3_
 
-- [ ] 16. Create login/registration UI
+- [x] 16. Create login/registration UI
+
+
+
+
+
+
   - Create frontend/auth.html for login/registration page
   - Implement dial-up connection sequence animation with ASCII art
   - Create login form with username and password fields
@@ -361,7 +367,12 @@
   - Display error messages for failed attempts
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 17. Implement rate limiting
+- [x] 17. Implement rate limiting
+
+
+
+
+
   - Add rate limiting middleware to FastAPI
   - Implement message rate limit: 10 messages per 10 seconds per user
   - Implement command rate limit: 5 commands per 5 seconds per user

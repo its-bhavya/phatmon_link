@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phantom Link BBS - Authentication</title>
+    <link rel="stylesheet" href="css/terminal.css">
+    <style>
+        /* Auth-specific styles */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000000;
+        }
+
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        .terminal-screen {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--terminal-bg);
+            border: 2px solid var(--terminal-green);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 
+                0 0 20px rgba(51, 255, 51, 0.3),
+                inset 0 0 50px rgba(51, 255, 51, 0.05);
+        }
+
+        .ascii-art {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 12px;
+            line-height: 1.2;
+            white-space: pre;
+            color: var(--terminal-green);
+            text-shadow: 
+                0 0 5px var(--terminal-green),
+                0 0 10px var(--terminal-green);
+        }
+
+        .dial-up-sequence {
+            margin-bottom: 30px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .dial-up-sequence.hidden {
+            display: none;
+        }
+
+        .dial-up-line {
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .auth-forms {
+            display: none;
+        }
+
+        .auth-forms.visible {
+            display: block;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+            color: var(--terminal-green);
+            text-shadow: 
+                0 0 5px var(--terminal-green),
+                0 0 10px var(--terminal-green);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--terminal-green);
+            font-size: 16px;
+            text-shadow: 
+                0 0 3px var(--terminal-green),
+                0 0 6px var(--terminal-green);
+        }
+
+        .form-input {
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--terminal-green);
+            color: var(--terminal-green);
+            font-family: 'VT323', 'Courier New', monospace;
+            font-size: 18px;
+            padding: 10px;
+            box-sizing: border-box;
+            outline: none;
+            text-shadow: 
+                0 0 3px var(--terminal-green),
+                0 0 6px var(--terminal-green);
+        }
+
+        .form-input:focus {
+            border-color: var(--terminal-green);
+            box-shadow: 
+                0 0 10px rgba(51, 255, 51, 0.5),
+                inset 0 0 10px rgba(51, 255, 51, 0.1);
+        }
+
+        .form-button {
+            width: 100%;
+            background-color: transparent;
+            border: 2px solid var(--terminal-green);
+            color: var(--terminal-green);
+            font-family: 'VT323', 'Courier New', monospace;
+            font-size: 18px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-shadow: 
+                0 0 5px var(--terminal-green),
+                0 0 10px var(--terminal-green);
+        }
+
+        .form-button:hover {
+            background-color: var(--terminal-green);
+            color: var(--terminal-bg);
+            text-shadow: none;
+            box-shadow: 
+                0 0 20px rgba(51, 255, 51, 0.8),
+                inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-button:active {
+            transform: scale(0.98);
+        }
+
+        .form-toggle {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--terminal-dark-green);
+        }
+
+        .form-toggle-link {
+            color: var(--terminal-green);
+            cursor: pointer;
+            text-decoration: underline;
+            text-shadow: 
+                0 0 3px var(--terminal-green),
+                0 0 6px var(--terminal-green);
+        }
+
+        .form-toggle-link:hover {
+            color: var(--terminal-yellow);
+            text-shadow: 
+                0 0 5px var(--terminal-yellow),
+                0 0 10px var(--terminal-yellow);
+        }
+
+        .error-message {
+            color: var(--terminal-red);
+            text-align: center;
+            margin-top: 15px;
+            font-size: 16px;
+            text-shadow: 
+                0 0 5px var(--terminal-red),
+                0 0 10px var(--terminal-red);
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--terminal-dark-green);
+            margin-top: 5px;
+        }
+
+        #login-form, #register-form {
+            display: none;
+        }
+
+        #login-form.active, #register-form.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="terminal-screen">
+            <!-- ASCII Art Header -->
+            <div class="ascii-art">
+ ____  _                 _                    _     _       _    
+|  _ \| |__   __ _ _ __ | |_ ___  _ __ ___   | |   (_)_ __ | | __
+| |_) | '_ \ / _` | '_ \| __/ _ \| '_ ` _ \  | |   | | '_ \| |/ /
+|  __/| | | | (_| | | | | || (_) | | | | | | | |___| | | | |   < 
+|_|   |_| |_|\__,_|_| |_|\__\___/|_| |_| |_| |_____|_|_| |_|_|\_\
+                                                                  
+                    B B S   S Y S T E M
+            </div>
+
+            <!-- Dial-up Connection Sequence -->
+            <div id="dial-up-sequence" class="dial-up-sequence">
+                <!-- Lines will be added dynamically -->
+            </div>
+
+            <!-- Authentication Forms -->
+            <div id="auth-forms" class="auth-forms">
+                <!-- Login Form -->
+                <form id="login-form" class="active">
+                    <div class="form-header">[ LOGIN ]</div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="login-username">&gt; USERNAME:</label>
+                        <input 
+                            type="text" 
+                            id="login-username" 
+                            class="form-input" 
+                            autocomplete="username"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="login-password">&gt; PASSWORD:</label>
+                        <input 
+                            type="password" 
+                            id="login-password" 
+                            class="form-input" 
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="form-button">[ CONNECT ]</button>
+
+                    <div class="form-toggle">
+                        New user? <span class="form-toggle-link" id="show-register">Register here</span>
+                    </div>
+
+                    <div id="login-error" class="error-message"></div>
+                </form>
+
+                <!-- Registration Form -->
+                <form id="register-form">
+                    <div class="form-header">[ REGISTER ]</div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="register-username">&gt; USERNAME:</label>
+                        <input 
+                            type="text" 
+                            id="register-username" 
+                            class="form-input" 
+                            autocomplete="username"
+                            required
+                        >
+                        <div class="form-hint">3-20 characters</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="register-password">&gt; PASSWORD:</label>
+                        <input 
+                            type="password" 
+                            id="register-password" 
+                            class="form-input" 
+                            autocomplete="new-password"
+                            required
+                        >
+                        <div class="form-hint">Minimum 8 characters</div>
+                    </div>
+
+                    <button type="submit" class="form-button">[ CREATE ACCOUNT ]</button>
+
+                    <div class="form-toggle">
+                        Already have an account? <span class="form-toggle-link" id="show-login">Login here</span>
+                    </div>
+
+                    <div id="register-error" class="error-message"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dial-up connection sequence
+        const dialUpLines = [
+            'INITIALIZING MODEM...',
+            'ATZ',
+            'OK',
+            'ATDT 555-PHANTOM',
+            '',
+            '♪♫ DIALING... ♪♫',
+            '',
+            'CONNECTING...',
+            '....',
+            'CARRIER DETECTED',
+            'NEGOTIATING PROTOCOL...',
+            'HANDSHAKE COMPLETE',
+            '',
+            'CONNECTED AT 14400 BAUD',
+            '',
+            'WELCOME TO PHANTOM LINK BBS',
+            ''
+        ];
+
+        let lineIndex = 0;
+        const dialUpSequence = document.getElementById('dial-up-sequence');
+        const authForms = document.getElementById('auth-forms');
+
+        function showNextLine() {
+            if (lineIndex < dialUpLines.length) {
+                const line = document.createElement('div');
+                line.className = 'dial-up-line';
+                line.textContent = dialUpLines[lineIndex];
+                line.style.animationDelay = '0s';
+                dialUpSequence.appendChild(line);
+                lineIndex++;
+                
+                // Vary timing for more realistic effect
+                const delay = dialUpLines[lineIndex - 1] === '' ? 100 : 
+                             dialUpLines[lineIndex - 1].includes('♪') ? 800 :
+                             dialUpLines[lineIndex - 1] === '....' ? 1000 : 300;
+                
+                setTimeout(showNextLine, delay);
+            } else {
+                // Sequence complete, show forms
+                setTimeout(() => {
+                    dialUpSequence.classList.add('hidden');
+                    authForms.classList.add('visible');
+                    document.getElementById('login-username').focus();
+                }, 500);
+            }
+        }
+
+        // Start dial-up sequence on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(showNextLine, 500);
+        });
+
+        // Form toggle functionality
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const showRegisterLink = document.getElementById('show-register');
+        const showLoginLink = document.getElementById('show-login');
+
+        showRegisterLink.addEventListener('click', () => {
+            loginForm.classList.remove('active');
+            registerForm.classList.add('active');
+            document.getElementById('register-username').focus();
+            document.getElementById('login-error').classList.remove('visible');
+        });
+
+        showLoginLink.addEventListener('click', () => {
+            registerForm.classList.remove('active');
+            loginForm.classList.add('active');
+            document.getElementById('login-username').focus();
+            document.getElementById('register-error').classList.remove('visible');
+        });
+
+        // Login form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const errorDiv = document.getElementById('login-error');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store JWT token in localStorage
+                    localStorage.setItem('token', data.token);
+                    
+                    // Show success message
+                    errorDiv.textContent = 'LOGIN SUCCESSFUL. REDIRECTING...';
+                    errorDiv.style.color = 'var(--terminal-green)';
+                    errorDiv.classList.add('visible');
+                    
+                    // Redirect to main terminal UI
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 1000);
+                } else {
+                    // Display error message
+                    errorDiv.textContent = data.detail || 'LOGIN FAILED. PLEASE TRY AGAIN.';
+                    errorDiv.style.color = 'var(--terminal-red)';
+                    errorDiv.classList.add('visible');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'CONNECTION ERROR. PLEASE TRY AGAIN.';
+                errorDiv.style.color = 'var(--terminal-red)';
+                errorDiv.classList.add('visible');
+            }
+        });
+
+        // Registration form submission
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            const errorDiv = document.getElementById('register-error');
+
+            // Client-side validation
+            if (username.length < 3 || username.length > 20) {
+                errorDiv.textContent = 'USERNAME MUST BE 3-20 CHARACTERS.';
+                errorDiv.style.color = 'var(--terminal-red)';
+                errorDiv.classList.add('visible');
+                return;
+            }
+
+            if (password.length < 8) {
+                errorDiv.textContent = 'PASSWORD MUST BE AT LEAST 8 CHARACTERS.';
+                errorDiv.style.color = 'var(--terminal-red)';
+                errorDiv.classList.add('visible');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store JWT token in localStorage
+                    localStorage.setItem('token', data.token);
+                    
+                    // Show success message
+                    errorDiv.textContent = 'REGISTRATION SUCCESSFUL. REDIRECTING...';
+                    errorDiv.style.color = 'var(--terminal-green)';
+                    errorDiv.classList.add('visible');
+                    
+                    // Redirect to main terminal UI
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 1000);
+                } else {
+                    // Display error message
+                    errorDiv.textContent = data.detail || 'REGISTRATION FAILED. PLEASE TRY AGAIN.';
+                    errorDiv.style.color = 'var(--terminal-red)';
+                    errorDiv.classList.add('visible');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'CONNECTION ERROR. PLEASE TRY AGAIN.';
+                errorDiv.style.color = 'var(--terminal-red)';
+                errorDiv.classList.add('visible');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -13,6 +13,8 @@ from typing import Optional, Dict
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status, Request, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from sqlalchemy.orm import Session
 import os
@@ -23,6 +25,7 @@ from backend.auth.service import AuthService
 from backend.websocket.manager import WebSocketManager
 from backend.rooms.service import RoomService
 from backend.commands.handler import CommandHandler
+from backend.rate_limiter import RateLimiter
 
 
 @asynccontextmanager
@@ -48,6 +51,16 @@ async def lifespan(app: FastAPI):
         app.state.websocket_manager
     )
     print("Command handler initialized")
+    
+    # Initialize rate limiter
+    app.state.rate_limiter = RateLimiter(
+        message_limit=10,
+        message_window=10,
+        command_limit=5,
+        command_window=5,
+        mute_duration=30
+    )
+    print("Rate limiter initialized")
     
     # Start session cleanup task
     cleanup_task = asyncio.create_task(cleanup_expired_sessions(app))
@@ -83,6 +96,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files for frontend
+app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
+app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
+app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
 
 # Track failed login attempts per connection
 # Key: client IP address, Value: number of failed attempts
@@ -212,7 +230,25 @@ def clear_failed_attempts(client_ip: str) -> None:
 
 @app.get("/")
 async def root():
-    """Root endpoint - health check."""
+    """Serve the authentication page as the entry point."""
+    return FileResponse("frontend/auth.html")
+
+
+@app.get("/index.html")
+async def index():
+    """Serve the main terminal UI."""
+    return FileResponse("frontend/index.html")
+
+
+@app.get("/auth.html")
+async def auth():
+    """Serve the authentication page."""
+    return FileResponse("frontend/auth.html")
+
+
+@app.get("/api")
+async def api_root():
+    """API health check endpoint."""
     return {
         "service": "Phantom Link BBS",
         "status": "online",
@@ -515,6 +551,23 @@ async def websocket_endpoint(
                 if not content:
                     continue
                 
+                # Check rate limit
+                allowed, error_message, should_disconnect = app.state.rate_limiter.check_message_limit(user.username)
+                
+                if not allowed:
+                    # Send error message to user
+                    await app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "error",
+                        "content": error_message
+                    })
+                    
+                    # Disconnect if persistent abuse
+                    if should_disconnect:
+                        await websocket.close(code=1008, reason="Rate limit violation")
+                        break
+                    
+                    continue
+                
                 # Get user's current room
                 current_room = app.state.websocket_manager.get_user_room(user.username)
                 if not current_room:
@@ -536,6 +589,23 @@ async def websocket_endpoint(
                 # Handle command
                 command = data.get("command", "").strip()
                 if not command:
+                    continue
+                
+                # Check rate limit
+                allowed, error_message, should_disconnect = app.state.rate_limiter.check_command_limit(user.username)
+                
+                if not allowed:
+                    # Send error message to user
+                    await app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "error",
+                        "content": error_message
+                    })
+                    
+                    # Disconnect if persistent abuse
+                    if should_disconnect:
+                        await websocket.close(code=1008, reason="Rate limit violation")
+                        break
+                    
                     continue
                 
                 # Remove leading "/" if present
@@ -638,6 +708,9 @@ async def websocket_endpoint(
             
             # Disconnect from WebSocket manager
             await app.state.websocket_manager.disconnect(websocket)
+            
+            # Reset rate limiter state for this user
+            app.state.rate_limiter.reset_user(user.username)
             
             # Store session for potential reconnection
             if current_room:
