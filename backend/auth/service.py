@@ -14,13 +14,7 @@ import bcrypt
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from backend.database import User, Session as SessionModel
-import os
-
-# JWT configuration
-# These should be loaded from environment variables in production
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here-change-in-production")
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 1
+from backend.config import get_config
 
 
 class AuthService:
@@ -42,6 +36,7 @@ class AuthService:
             db: SQLAlchemy database session
         """
         self.db = db
+        self.config = get_config()
     
     def hash_password(self, password: str) -> str:
         """
@@ -152,7 +147,7 @@ class AuthService:
             JWT token string
         """
         now = datetime.utcnow()
-        expires_at = now + timedelta(hours=JWT_EXPIRATION_HOURS)
+        expires_at = now + timedelta(hours=self.config.JWT_EXPIRATION_HOURS)
         
         payload = {
             "user_id": user.id,
@@ -161,7 +156,7 @@ class AuthService:
             "exp": expires_at
         }
         
-        token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+        token = jwt.encode(payload, self.config.JWT_SECRET_KEY, algorithm=self.config.JWT_ALGORITHM)
         return token
     
     def validate_jwt_token(self, token: str) -> Optional[dict]:
@@ -176,7 +171,7 @@ class AuthService:
             Payload contains: user_id, username, exp
         """
         try:
-            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            payload = jwt.decode(token, self.config.JWT_SECRET_KEY, algorithms=[self.config.JWT_ALGORITHM])
             return payload
         except JWTError:
             return None
@@ -274,7 +269,7 @@ class AuthService:
         token = self.create_jwt_token(user)
         
         # Calculate expiration
-        expires_at = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+        expires_at = datetime.utcnow() + timedelta(hours=self.config.JWT_EXPIRATION_HOURS)
         
         # Store session in database
         session = SessionModel(

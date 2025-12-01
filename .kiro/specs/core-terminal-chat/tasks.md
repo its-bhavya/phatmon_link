@@ -404,7 +404,12 @@
   - Serve auth.html at /auth path
   - _Requirements: All (infrastructure)_
 
-- [ ] 20. Implement configuration management
+- [x] 20. Implement configuration management
+
+
+
+
+
   - Create config.py for environment variable loading
   - Load DATABASE_URL, JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRATION_HOURS
   - Load CORS_ORIGINS from environment

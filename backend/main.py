@@ -26,15 +26,16 @@ from backend.websocket.manager import WebSocketManager
 from backend.rooms.service import RoomService
 from backend.commands.handler import CommandHandler
 from backend.rate_limiter import RateLimiter
+from backend.config import get_config
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
-    database_url = os.getenv("DATABASE_URL", "sqlite:///./phantom_link.db")
-    init_database(database_url)
-    print(f"Database initialized: {database_url}")
+    config = get_config()
+    init_database(config.DATABASE_URL)
+    print(f"Database initialized: {config.DATABASE_URL}")
     
     # Initialize room service and create default rooms
     app.state.room_service = RoomService()
@@ -87,11 +88,11 @@ app = FastAPI(
 )
 
 # CORS configuration
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+config = get_config()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=config.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -747,13 +748,12 @@ async def websocket_endpoint(
 if __name__ == "__main__":
     import uvicorn
     
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
+    config = get_config()
     
     uvicorn.run(
         "backend.main:app",
-        host=host,
-        port=port,
+        host=config.HOST,
+        port=config.PORT,
         reload=True,
         log_level="info"
     )
