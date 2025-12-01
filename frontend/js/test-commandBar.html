@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CommandLineBar Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #33ff33;
+            padding: 20px;
+        }
+        
+        .test-output {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #33ff33;
+        }
+        
+        .command-line-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #000;
+            border-top: 2px solid #33ff33;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .command-prompt {
+            color: #33ff33;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            outline: none;
+            caret-color: #33ff33;
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: #33ff33;
+            margin-left: 2px;
+            animation: blink 1s step-end infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>CommandLineBar Component Test</h1>
+    
+    <div class="test-output">
+        <h2>Test Output:</h2>
+        <div id="output"></div>
+    </div>
+    
+    <div class="test-output">
+        <h2>History:</h2>
+        <div id="history"></div>
+    </div>
+    
+    <div class="command-line-bar">
+        <span class="command-prompt">&gt;</span>
+        <input 
+            type="text" 
+            class="command-input" 
+            id="commandInput" 
+            placeholder="Type a message or /help for commands"
+            autocomplete="off"
+            spellcheck="false"
+        />
+        <span class="cursor"></span>
+    </div>
+    
+    <script type="module">
+        import { CommandLineBar } from './commandBar.js';
+        
+        const output = document.getElementById('output');
+        const historyDiv = document.getElementById('history');
+        
+        function addOutput(text, type = 'message') {
+            const div = document.createElement('div');
+            div.style.color = type === 'command' ? '#ffff33' : '#33ff33';
+            div.textContent = text;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function updateHistory(history) {
+            historyDiv.innerHTML = history.map((item, i) => 
+                `<div>${i + 1}. ${item}</div>`
+            ).join('');
+        }
+        
+        // Initialize CommandLineBar
+        const commandBar = new CommandLineBar(
+            // onSubmit callback for regular messages
+            (message) => {
+                addOutput(`Message: ${message}`, 'message');
+                updateHistory(commandBar.getHistory());
+            },
+            // onCommand callback for commands
+            (command, args, fullInput) => {
+                addOutput(`Command: ${command}, Args: [${args.join(', ')}], Full: ${fullInput}`, 'command');
+                updateHistory(commandBar.getHistory());
+            }
+        );
+        
+        addOutput('CommandLineBar initialized. Try typing messages and commands!');
+        addOutput('- Type regular messages and press Enter');
+        addOutput('- Type /help or other commands starting with /');
+        addOutput('- Use Up/Down arrows to navigate history');
+    </script>
+</body>
+</html>
