@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatDisplay Component Test</title>
+    
+    <link rel="stylesheet" href="../css/terminal.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #33ff33;
+            padding: 20px;
+        }
+        
+        .terminal-screen {
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+            width: 100%;
+            background-color: #000;
+            border: 2px solid #33ff33;
+            position: relative;
+        }
+        
+        .chat-display {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            scrollbar-width: thin;
+            scrollbar-color: #33ff33 #000;
+        }
+        
+        .chat-display::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-display::-webkit-scrollbar-track {
+            background: #000;
+        }
+        
+        .chat-display::-webkit-scrollbar-thumb {
+            background: #33ff33;
+            border-radius: 4px;
+        }
+        
+        .message {
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+        
+        .message.system {
+            color: #ffff33;
+        }
+        
+        .message.error {
+            color: #ff3333;
+        }
+        
+        .timestamp {
+            color: #00aa00;
+        }
+        
+        .username {
+            color: #33ff33;
+            font-weight: bold;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #33ff33;
+        }
+        
+        button {
+            background-color: #000;
+            color: #33ff33;
+            border: 1px solid #33ff33;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button:hover {
+            background-color: #33ff33;
+            color: #000;
+        }
+        
+        h1, h2 {
+            color: #33ff33;
+            margin-bottom: 10px;
+        }
+        
+        .info {
+            color: #00aa00;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>ChatDisplay Component Test</h1>
+    
+    <div class="terminal-screen">
+        <div class="chat-display" id="chatDisplay">
+            <!-- Messages will be added here -->
+        </div>
+    </div>
+    
+    <div class="controls">
+        <h2>Test Controls</h2>
+        <div class="info">Message count: <span id="messageCount">0</span></div>
+        
+        <button onclick="testChatMessage()">Add Chat Message</button>
+        <button onclick="testSystemMessage()">Add System Message</button>
+        <button onclick="testErrorMessage()">Add Error Message</button>
+        <button onclick="testMultipleMessages()">Add Multiple Messages</button>
+        <button onclick="testClear()">Clear Display</button>
+        <button onclick="testAutoScroll()">Toggle Auto-Scroll</button>
+    </div>
+    
+    <script type="module">
+        import { ChatDisplay } from './chatDisplay.js';
+        
+        // Initialize ChatDisplay
+        window.chatDisplay = new ChatDisplay('chatDisplay');
+        
+        // Update message count
+        function updateMessageCount() {
+            document.getElementById('messageCount').textContent = window.chatDisplay.getMessageCount();
+        }
+        
+        // Test functions
+        window.testChatMessage = function() {
+            window.chatDisplay.addMessage({
+                type: 'chat_message',
+                username: 'TestUser',
+                content: 'This is a test chat message!',
+                timestamp: new Date().toISOString()
+            });
+            updateMessageCount();
+        };
+        
+        window.testSystemMessage = function() {
+            window.chatDisplay.addMessage({
+                type: 'system',
+                content: 'This is a system message',
+                timestamp: new Date().toISOString()
+            });
+            updateMessageCount();
+        };
+        
+        window.testErrorMessage = function() {
+            window.chatDisplay.addMessage({
+                type: 'error',
+                content: 'This is an error message',
+                timestamp: new Date().toISOString()
+            });
+            updateMessageCount();
+        };
+        
+        window.testMultipleMessages = function() {
+            const messages = [
+                { type: 'chat_message', username: 'Alice', content: 'Hello everyone!', timestamp: new Date().toISOString() },
+                { type: 'chat_message', username: 'Bob', content: 'Hi Alice!', timestamp: new Date().toISOString() },
+                { type: 'system', content: 'Bob joined the room', timestamp: new Date().toISOString() },
+                { type: 'chat_message', username: 'Charlie', content: 'Welcome Bob!', timestamp: new Date().toISOString() }
+            ];
+            window.chatDisplay.addMessages(messages);
+            updateMessageCount();
+        };
+        
+        window.testClear = function() {
+            window.chatDisplay.clear();
+            updateMessageCount();
+        };
+        
+        window.testAutoScroll = function() {
+            if (window.chatDisplay.isAutoScrollEnabled()) {
+                window.chatDisplay.disableAutoScroll();
+                alert('Auto-scroll disabled');
+            } else {
+                window.chatDisplay.enableAutoScroll();
+                alert('Auto-scroll enabled');
+            }
+        };
+        
+        // Add initial welcome message
+        window.chatDisplay.addMessage({
+            type: 'system',
+            content: 'ChatDisplay component test initialized',
+            timestamp: new Date().toISOString()
+        });
+        updateMessageCount();
+    </script>
+</body>
+</html>
