@@ -89,7 +89,14 @@
   - Test failed login attempt tracking
   - _Requirements: 1.4, 1.5, 1.6, 1.7, 2.2, 2.3, 2.4_
 
-- [ ] 5. Implement room service and models
+- [x] 5. Implement room service and models
+
+
+
+
+
+
+
   - Create rooms/service.py with RoomService class
   - Define Room model with name, description, users set
   - Implement create_default_rooms() for Lobby, Techline, Arcade Hall, Archives
