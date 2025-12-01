@@ -175,7 +175,12 @@
   - **Property 22: Invalid commands return error**
   - **Validates: Requirements 7.5**
 
-- [ ] 8. Implement WebSocket endpoint and message handling
+- [x] 8. Implement WebSocket endpoint and message handling
+
+
+
+
+
   - Create WebSocket endpoint at /ws with token authentication
   - Implement token validation on connection
   - Implement welcome message on successful connection

@@ -8,17 +8,21 @@ This module provides the main FastAPI application with:
 - Failed login attempt tracking
 """
 
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import Optional, Dict
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from sqlalchemy.orm import Session
 import os
+import asyncio
 
 from backend.database import init_database, get_db, close_database
 from backend.auth.service import AuthService
+from backend.websocket.manager import WebSocketManager
+from backend.rooms.service import RoomService
+from backend.commands.handler import CommandHandler
 
 
 @asynccontextmanager
@@ -29,9 +33,34 @@ async def lifespan(app: FastAPI):
     init_database(database_url)
     print(f"Database initialized: {database_url}")
     
+    # Initialize room service and create default rooms
+    app.state.room_service = RoomService()
+    app.state.room_service.create_default_rooms()
+    print("Default rooms created")
+    
+    # Initialize WebSocket manager
+    app.state.websocket_manager = WebSocketManager()
+    print("WebSocket manager initialized")
+    
+    # Initialize command handler
+    app.state.command_handler = CommandHandler(
+        app.state.room_service,
+        app.state.websocket_manager
+    )
+    print("Command handler initialized")
+    
+    # Start session cleanup task
+    cleanup_task = asyncio.create_task(cleanup_expired_sessions(app))
+    
     yield
     
     # Shutdown
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
+    
     close_database()
     print("Database connection closed")
 
@@ -58,6 +87,13 @@ app.add_middleware(
 # Track failed login attempts per connection
 # Key: client IP address, Value: number of failed attempts
 failed_login_attempts = {}
+
+# Track disconnected user sessions for reconnection
+# Key: username, Value: dict with room, disconnected_at timestamp
+disconnected_sessions: Dict[str, dict] = {}
+
+# Session preservation timeout (30 seconds)
+SESSION_PRESERVATION_TIMEOUT = 30
 
 
 # Pydantic Models for Request/Response
@@ -320,6 +356,313 @@ async def login(
         user=UserResponse.from_orm(user),
         message=welcome_message
     )
+
+
+async def cleanup_expired_sessions(app: FastAPI):
+    """
+    Background task to clean up expired disconnected sessions.
+    
+    This task runs every 10 seconds and removes sessions that have been
+    disconnected for more than SESSION_PRESERVATION_TIMEOUT seconds.
+    
+    Requirements: 8.5
+    """
+    while True:
+        try:
+            await asyncio.sleep(10)  # Check every 10 seconds
+            
+            current_time = datetime.utcnow()
+            expired_users = []
+            
+            # Find expired sessions
+            for username, session_data in disconnected_sessions.items():
+                disconnected_at = session_data.get("disconnected_at")
+                if disconnected_at:
+                    elapsed = (current_time - disconnected_at).total_seconds()
+                    if elapsed > SESSION_PRESERVATION_TIMEOUT:
+                        expired_users.append(username)
+            
+            # Remove expired sessions
+            for username in expired_users:
+                session_data = disconnected_sessions.pop(username, None)
+                if session_data:
+                    room = session_data.get("room")
+                    print(f"Session expired for user {username} (was in {room})")
+                    
+                    # Remove from room service
+                    if room:
+                        # Create a temporary user object for cleanup
+                        from backend.database import User
+                        temp_user = User(username=username)
+                        app.state.room_service.leave_room(temp_user, room)
+                    
+                    # Broadcast updated user list
+                    active_users = app.state.websocket_manager.get_active_users()
+                    await app.state.websocket_manager.broadcast_to_all({
+                        "type": "user_list",
+                        "users": active_users
+                    })
+        
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            print(f"Error in session cleanup: {e}")
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    token: str = Query(..., description="JWT authentication token"),
+    db: Session = Depends(get_db)
+):
+    """
+    WebSocket endpoint for real-time chat communication.
+    
+    This endpoint:
+    1. Validates JWT token on connection
+    2. Accepts WebSocket connection
+    3. Places user in Lobby (or restores previous room if reconnecting)
+    4. Sends welcome message
+    5. Handles incoming messages (chat_message, command, join_room)
+    6. Broadcasts messages to appropriate rooms
+    7. Handles disconnection and session preservation
+    
+    Requirements: 4.2, 5.1, 5.2, 6.1, 6.2, 8.1, 8.3, 8.4, 8.5
+    """
+    auth_service = AuthService(db)
+    user = None
+    
+    try:
+        # Validate token
+        user = auth_service.get_user_from_token(token)
+        if not user:
+            await websocket.close(code=4001, reason="Invalid or expired token")
+            return
+        
+        # Check if user is reconnecting
+        initial_room = "Lobby"
+        is_reconnecting = False
+        
+        if user.username in disconnected_sessions:
+            session_data = disconnected_sessions.pop(user.username)
+            previous_room = session_data.get("room")
+            disconnected_at = session_data.get("disconnected_at")
+            
+            # Check if within timeout period
+            if disconnected_at:
+                elapsed = (datetime.utcnow() - disconnected_at).total_seconds()
+                if elapsed <= SESSION_PRESERVATION_TIMEOUT:
+                    initial_room = previous_room
+                    is_reconnecting = True
+                    print(f"User {user.username} reconnecting to {initial_room}")
+        
+        # Connect user via WebSocket manager
+        await app.state.websocket_manager.connect(websocket, user, initial_room)
+        
+        # Add user to room service
+        app.state.room_service.join_room(user, initial_room)
+        
+        # Send welcome message
+        if is_reconnecting:
+            welcome_message = f"Welcome back, {user.username}! Reconnected to {initial_room}."
+        else:
+            if user.last_login:
+                last_login_str = user.last_login.strftime("%Y-%m-%d %H:%M:%S UTC")
+                welcome_message = f"Welcome to Phantom Link BBS, {user.username}! Last login: {last_login_str}"
+            else:
+                welcome_message = f"Welcome to Phantom Link BBS, {user.username}!"
+        
+        await app.state.websocket_manager.send_to_user(websocket, {
+            "type": "system",
+            "content": welcome_message
+        })
+        
+        # Send room entry message
+        room = app.state.room_service.get_room(initial_room)
+        if room:
+            await app.state.websocket_manager.send_to_user(websocket, {
+                "type": "system",
+                "content": f"\n=== {room.name} ===\n{room.description}\n"
+            })
+        
+        # Broadcast user join to room
+        await app.state.websocket_manager.broadcast_to_room(
+            initial_room,
+            {
+                "type": "system",
+                "content": f"* {user.username} has entered the room"
+            },
+            exclude_websocket=websocket
+        )
+        
+        # Broadcast updated active users list to all
+        active_users = app.state.websocket_manager.get_active_users()
+        await app.state.websocket_manager.broadcast_to_all({
+            "type": "user_list",
+            "users": active_users
+        })
+        
+        # Message handling loop
+        while True:
+            # Receive message from client
+            data = await websocket.receive_json()
+            
+            message_type = data.get("type")
+            
+            if message_type == "chat_message":
+                # Handle chat message
+                content = data.get("content", "").strip()
+                if not content:
+                    continue
+                
+                # Get user's current room
+                current_room = app.state.websocket_manager.get_user_room(user.username)
+                if not current_room:
+                    continue
+                
+                # Create message with timestamp
+                message = {
+                    "type": "chat_message",
+                    "username": user.username,
+                    "content": content,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "room": current_room
+                }
+                
+                # Broadcast to room (including sender)
+                await app.state.websocket_manager.broadcast_to_room(current_room, message)
+            
+            elif message_type == "command":
+                # Handle command
+                command = data.get("command", "").strip()
+                if not command:
+                    continue
+                
+                # Remove leading "/" if present
+                if command.startswith("/"):
+                    command = command[1:]
+                
+                # Parse command and arguments
+                parts = command.split(maxsplit=1)
+                cmd_name = parts[0] if parts else ""
+                cmd_args = parts[1] if len(parts) > 1 else None
+                
+                # Execute command
+                response = app.state.command_handler.handle_command(cmd_name, user, cmd_args)
+                
+                # Send response to user
+                await app.state.websocket_manager.send_to_user(websocket, response)
+                
+                # If it's a users command, send updated list
+                if cmd_name == "users":
+                    # Response already contains the user list
+                    pass
+            
+            elif message_type == "join_room":
+                # Handle room change
+                new_room = data.get("room", "").strip()
+                if not new_room:
+                    continue
+                
+                # Check if room exists
+                room = app.state.room_service.get_room(new_room)
+                if not room:
+                    await app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "error",
+                        "content": f"Room '{new_room}' not found."
+                    })
+                    continue
+                
+                # Get current room
+                current_room = app.state.websocket_manager.get_user_room(user.username)
+                
+                # Check if already in that room
+                if current_room == new_room:
+                    await app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "error",
+                        "content": f"You are already in {new_room}."
+                    })
+                    continue
+                
+                # Leave current room
+                if current_room:
+                    app.state.room_service.leave_room(user, current_room)
+                    
+                    # Notify old room
+                    await app.state.websocket_manager.broadcast_to_room(
+                        current_room,
+                        {
+                            "type": "system",
+                            "content": f"* {user.username} has left the room"
+                        }
+                    )
+                
+                # Join new room
+                app.state.room_service.join_room(user, new_room)
+                app.state.websocket_manager.update_user_room(websocket, new_room)
+                
+                # Send room entry message to user
+                await app.state.websocket_manager.send_to_user(websocket, {
+                    "type": "system",
+                    "content": f"\n=== {room.name} ===\n{room.description}\n"
+                })
+                
+                # Notify new room
+                await app.state.websocket_manager.broadcast_to_room(
+                    new_room,
+                    {
+                        "type": "system",
+                        "content": f"* {user.username} has entered the room"
+                    },
+                    exclude_websocket=websocket
+                )
+                
+                # Broadcast updated active users list
+                active_users = app.state.websocket_manager.get_active_users()
+                await app.state.websocket_manager.broadcast_to_all({
+                    "type": "user_list",
+                    "users": active_users
+                })
+    
+    except WebSocketDisconnect:
+        print(f"WebSocket disconnected for user: {user.username if user else 'unknown'}")
+    
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    
+    finally:
+        # Handle disconnection
+        if user:
+            # Get user's current room before disconnect
+            current_room = app.state.websocket_manager.get_user_room(user.username)
+            
+            # Disconnect from WebSocket manager
+            await app.state.websocket_manager.disconnect(websocket)
+            
+            # Store session for potential reconnection
+            if current_room:
+                disconnected_sessions[user.username] = {
+                    "room": current_room,
+                    "disconnected_at": datetime.utcnow()
+                }
+                print(f"Session preserved for {user.username} in {current_room}")
+            
+            # Notify room of user leaving
+            if current_room:
+                await app.state.websocket_manager.broadcast_to_room(
+                    current_room,
+                    {
+                        "type": "system",
+                        "content": f"* {user.username} has left the room"
+                    }
+                )
+            
+            # Broadcast updated active users list
+            active_users = app.state.websocket_manager.get_active_users()
+            await app.state.websocket_manager.broadcast_to_all({
+                "type": "user_list",
+                "users": active_users
+            })
 
 
 if __name__ == "__main__":
