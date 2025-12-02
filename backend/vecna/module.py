@@ -1,0 +1,442 @@
+"""
+Vecna Module - Adversarial AI component for conditional hostile interactions.
+
+This module implements the text corruption algorithm and core Vecna functionality
+for creating adversarial experiences in the BBS system.
+"""
+
+import random
+import logging
+from typing import Optional, Dict, Any
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+
+from backend.vecna.sentiment import SentimentAnalyzer
+from backend.vecna.pattern_detector import PatternDetector
+from backend.vecna.gemini_service import GeminiService
+from backend.vecna.user_profile import UserProfile
+
+logger = logging.getLogger(__name__)
+
+
+def corrupt_text(text: str, corruption_level: float = 0.3) -> str:
+    """
+    Apply text corruption while maintaining partial readability.
+    
+    This function corrupts text by applying character substitutions, random deletions,
+    and case randomization while ensuring at least 50% of characters remain readable.
+    
+    Algorithm:
+    1. Identify corruption candidates (skip spaces, punctuation)
+    2. Apply substitution map to random subset
+    3. Randomly delete characters
+    4. Randomize case
+    5. Ensure readability threshold (50% minimum)
+    
+    Args:
+        text: Original text to corrupt
+        corruption_level: Percentage of characters to corrupt (0.0-1.0)
+                         Clamped to maximum 0.5 to ensure 50% readability
+    
+    Returns:
+        Corrupted text string with partial readability preserved
+        
+    Requirements:
+        - 3.2: Apply text corruption including character substitution and garbling
+        - 3.5: Maintain partial readability while creating visual distortion
+    
+    Examples:
+        >>> corrupt_text("Hello World", 0.3)
+        'H3ll0 W0rld'  # Example output (actual output is random)
+        
+        >>> corrupt_text("", 0.5)
+        ''  # Empty string returns empty string
+    """
+    # Handle edge case: empty string
+    if not text:
+        return text
+    
+    # Clamp corruption level to maximum 0.5 to ensure 50% readability
+    corruption_level = min(corruption_level, 0.5)
+    
+    # Character substitution map for creating corrupted text
+    substitution_map = {
+        'a': '@', 'A': '@',
+        'e': '3', 'E': '3',
+        'i': '1', 'I': '1',
+        'o': '0', 'O': '0',
+        's': '$', 'S': '$',
+        't': '7', 'T': '7',
+        'l': '1', 'L': '1',
+    }
+    
+    # Convert text to list for easier manipulation
+    chars = list(text)
+    corrupted_chars = []
+    
+    # Track how many characters we've corrupted
+    total_corruptible = 0
+    corrupted_count = 0
+    
+    # First pass: identify corruptible characters (letters only)
+    for char in chars:
+        if char.isalpha():
+            total_corruptible += 1
+    
+    # Calculate target corruption count
+    target_corruptions = int(total_corruptible * corruption_level)
+    
+    # Second pass: apply corruption
+    for i, char in enumerate(chars):
+        # Preserve spaces and punctuation
+        if not char.isalpha():
+            corrupted_chars.append(char)
+            continue
+        
+        # Decide whether to corrupt this character
+        should_corrupt = False
+        if corrupted_count < target_corruptions:
+            # Randomly decide to corrupt, weighted by remaining budget
+            remaining_chars = total_corruptible - i
+            remaining_budget = target_corruptions - corrupted_count
+            if remaining_chars > 0:
+                probability = remaining_budget / remaining_chars
+                should_corrupt = random.random() < probability
+        
+        if should_corrupt:
+            # Apply substitution if available
+            if char in substitution_map:
+                corrupted_chars.append(substitution_map[char])
+                corrupted_count += 1
+            # Otherwise, randomly change case
+            elif random.random() < 0.5:
+                corrupted_chars.append(char.swapcase())
+                corrupted_count += 1
+            else:
+                corrupted_chars.append(char)
+        else:
+            corrupted_chars.append(char)
+    
+    return ''.join(corrupted_chars)
+
+
+
+class TriggerType(Enum):
+    """Enumeration of Vecna trigger types."""
+    EMOTIONAL = "emotional"
+    SYSTEM = "system"
+    NONE = "none"
+
+
+@dataclass
+class VecnaTrigger:
+    """
+    Represents a Vecna trigger event.
+    
+    Attributes:
+        trigger_type: Type of trigger (emotional or system)
+        reason: Description of why Vecna was triggered
+        intensity: Intensity score of the trigger (0.0-1.0)
+        user_id: User database ID
+        timestamp: When the trigger occurred
+    """
+    trigger_type: TriggerType
+    reason: str
+    intensity: float
+    user_id: int
+    timestamp: datetime
+
+
+@dataclass
+class VecnaResponse:
+    """
+    Response from Vecna activation.
+    
+    Attributes:
+        trigger_type: Type of trigger that caused this response
+        content: Main response content
+        corrupted_text: Corrupted version of text (for emotional triggers)
+        freeze_duration: Duration in seconds for Psychic Grip (for system triggers)
+        visual_effects: List of visual effects to apply
+        timestamp: When the response was generated
+    """
+    trigger_type: TriggerType
+    content: str
+    corrupted_text: Optional[str] = None
+    freeze_duration: Optional[int] = None
+    visual_effects: list = None
+    timestamp: datetime = None
+    
+    def __post_init__(self):
+        if self.visual_effects is None:
+            self.visual_effects = []
+        if self.timestamp is None:
+            self.timestamp = datetime.utcnow()
+
+
+class VecnaModule:
+    """
+    Adversarial AI module for conditional hostile interactions.
+    
+    This class implements the core Vecna functionality including:
+    - Trigger evaluation (emotional and system)
+    - Text corruption
+    - Hostile response generation
+    - Psychic Grip execution
+    
+    Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.3, 4.4
+    """
+    
+    def __init__(
+        self,
+        gemini_service: GeminiService,
+        sentiment_analyzer: SentimentAnalyzer,
+        pattern_detector: PatternDetector,
+        psychic_grip_duration_range: tuple = (5, 8)
+    ):
+        """
+        Initialize the Vecna module.
+        
+        Args:
+            gemini_service: Service for AI content generation
+            sentiment_analyzer: Service for sentiment analysis
+            pattern_detector: Service for pattern detection
+            psychic_grip_duration_range: Tuple of (min, max) seconds for Psychic Grip
+        """
+        self.gemini = gemini_service
+        self.sentiment = sentiment_analyzer
+        self.pattern_detector = pattern_detector
+        self.psychic_grip_duration = psychic_grip_duration_range
+        
+        logger.info("VecnaModule initialized")
+    
+    async def evaluate_triggers(
+        self,
+        user_id: int,
+        message: str,
+        user_profile: UserProfile,
+        recent_messages: Optional[list] = None
+    ) -> Optional[VecnaTrigger]:
+        """
+        Evaluate if Vecna should activate.
+        
+        This method checks both emotional triggers (high-negative sentiment)
+        and system triggers (spam, command repetition, unusual activity).
+        
+        Args:
+            user_id: User database ID
+            message: User's message text
+            user_profile: UserProfile object with behavioral data
+            recent_messages: Optional list of recent messages for spam detection
+        
+        Returns:
+            VecnaTrigger object if triggered, None otherwise
+        
+        Requirements: 2.1, 2.2, 2.3, 2.4
+        """
+        try:
+            # Check emotional trigger first (high-negative sentiment)
+            sentiment_result = self.sentiment.analyze(message)
+            
+            if sentiment_result.is_trigger:
+                logger.info(f"Vecna emotional trigger for user {user_id}: {sentiment_result.intensity}")
+                return VecnaTrigger(
+                    trigger_type=TriggerType.EMOTIONAL,
+                    reason=f"High-negative sentiment detected: {', '.join(sentiment_result.keywords)}",
+                    intensity=sentiment_result.intensity,
+                    user_id=user_id,
+                    timestamp=datetime.utcnow()
+                )
+            
+            # Check system triggers
+            
+            # 1. Spam detection
+            if recent_messages:
+                is_spam = self.pattern_detector.detect_spam(user_id, recent_messages)
+                if is_spam:
+                    logger.info(f"Vecna system trigger (spam) for user {user_id}")
+                    return VecnaTrigger(
+                        trigger_type=TriggerType.SYSTEM,
+                        reason="Spam pattern detected",
+                        intensity=0.8,
+                        user_id=user_id,
+                        timestamp=datetime.utcnow()
+                    )
+            
+            # 2. Command repetition detection
+            is_command_repetition = self.pattern_detector.detect_command_repetition(user_profile)
+            if is_command_repetition:
+                logger.info(f"Vecna system trigger (command repetition) for user {user_id}")
+                return VecnaTrigger(
+                    trigger_type=TriggerType.SYSTEM,
+                    reason="Command repetition detected",
+                    intensity=0.7,
+                    user_id=user_id,
+                    timestamp=datetime.utcnow()
+                )
+            
+            # 3. Unusual activity detection
+            # Calculate current activity metrics
+            current_activity = {
+                'messages_per_minute': 1.0,  # Placeholder - should be calculated from recent activity
+                'commands_per_minute': len(user_profile.command_history) / 60.0 if user_profile.command_history else 0.0,
+                'room_switches_per_hour': len(set(user_profile.recent_rooms)) * 6 if user_profile.recent_rooms else 0.0
+            }
+            
+            is_unusual = self.pattern_detector.detect_unusual_activity(user_profile, current_activity)
+            if is_unusual:
+                logger.info(f"Vecna system trigger (unusual activity) for user {user_id}")
+                return VecnaTrigger(
+                    trigger_type=TriggerType.SYSTEM,
+                    reason="Unusual activity pattern detected",
+                    intensity=0.75,
+                    user_id=user_id,
+                    timestamp=datetime.utcnow()
+                )
+            
+            # No triggers detected
+            return None
+        
+        except Exception as e:
+            logger.error(f"Error evaluating Vecna triggers: {e}")
+            return None
+    
+    async def execute_emotional_trigger(
+        self,
+        user_id: int,
+        message: str,
+        user_profile: UserProfile
+    ) -> VecnaResponse:
+        """
+        Execute emotional trigger: corrupt text and generate hostile response.
+        
+        This method:
+        1. Applies text corruption to the message
+        2. Generates a hostile response using Gemini AI
+        3. Returns a VecnaResponse with corrupted content
+        
+        Args:
+            user_id: User database ID
+            message: User's original message
+            user_profile: UserProfile object for personalization
+        
+        Returns:
+            VecnaResponse with corrupted text and hostile content
+        
+        Requirements: 3.1, 3.2, 3.3, 3.4
+        """
+        try:
+            # Apply text corruption to the message
+            corruption_level = 0.3  # 30% corruption
+            corrupted_message = corrupt_text(message, corruption_level)
+            
+            # Convert UserProfile to dict for Gemini service
+            profile_dict = {
+                'interests': user_profile.interests,
+                'frequent_rooms': user_profile.frequent_rooms,
+                'recent_rooms': user_profile.recent_rooms,
+                'behavioral_patterns': user_profile.behavioral_patterns
+            }
+            
+            # Generate hostile response using Gemini
+            hostile_response = await self.gemini.generate_hostile_response(
+                user_message=message,
+                user_profile=profile_dict
+            )
+            
+            # Prefix with [VECNA] tag
+            vecna_content = f"[VECNA] {hostile_response}"
+            
+            logger.info(f"Vecna emotional trigger executed for user {user_id}")
+            
+            return VecnaResponse(
+                trigger_type=TriggerType.EMOTIONAL,
+                content=vecna_content,
+                corrupted_text=corrupted_message,
+                visual_effects=['text_corruption'],
+                timestamp=datetime.utcnow()
+            )
+        
+        except Exception as e:
+            logger.error(f"Error executing emotional trigger: {e}")
+            # Fallback response
+            return VecnaResponse(
+                trigger_type=TriggerType.EMOTIONAL,
+                content="[VECNA] sYst3m m@lfunct10n... y0ur qu3ry 1s... 1rr3l3v@nt...",
+                corrupted_text=corrupt_text(message, 0.3),
+                visual_effects=['text_corruption'],
+                timestamp=datetime.utcnow()
+            )
+    
+    async def execute_psychic_grip(
+        self,
+        user_id: int,
+        user_profile: UserProfile
+    ) -> VecnaResponse:
+        """
+        Execute Psychic Grip: freeze thread and generate cryptic narrative.
+        
+        This method:
+        1. Determines a random freeze duration (5-8 seconds)
+        2. Generates a cryptic narrative using Gemini AI
+        3. Returns a VecnaResponse with freeze duration and effects
+        
+        Args:
+            user_id: User database ID
+            user_profile: UserProfile object with behavioral history
+        
+        Returns:
+            VecnaResponse with freeze duration and narrative content
+        
+        Requirements: 4.1, 4.3, 4.4
+        """
+        try:
+            # Determine random freeze duration
+            freeze_duration = random.randint(
+                self.psychic_grip_duration[0],
+                self.psychic_grip_duration[1]
+            )
+            
+            # Convert UserProfile to dict for Gemini service
+            profile_dict = {
+                'interests': user_profile.interests,
+                'frequent_rooms': user_profile.frequent_rooms,
+                'recent_rooms': user_profile.recent_rooms,
+                'unfinished_boards': user_profile.unfinished_boards,
+                'command_history': user_profile.command_history,
+                'behavioral_patterns': user_profile.behavioral_patterns
+            }
+            
+            # Generate Psychic Grip narrative using Gemini
+            narrative = await self.gemini.generate_psychic_grip_narrative(
+                user_profile=profile_dict
+            )
+            
+            # Prefix with [VECNA] tag
+            vecna_content = f"[VECNA] {narrative}"
+            
+            # Define visual effects for Psychic Grip
+            visual_effects = ['flicker', 'inverted', 'scanlines', 'static']
+            
+            logger.info(f"Vecna Psychic Grip executed for user {user_id}, duration: {freeze_duration}s")
+            
+            return VecnaResponse(
+                trigger_type=TriggerType.SYSTEM,
+                content=vecna_content,
+                freeze_duration=freeze_duration,
+                visual_effects=visual_effects,
+                timestamp=datetime.utcnow()
+            )
+        
+        except Exception as e:
+            logger.error(f"Error executing Psychic Grip: {e}")
+            # Fallback response
+            freeze_duration = random.randint(5, 8)
+            return VecnaResponse(
+                trigger_type=TriggerType.SYSTEM,
+                content="[VECNA] ...1 s33 y0u w@nd3r... @1ml3ssly... l0st 1n th3 v01d...",
+                freeze_duration=freeze_duration,
+                visual_effects=['flicker', 'inverted', 'scanlines', 'static'],
+                timestamp=datetime.utcnow()
+            )
