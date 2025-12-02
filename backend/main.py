@@ -27,6 +27,8 @@ from backend.rooms.service import RoomService
 from backend.commands.handler import CommandHandler
 from backend.rate_limiter import RateLimiter
 from backend.config import get_config
+from backend.vecna.auto_router import on_message_hook
+from backend.vecna.gemini_service import GeminiService, GeminiServiceError
 
 
 @asynccontextmanager
@@ -62,6 +64,23 @@ async def lifespan(app: FastAPI):
         mute_duration=30
     )
     print("Rate limiter initialized")
+    
+    # Initialize Gemini service for auto-routing (if enabled)
+    if config.VECNA_ENABLED and config.GEMINI_API_KEY:
+        try:
+            app.state.gemini_service = GeminiService(
+                api_key=config.GEMINI_API_KEY,
+                model=config.GEMINI_MODEL,
+                temperature=config.GEMINI_TEMPERATURE,
+                max_tokens=config.GEMINI_MAX_TOKENS
+            )
+            print("Gemini service initialized for auto-routing")
+        except GeminiServiceError as e:
+            print(f"Warning: Gemini service initialization failed: {e}")
+            app.state.gemini_service = None
+    else:
+        app.state.gemini_service = None
+        print("Gemini service disabled (VECNA_ENABLED=false or no API key)")
     
     # Start session cleanup task
     cleanup_task = asyncio.create_task(cleanup_expired_sessions(app))
@@ -637,6 +656,75 @@ async def websocket_endpoint(
                 current_room = app.state.websocket_manager.get_user_room(user.username)
                 if not current_room:
                     continue
+                
+                # Auto-route user if Gemini service is available
+                if app.state.gemini_service:
+                    try:
+                        notification = await on_message_hook(
+                            user=user,
+                            message=content,
+                            current_room=current_room,
+                            room_service=app.state.room_service,
+                            gemini_service=app.state.gemini_service
+                        )
+                        
+                        # Send notification if user was moved
+                        if notification:
+                            await app.state.websocket_manager.send_to_user(websocket, {
+                                "type": "system",
+                                "content": notification
+                            })
+                            
+                            # Update current_room after potential move
+                            new_room = app.state.websocket_manager.get_user_room(user.username)
+                            if new_room and new_room != current_room:
+                                # User was moved - update room reference
+                                current_room = new_room
+                                
+                                # Update WebSocket manager's room tracking
+                                app.state.websocket_manager.update_user_room(websocket, new_room)
+                                
+                                # Broadcast updated room list
+                                rooms = app.state.room_service.get_rooms()
+                                await app.state.websocket_manager.broadcast_to_all({
+                                    "type": "room_list",
+                                    "rooms": [
+                                        {
+                                            "name": room.name,
+                                            "count": app.state.room_service.get_room_count(room.name),
+                                            "description": room.description
+                                        }
+                                        for room in rooms
+                                    ]
+                                })
+                                
+                                # Send room_change message to user
+                                room = app.state.room_service.get_room(new_room)
+                                if room:
+                                    await app.state.websocket_manager.send_to_user(websocket, {
+                                        "type": "room_change",
+                                        "room": new_room,
+                                        "content": f"You are now in: {new_room}"
+                                    })
+                                    
+                                    # Send room entry message
+                                    await app.state.websocket_manager.send_to_user(websocket, {
+                                        "type": "system",
+                                        "content": f"\n=== {room.name} ===\n{room.description}\n"
+                                    })
+                                    
+                                    # Notify new room of user entry
+                                    await app.state.websocket_manager.broadcast_to_room(
+                                        new_room,
+                                        {
+                                            "type": "system",
+                                            "content": f"* {user.username} has entered the room"
+                                        },
+                                        exclude_websocket=websocket
+                                    )
+                    except Exception as e:
+                        # Log error but don't break message flow
+                        print(f"Auto-routing error: {e}")
                 
                 # Create message with timestamp
                 message = {

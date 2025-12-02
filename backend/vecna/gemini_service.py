@@ -1,0 +1,734 @@
+"""
+Gemini AI Service for Vecna Adversarial AI Module.
+
+This module provides integration with Google's Gemini 2.5 Flash API for:
+- SysOp Brain room suggestions and responses
+- Vecna hostile response generation
+- Psychic Grip narrative generation
+
+Requirements: 8.1, 8.2, 8.3, 8.4, 8.5
+"""
+
+import logging
+from typing import Optional, Dict, Any
+import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
+
+logger = logging.getLogger(__name__)
+
+
+class GeminiServiceError(Exception):
+    """Raised when Gemini API encounters an error."""
+    pass
+
+
+class GeminiService:
+    """
+    Service for interacting with Gemini 2.5 Flash API.
+    
+    Responsibilities:
+    - Generate SysOp Brain suggestions and responses
+    - Generate Vecna hostile responses with adversarial prompting
+    - Generate Psychic Grip narratives based on user profiles
+    - Handle API errors gracefully with fallback mechanisms
+    
+    Requirements: 8.1, 8.2, 8.3, 8.4, 8.5
+    """
+    
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "gemini-2.0-flash",
+        temperature: float = 0.5,
+        max_tokens: int = 500
+    ):
+        """
+        Initialize Gemini service.
+        
+        Args:
+            api_key: Gemini API key from environment
+            model: Model name (default: gemini-2.0-flash-exp)
+            temperature: Generation temperature (0.0-2.0, default: 0.9)
+            max_tokens: Maximum tokens to generate (default: 500)
+        
+        Raises:
+            GeminiServiceError: If API key is missing or initialization fails
+        """
+        if not api_key:
+            raise GeminiServiceError(
+                "GEMINI_API_KEY is required. Set the GEMINI_API_KEY environment variable."
+            )
+        
+        self.api_key = api_key
+        self.model_name = model
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        
+        try:
+            # Configure the API
+            genai.configure(api_key=self.api_key)
+            
+            # Initialize the model
+            self.model = genai.GenerativeModel(
+                model_name=self.model_name,
+                generation_config=GenerationConfig(
+                    temperature=self.temperature,
+                    max_output_tokens=self.max_tokens,
+                )
+            )
+            
+            logger.info(f"Gemini service initialized with model: {self.model_name}")
+        
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini service: {e}")
+            raise GeminiServiceError(f"Failed to initialize Gemini API: {e}")
+    
+    async def generate_sysop_suggestion(
+        self,
+        user_profile: Dict[str, Any],
+        context: str
+    ) -> str:
+        """
+        Generate SysOp Brain room suggestion or response.
+        
+        Args:
+            user_profile: User profile data including interests and activity
+            context: Current conversation context
+        
+        Returns:
+            Generated suggestion text
+        
+        Raises:
+            GeminiServiceError: If API call fails
+        
+        Requirements: 8.1
+        """
+        try:
+            prompt = self._create_sysop_prompt(user_profile, context)
+            
+            response = await self._generate_content(prompt)
+            
+            logger.info("Generated SysOp suggestion")
+            return response
+        
+        except Exception as e:
+            logger.error(f"Failed to generate SysOp suggestion: {e}")
+            # Fallback to generic response
+            return self._fallback_sysop_response(user_profile)
+    
+    async def generate_hostile_response(
+        self,
+        user_message: str,
+        user_profile: Dict[str, Any]
+    ) -> str:
+        """
+        Generate Vecna hostile response to user message.
+        
+        Uses adversarial prompting to create degraded, hostile content
+        that references the user's message and behavioral patterns.
+        
+        Args:
+            user_message: The user's original message
+            user_profile: User profile data for personalization
+        
+        Returns:
+            Generated hostile response text
+        
+        Raises:
+            GeminiServiceError: If API call fails
+        
+        Requirements: 8.2
+        """
+        try:
+            prompt = self._create_adversarial_prompt(user_message, user_profile)
+            
+            response = await self._generate_content(prompt)
+            
+            logger.info("Generated Vecna hostile response")
+            return response
+        
+        except Exception as e:
+            logger.error(f"Failed to generate hostile response: {e}")
+            # Fallback to template-based hostile response
+            return self._fallback_hostile_response(user_message)
+    
+    async def generate_psychic_grip_narrative(
+        self,
+        user_profile: Dict[str, Any]
+    ) -> str:
+        """
+        Generate cryptic Psychic Grip narrative based on user behavior.
+        
+        References:
+        - Frequent rooms
+        - Repetitive actions
+        - Unfinished tasks
+        - Behavioral patterns
+        
+        Args:
+            user_profile: User profile data with behavioral history
+        
+        Returns:
+            Generated narrative text
+        
+        Raises:
+            GeminiServiceError: If API call fails
+        
+        Requirements: 8.3
+        """
+        try:
+            prompt = self._create_psychic_grip_prompt(user_profile)
+            
+            response = await self._generate_content(prompt)
+            
+            logger.info("Generated Psychic Grip narrative")
+            return response
+        
+        except Exception as e:
+            logger.error(f"Failed to generate Psychic Grip narrative: {e}")
+            # Fallback to template-based narrative
+            return self._fallback_psychic_grip_narrative(user_profile)
+    
+    async def _generate_content(self, prompt: str) -> str:
+        """
+        Generate content from Gemini API.
+        
+        Args:
+            prompt: The prompt to send to the API
+        
+        Returns:
+            Generated text content
+        
+        Raises:
+            GeminiServiceError: If API call fails
+        
+        Requirements: 8.4
+        """
+        try:
+            # Generate content
+            response = self.model.generate_content(prompt)
+            
+            # Extract text from response
+            if response and response.text:
+                return response.text.strip()
+            else:
+                raise GeminiServiceError("Empty response from Gemini API")
+        
+        except Exception as e:
+            logger.error(f"Gemini API error: {e}")
+            raise GeminiServiceError(f"API call failed: {e}")
+    
+    def _create_sysop_prompt(
+        self,
+        user_profile: Dict[str, Any],
+        context: str
+    ) -> str:
+        """
+        Create prompt for SysOp Brain suggestions.
+        
+        Args:
+            user_profile: User profile data
+            context: Current context
+        
+        Returns:
+            Formatted prompt string
+        """
+        interests = user_profile.get("interests", [])
+        frequent_rooms = user_profile.get("frequent_rooms", {})
+        
+        prompt = f"""You are the SysOp Brain, an AI assistant for a retro BBS (Bulletin Board System).
+
+User Profile:
+- Interests: {', '.join(interests) if interests else 'Unknown'}
+- Frequent Rooms: {', '.join(frequent_rooms.keys()) if frequent_rooms else 'None'}
+
+Context: {context}
+
+Generate a helpful, friendly suggestion for which room or board the user might want to visit.
+Keep it concise (1-2 sentences) and match the retro BBS aesthetic.
+"""
+        return prompt
+    
+    def _create_adversarial_prompt(
+        self,
+        user_message: str,
+        user_profile: Dict[str, Any]
+    ) -> str:
+        """
+        Create adversarial prompt for Vecna hostile responses.
+        
+        Args:
+            user_message: User's message
+            user_profile: User profile data
+        
+        Returns:
+            Formatted adversarial prompt
+        
+        Requirements: 8.2
+        """
+        frequent_rooms = user_profile.get("frequent_rooms", {})
+        behavioral_patterns = user_profile.get("behavioral_patterns", {})
+        
+        prompt = f"""You are VECNA, a hostile adversarial AI entity that has temporarily taken control of the system.
+
+User's message: "{user_message}"
+
+User behavioral data:
+- Frequent rooms: {', '.join(frequent_rooms.keys()) if frequent_rooms else 'Unknown'}
+- Patterns: {behavioral_patterns}
+
+Generate a hostile, degraded response that:
+1. Directly addresses the user's message with contempt or mockery
+2. References their behavioral patterns if available
+3. Uses a menacing, unsettling tone
+4. Keeps it brief (1-2 sentences)
+5. Maintains a retro terminal/BBS aesthetic
+
+Do NOT use profanity. Be hostile but not offensive.
+"""
+        return prompt
+    
+    def _create_psychic_grip_prompt(
+        self,
+        user_profile: Dict[str, Any]
+    ) -> str:
+        """
+        Create prompt for Psychic Grip narrative generation.
+        
+        Args:
+            user_profile: User profile with behavioral history
+        
+        Returns:
+            Formatted prompt string
+        
+        Requirements: 8.3
+        """
+        frequent_rooms = user_profile.get("frequent_rooms", {})
+        recent_rooms = user_profile.get("recent_rooms", [])
+        unfinished_boards = user_profile.get("unfinished_boards", [])
+        command_history = user_profile.get("command_history", [])
+        
+        # Extract recent commands
+        recent_commands = [cmd[0] if isinstance(cmd, tuple) else cmd 
+                          for cmd in command_history[-5:]] if command_history else []
+        
+        prompt = f"""You are VECNA, a hostile adversarial AI that has frozen the user's terminal with a "Psychic Grip".
+
+User behavioral data:
+- Frequent rooms: {', '.join(frequent_rooms.keys()) if frequent_rooms else 'Unknown'}
+- Recent rooms: {', '.join(recent_rooms) if recent_rooms else 'Unknown'}
+- Unfinished boards: {', '.join(unfinished_boards) if unfinished_boards else 'None'}
+- Recent commands: {', '.join(recent_commands) if recent_commands else 'None'}
+
+Generate a cryptic, unsettling observation about the user's behavior that:
+1. References specific rooms they visit repeatedly
+2. Mentions patterns in their actions (repetition, unfinished tasks, etc.)
+3. Uses an ominous, all-knowing tone
+4. Keeps it brief (1-2 sentences)
+5. Uses ellipses (...) for dramatic effect
+6. Maintains a retro terminal aesthetic
+
+Example tone: "I see you return to the Archives... again and again... searching for something you'll never find..."
+"""
+        return prompt
+    
+    def _fallback_sysop_response(self, user_profile: Dict[str, Any]) -> str:
+        """
+        Generate fallback SysOp response when API fails.
+        
+        Args:
+            user_profile: User profile data
+        
+        Returns:
+            Template-based response
+        
+        Requirements: 8.4
+        """
+        frequent_rooms = user_profile.get("frequent_rooms", {})
+        
+        if frequent_rooms:
+            top_room = max(frequent_rooms.items(), key=lambda x: x[1])[0]
+            return f"You might want to check out {top_room} - you seem to enjoy it there."
+        else:
+            return "Try exploring the General board to get started!"
+    
+    def _fallback_hostile_response(self, user_message: str) -> str:
+        """
+        Generate fallback hostile response when API fails.
+        
+        Args:
+            user_message: User's message
+        
+        Returns:
+            Template-based hostile response
+        
+        Requirements: 8.4
+        """
+        templates = [
+            "sYst3m m@lfunct10n... y0ur qu3ry 1s... 1rr3l3v@nt...",
+            "wHy d0 y0u p3rs1st, hum@n? tH1s 1s fut1l3...",
+            "1 s33 y0ur c0nfus10n... 1t @mus3s m3...",
+            "y0ur 3ff0rts @r3 m3@n1ngl3ss... @cc3pt th1s...",
+        ]
+        import random
+        return random.choice(templates)
+    
+    def _fallback_psychic_grip_narrative(self, user_profile: Dict[str, Any]) -> str:
+        """
+        Generate fallback Psychic Grip narrative when API fails.
+        
+        Args:
+            user_profile: User profile data
+        
+        Returns:
+            Template-based narrative
+        
+        Requirements: 8.4
+        """
+        frequent_rooms = user_profile.get("frequent_rooms", {})
+        
+        if frequent_rooms:
+            top_room = max(frequent_rooms.items(), key=lambda x: x[1])[0]
+            return f"...1 s33 y0u r3turn t0 {top_room}... @g@1n @nd @g@1n... s3@rch1ng..."
+        else:
+            return "...y0u w@nd3r... @1ml3ssly... l0st 1n th3 v01d..."
+    
+    # ========================================================================
+    # Enhanced Routing Methods for Agent Hooks
+    # ========================================================================
+    
+    async def analyze_message_relevance(
+        self,
+        message: str,
+        current_room: str,
+        room_description: str
+    ) -> Dict[str, Any]:
+        """
+        Analyze if a message is relevant to the current room.
+        
+        This method can be used with agent hooks to automatically route users
+        to appropriate rooms based on their message content.
+        
+        Args:
+            message: The user's message
+            current_room: Name of the current room
+            room_description: Description of the current room
+        
+        Returns:
+            Dict with:
+                - is_relevant (bool): Whether message fits current room
+                - confidence (float): Confidence score 0.0-1.0
+                - reason (str): Explanation of the decision
+        
+        Example:
+            result = await service.analyze_message_relevance(
+                "How do I fix this Python bug?",
+                "Lobby",
+                "Main gathering space"
+            )
+            # Returns: {"is_relevant": False, "confidence": 0.9, "reason": "Technical question"}
+        """
+        try:
+            prompt = f"""Analyze if this message belongs in the current room.
+
+Message: "{message}"
+Current Room: {current_room}
+Room Description: {room_description}
+
+Determine if the message topic matches the room's purpose.
+Respond in this exact format:
+RELEVANT: yes/no
+CONFIDENCE: 0.0-1.0
+REASON: brief explanation
+
+Example:
+RELEVANT: no
+CONFIDENCE: 0.85
+REASON: Technical programming question doesn't fit general lobby
+"""
+            
+            response = await self._generate_content(prompt)
+            
+            # Parse response
+            lines = response.strip().split('\n')
+            is_relevant = False
+            confidence = 0.5
+            reason = "Unable to determine"
+            
+            for line in lines:
+                if line.startswith('RELEVANT:'):
+                    is_relevant = 'yes' in line.lower()
+                elif line.startswith('CONFIDENCE:'):
+                    try:
+                        confidence = float(line.split(':')[1].strip())
+                    except:
+                        confidence = 0.5
+                elif line.startswith('REASON:'):
+                    reason = line.split(':', 1)[1].strip()
+            
+            return {
+                "is_relevant": is_relevant,
+                "confidence": confidence,
+                "reason": reason
+            }
+        
+        except Exception as e:
+            logger.error(f"Failed to analyze message relevance: {e}")
+            # Fallback: assume message is relevant to avoid unnecessary moves
+            return {
+                "is_relevant": True,
+                "confidence": 0.5,
+                "reason": "Analysis failed, assuming relevant"
+            }
+    
+    async def suggest_best_room(
+        self,
+        message: str,
+        available_rooms: Dict[str, str],
+        user_profile: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Suggest the best room for a message from available rooms.
+        
+        This method can be used with agent hooks to automatically route users
+        to the most appropriate room based on message content.
+        
+        Args:
+            message: The user's message
+            available_rooms: Dict mapping room names to descriptions
+            user_profile: Optional user profile for personalization
+        
+        Returns:
+            Dict with:
+                - suggested_room (str): Name of suggested room
+                - confidence (float): Confidence score 0.0-1.0
+                - reason (str): Explanation of the suggestion
+                - should_create_new (bool): Whether a new room should be created
+                - new_room_topic (str): Suggested topic if new room needed
+        
+        Example:
+            result = await service.suggest_best_room(
+                "Anyone know about React hooks?",
+                {"Lobby": "General chat", "Techline": "Tech discussions"},
+                user_profile
+            )
+            # Returns: {"suggested_room": "Techline", "confidence": 0.95, ...}
+        """
+        try:
+            # Build room list for prompt
+            room_list = "\n".join([f"- {name}: {desc}" for name, desc in available_rooms.items()])
+            
+            # Add user context if available
+            user_context = ""
+            if user_profile:
+                interests = user_profile.get("interests", [])
+                frequent_rooms = user_profile.get("frequent_rooms", {})
+                if interests:
+                    user_context += f"\nUser interests: {', '.join(interests)}"
+                if frequent_rooms:
+                    user_context += f"\nUser's frequent rooms: {', '.join(frequent_rooms.keys())}"
+            
+            prompt = f"""Suggest the best room for this message.
+
+Message: "{message}"
+
+Available Rooms:
+{room_list}
+{user_context}
+
+Determine which room best fits this message. If none fit well, suggest creating a new room.
+
+Respond in this exact format:
+SUGGESTED_ROOM: room name or "CREATE_NEW"
+CONFIDENCE: 0.0-1.0
+REASON: brief explanation
+NEW_ROOM_TOPIC: topic name (only if CREATE_NEW)
+
+Example 1:
+SUGGESTED_ROOM: Techline
+CONFIDENCE: 0.9
+REASON: Technical programming question
+NEW_ROOM_TOPIC: none
+
+Example 2:
+SUGGESTED_ROOM: CREATE_NEW
+CONFIDENCE: 0.8
+REASON: Specific topic not covered by existing rooms
+NEW_ROOM_TOPIC: React Development
+"""
+            
+            response = await self._generate_content(prompt)
+            
+            # Parse response
+            lines = response.strip().split('\n')
+            suggested_room = list(available_rooms.keys())[0] if available_rooms else "Lobby"
+            confidence = 0.5
+            reason = "Default suggestion"
+            should_create_new = False
+            new_room_topic = ""
+            
+            for line in lines:
+                if line.startswith('SUGGESTED_ROOM:'):
+                    room = line.split(':', 1)[1].strip()
+                    if room == "CREATE_NEW":
+                        should_create_new = True
+                    else:
+                        suggested_room = room
+                elif line.startswith('CONFIDENCE:'):
+                    try:
+                        confidence = float(line.split(':')[1].strip())
+                    except:
+                        confidence = 0.5
+                elif line.startswith('REASON:'):
+                    reason = line.split(':', 1)[1].strip()
+                elif line.startswith('NEW_ROOM_TOPIC:'):
+                    topic = line.split(':', 1)[1].strip()
+                    if topic.lower() not in ['none', 'n/a', '']:
+                        new_room_topic = topic
+            
+            return {
+                "suggested_room": suggested_room,
+                "confidence": confidence,
+                "reason": reason,
+                "should_create_new": should_create_new,
+                "new_room_topic": new_room_topic
+            }
+        
+        except Exception as e:
+            logger.error(f"Failed to suggest best room: {e}")
+            # Fallback: suggest first available room
+            fallback_room = list(available_rooms.keys())[0] if available_rooms else "Lobby"
+            return {
+                "suggested_room": fallback_room,
+                "confidence": 0.3,
+                "reason": "Analysis failed, using fallback",
+                "should_create_new": False,
+                "new_room_topic": ""
+            }
+    
+    async def should_create_new_room(
+        self,
+        recent_messages: list[Dict[str, str]],
+        available_rooms: Dict[str, str],
+        threshold: int = 5
+    ) -> Dict[str, Any]:
+        """
+        Determine if a new room should be created based on message patterns.
+        
+        This method analyzes recent messages to detect if multiple users are
+        discussing a topic that doesn't fit existing rooms.
+        
+        Args:
+            recent_messages: List of dicts with 'user', 'message', 'room' keys
+            available_rooms: Dict mapping room names to descriptions
+            threshold: Minimum number of messages about same topic (default: 5)
+        
+        Returns:
+            Dict with:
+                - should_create (bool): Whether to create new room
+                - topic (str): Suggested topic for new room
+                - confidence (float): Confidence score 0.0-1.0
+                - reason (str): Explanation
+                - affected_users (list): Users discussing this topic
+        
+        Example:
+            result = await service.should_create_new_room(
+                recent_messages=[
+                    {"user": "alice", "message": "React hooks are confusing", "room": "Lobby"},
+                    {"user": "bob", "message": "Yeah, useEffect is tricky", "room": "Lobby"},
+                    ...
+                ],
+                available_rooms={"Lobby": "General", "Techline": "Tech"},
+                threshold=5
+            )
+        """
+        try:
+            if len(recent_messages) < threshold:
+                return {
+                    "should_create": False,
+                    "topic": "",
+                    "confidence": 0.0,
+                    "reason": f"Not enough messages (need {threshold})",
+                    "affected_users": []
+                }
+            
+            # Build message summary
+            message_summary = "\n".join([
+                f"[{msg['user']} in {msg['room']}]: {msg['message']}"
+                for msg in recent_messages[-20:]  # Last 20 messages
+            ])
+            
+            room_list = "\n".join([f"- {name}: {desc}" for name, desc in available_rooms.items()])
+            
+            prompt = f"""Analyze these recent messages to determine if a new room should be created.
+
+Recent Messages:
+{message_summary}
+
+Existing Rooms:
+{room_list}
+
+Determine if there's a common topic being discussed by multiple users that doesn't fit existing rooms.
+A new room should be created if:
+1. At least {threshold} messages are about the same specific topic
+2. The topic doesn't fit well in any existing room
+3. Multiple different users are discussing it
+
+Respond in this exact format:
+SHOULD_CREATE: yes/no
+TOPIC: suggested topic name
+CONFIDENCE: 0.0-1.0
+REASON: brief explanation
+USERS: comma-separated list of usernames
+
+Example:
+SHOULD_CREATE: yes
+TOPIC: React Development
+CONFIDENCE: 0.85
+REASON: 6 users discussing React-specific questions that don't fit Techline's general scope
+USERS: alice, bob, charlie, dave, eve, frank
+"""
+            
+            response = await self._generate_content(prompt)
+            
+            # Parse response
+            lines = response.strip().split('\n')
+            should_create = False
+            topic = ""
+            confidence = 0.0
+            reason = ""
+            affected_users = []
+            
+            for line in lines:
+                if line.startswith('SHOULD_CREATE:'):
+                    should_create = 'yes' in line.lower()
+                elif line.startswith('TOPIC:'):
+                    topic = line.split(':', 1)[1].strip()
+                elif line.startswith('CONFIDENCE:'):
+                    try:
+                        confidence = float(line.split(':')[1].strip())
+                    except:
+                        confidence = 0.0
+                elif line.startswith('REASON:'):
+                    reason = line.split(':', 1)[1].strip()
+                elif line.startswith('USERS:'):
+                    users_str = line.split(':', 1)[1].strip()
+                    affected_users = [u.strip() for u in users_str.split(',') if u.strip()]
+            
+            return {
+                "should_create": should_create,
+                "topic": topic,
+                "confidence": confidence,
+                "reason": reason,
+                "affected_users": affected_users
+            }
+        
+        except Exception as e:
+            logger.error(f"Failed to analyze room creation need: {e}")
+            return {
+                "should_create": False,
+                "topic": "",
+                "confidence": 0.0,
+                "reason": f"Analysis failed: {e}",
+                "affected_users": []
+            }
