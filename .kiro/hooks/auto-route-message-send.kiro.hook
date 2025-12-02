@@ -4,7 +4,7 @@
   "description": "Automatically analyzes each message sent and routes users to more appropriate rooms when their message doesn't fit the current room's topic. The AI suggests the best room with a confidence score, and users receive a notification when they're moved.",
   "version": "1",
   "when": {
-    "type": "userTriggered"
+    "type": "userPrompt"
   },
   "then": {
     "type": "askAgent",
