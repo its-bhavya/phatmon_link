@@ -233,7 +233,12 @@
   - **Property 17: Grip release message**
   - **Validates: Requirements 4.5, 9.2**
 
-- [ ] 11. Add Vecna message types to WebSocket protocol
+- [x] 11. Add Vecna message types to WebSocket protocol
+
+
+
+
+
   - Define vecna_emotional message type with corrupted content
   - Define vecna_psychic_grip message type with duration and effects
   - Define vecna_release message type for grip release

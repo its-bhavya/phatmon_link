@@ -2,6 +2,20 @@
 WebSocket manager for Phantom Link BBS.
 
 This module provides WebSocket connection management, message routing, and broadcasting.
+
+Supported Message Types:
+- chat_message: Regular chat messages
+- system: System notifications
+- error: Error messages
+- user_list: Active user list updates
+- room_list: Room list updates
+- room_change: Room change notifications
+- help: Help command responses
+- vecna_emotional: Vecna emotional trigger (Requirements 3.3, 9.1)
+- vecna_psychic_grip: Vecna Psychic Grip with thread freeze (Requirements 4.1, 4.5, 9.1)
+- vecna_release: Vecna control release (Requirements 4.5, 9.2)
+
+For detailed Vecna message type specifications, see backend/websocket/VECNA_MESSAGE_TYPES.md
 """
 
 from datetime import datetime

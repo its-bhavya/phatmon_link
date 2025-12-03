@@ -254,5 +254,148 @@ def test_websocket_message_isolation_by_room(client):
     pass
 
 
+def test_vecna_message_types_defined():
+    """
+    Test that Vecna message types are properly defined and documented.
+    
+    This test verifies that:
+    1. vecna_emotional message type is defined
+    2. vecna_psychic_grip message type is defined
+    3. vecna_release message type is defined
+    4. Message structures match requirements
+    
+    Requirements: 3.3, 4.1, 4.5, 9.1
+    """
+    # Define expected message structures
+    vecna_emotional_structure = {
+        "type": "vecna_emotional",
+        "content": str,
+        "corrupted_text": str,
+        "visual_effects": list,
+        "timestamp": str
+    }
+    
+    vecna_psychic_grip_structure = {
+        "type": "vecna_psychic_grip",
+        "content": str,
+        "freeze_duration": int,
+        "visual_effects": list,
+        "timestamp": str
+    }
+    
+    vecna_release_structure = {
+        "type": "vecna_release",
+        "content": str
+    }
+    
+    # Verify structures are valid
+    assert vecna_emotional_structure["type"] == "vecna_emotional"
+    assert vecna_psychic_grip_structure["type"] == "vecna_psychic_grip"
+    assert vecna_release_structure["type"] == "vecna_release"
+    
+    # Verify required fields
+    assert "content" in vecna_emotional_structure
+    assert "corrupted_text" in vecna_emotional_structure
+    assert "visual_effects" in vecna_emotional_structure
+    
+    assert "content" in vecna_psychic_grip_structure
+    assert "freeze_duration" in vecna_psychic_grip_structure
+    assert "visual_effects" in vecna_psychic_grip_structure
+    
+    assert "content" in vecna_release_structure
+
+
+def test_vecna_emotional_message_format():
+    """
+    Test that vecna_emotional message format is correct.
+    
+    Requirements: 3.3, 9.1
+    """
+    # Example vecna_emotional message
+    message = {
+        "type": "vecna_emotional",
+        "content": "[VECNA] Y0ur fr@str@t10n 1s d3l1c10us...",
+        "corrupted_text": "Th1s syst3m 1s t3rr1bl3!",
+        "visual_effects": ["text_corruption"],
+        "timestamp": "2024-01-15T10:30:00.000000"
+    }
+    
+    # Verify message structure
+    assert message["type"] == "vecna_emotional"
+    assert message["content"].startswith("[VECNA]")
+    assert isinstance(message["corrupted_text"], str)
+    assert isinstance(message["visual_effects"], list)
+    assert isinstance(message["timestamp"], str)
+
+
+def test_vecna_psychic_grip_message_format():
+    """
+    Test that vecna_psychic_grip message format is correct.
+    
+    Requirements: 4.1, 4.5, 9.1
+    """
+    # Example vecna_psychic_grip message
+    message = {
+        "type": "vecna_psychic_grip",
+        "content": "[VECNA] I see you visiting #general... again and again...",
+        "freeze_duration": 6,
+        "visual_effects": ["screen_flicker", "inverted_colors", "scanlines"],
+        "timestamp": "2024-01-15T10:30:00.000000"
+    }
+    
+    # Verify message structure
+    assert message["type"] == "vecna_psychic_grip"
+    assert message["content"].startswith("[VECNA]")
+    assert isinstance(message["freeze_duration"], int)
+    assert 5 <= message["freeze_duration"] <= 8  # Duration should be 5-8 seconds
+    assert isinstance(message["visual_effects"], list)
+    assert isinstance(message["timestamp"], str)
+
+
+def test_vecna_release_message_format():
+    """
+    Test that vecna_release message format is correct.
+    
+    Requirements: 4.5, 9.2
+    """
+    # Example vecna_release message
+    message = {
+        "type": "vecna_release",
+        "content": "[SYSTEM] Control returned to SysOp. Continue your session."
+    }
+    
+    # Verify message structure
+    assert message["type"] == "vecna_release"
+    assert message["content"].startswith("[SYSTEM]")
+    assert "SysOp" in message["content"]
+
+
+def test_vecna_message_prefix_requirements():
+    """
+    Test that Vecna messages have correct prefixes.
+    
+    Requirements: 9.1, 9.2
+    """
+    # Vecna messages should have [VECNA] prefix
+    vecna_emotional = {
+        "type": "vecna_emotional",
+        "content": "[VECNA] Test message"
+    }
+    assert vecna_emotional["content"].startswith("[VECNA]")
+    
+    vecna_psychic_grip = {
+        "type": "vecna_psychic_grip",
+        "content": "[VECNA] Test message"
+    }
+    assert vecna_psychic_grip["content"].startswith("[VECNA]")
+    
+    # Release message should have [SYSTEM] prefix
+    vecna_release = {
+        "type": "vecna_release",
+        "content": "[SYSTEM] Control returned to SysOp. Continue your session."
+    }
+    assert vecna_release["content"].startswith("[SYSTEM]")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

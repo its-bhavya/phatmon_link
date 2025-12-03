@@ -485,6 +485,19 @@ function handleCommandSubmit(command, args, fullInput) {
 /**
  * Handle incoming WebSocket messages
  * Route messages to appropriate handlers (Requirement 9.3)
+ * 
+ * Supported message types:
+ * - chat_message: Regular chat messages
+ * - system: System notifications
+ * - error: Error messages
+ * - user_list: Active user list updates
+ * - room_list: Room list updates
+ * - room_change: Room change notifications
+ * - help: Help command responses
+ * - vecna_emotional: Vecna emotional trigger (Requirements 3.3, 9.1)
+ * - vecna_psychic_grip: Vecna Psychic Grip with thread freeze (Requirements 4.1, 4.5, 9.1)
+ * - vecna_release: Vecna control release (Requirements 4.5, 9.2)
+ * 
  * @param {Object} message - The message object from server
  */
 function handleWebSocketMessage(message) {
@@ -515,6 +528,18 @@ function handleWebSocketMessage(message) {
             
         case 'help':
             handleHelpMessage(message);
+            break;
+            
+        case 'vecna_emotional':
+            handleVecnaEmotional(message);
+            break;
+            
+        case 'vecna_psychic_grip':
+            handleVecnaPsychicGrip(message);
+            break;
+            
+        case 'vecna_release':
+            handleVecnaRelease(message);
             break;
             
         default:
@@ -633,6 +658,72 @@ function handleHelpMessage(message) {
         content: message.content,
         timestamp: message.timestamp
     });
+}
+
+/**
+ * Handle Vecna emotional trigger message (Requirements 3.3, 9.1)
+ * Displays corrupted hostile response with text corruption effects
+ * @param {Object} message - Vecna emotional message object
+ */
+function handleVecnaEmotional(message) {
+    // TODO: Implement in task 14 - Implement frontend Vecna Handler
+    // For now, display as system message with [VECNA] prefix
+    chatDisplay.addMessage({
+        type: 'system',
+        content: message.content,
+        timestamp: message.timestamp
+    });
+    
+    console.log('Vecna emotional trigger:', {
+        content: message.content,
+        corrupted_text: message.corrupted_text,
+        visual_effects: message.visual_effects
+    });
+}
+
+/**
+ * Handle Vecna Psychic Grip message (Requirements 4.1, 4.5, 9.1)
+ * Freezes input and applies visual effects for the specified duration
+ * @param {Object} message - Vecna Psychic Grip message object
+ */
+function handleVecnaPsychicGrip(message) {
+    // TODO: Implement in task 14 - Implement frontend Vecna Handler
+    // For now, display as system message and log details
+    chatDisplay.addMessage({
+        type: 'system',
+        content: message.content,
+        timestamp: message.timestamp
+    });
+    
+    console.log('Vecna Psychic Grip activated:', {
+        content: message.content,
+        freeze_duration: message.freeze_duration,
+        visual_effects: message.visual_effects
+    });
+    
+    // TODO: Disable input for freeze_duration seconds
+    // TODO: Apply visual effects (screen_flicker, inverted_colors, scanlines, static)
+    // TODO: Display narrative with character-by-character animation
+}
+
+/**
+ * Handle Vecna release message (Requirements 4.5, 9.2)
+ * Restores normal operation after Psychic Grip
+ * @param {Object} message - Vecna release message object
+ */
+function handleVecnaRelease(message) {
+    // TODO: Implement in task 14 - Implement frontend Vecna Handler
+    // For now, display as system message
+    chatDisplay.addMessage({
+        type: 'system',
+        content: message.content
+    });
+    
+    console.log('Vecna released control');
+    
+    // TODO: Remove all visual effects
+    // TODO: Re-enable input
+    // TODO: Restore normal terminal styling
 }
 
 /**
