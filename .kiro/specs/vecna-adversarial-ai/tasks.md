@@ -300,7 +300,12 @@
   - **Property 33: Character animation**
   - **Validates: Requirements 9.4**
 
-- [ ] 15. Integrate Vecna Handler into main.js
+- [x] 15. Integrate Vecna Handler into main.js
+
+
+
+
+
   - Import VecnaHandler and VecnaEffects in main.js
   - Initialize VecnaHandler with chatDisplay, commandBar, and vecnaEffects
   - Add message routing for vecna_emotional, vecna_psychic_grip, and vecna_release types

@@ -7,12 +7,16 @@
 import { CommandLineBar } from './commandBar.js';
 import { ChatDisplay } from './chatDisplay.js';
 import { SidePanel } from './sidePanel.js';
+import { VecnaHandler } from './vecnaHandler.js';
+import { VecnaEffects } from './vecnaEffects.js';
 
 // Application state
 let wsClient = null;
 let commandBar = null;
 let chatDisplay = null;
 let sidePanel = null;
+let vecnaEffects = null;
+let vecnaHandler = null;
 let currentRoom = 'Lobby';
 let activeUsers = [];
 
@@ -41,6 +45,11 @@ function init() {
     
     // Initialize SidePanel with room click handler (Requirement 4.3, 6.3, 6.4)
     sidePanel = new SidePanel('sidePanel', handleSidePanelRoomClick);
+    
+    // Initialize Vecna components (Requirements 4.2, 5.1, 5.2, 5.6)
+    const chatDisplayElement = document.getElementById('chatDisplay');
+    vecnaEffects = new VecnaEffects(chatDisplayElement);
+    vecnaHandler = new VecnaHandler(chatDisplay, commandBar, vecnaEffects);
     
     // Check if user is authenticated
     const token = localStorage.getItem('jwt_token');
@@ -666,19 +675,16 @@ function handleHelpMessage(message) {
  * @param {Object} message - Vecna emotional message object
  */
 function handleVecnaEmotional(message) {
-    // TODO: Implement in task 14 - Implement frontend Vecna Handler
-    // For now, display as system message with [VECNA] prefix
-    chatDisplay.addMessage({
-        type: 'system',
-        content: message.content,
-        timestamp: message.timestamp
-    });
-    
-    console.log('Vecna emotional trigger:', {
-        content: message.content,
-        corrupted_text: message.corrupted_text,
-        visual_effects: message.visual_effects
-    });
+    if (vecnaHandler) {
+        vecnaHandler.handleEmotionalTrigger(message);
+    } else {
+        // Fallback if VecnaHandler not initialized
+        chatDisplay.addMessage({
+            type: 'system',
+            content: message.content,
+            timestamp: message.timestamp
+        });
+    }
 }
 
 /**
@@ -687,23 +693,16 @@ function handleVecnaEmotional(message) {
  * @param {Object} message - Vecna Psychic Grip message object
  */
 function handleVecnaPsychicGrip(message) {
-    // TODO: Implement in task 14 - Implement frontend Vecna Handler
-    // For now, display as system message and log details
-    chatDisplay.addMessage({
-        type: 'system',
-        content: message.content,
-        timestamp: message.timestamp
-    });
-    
-    console.log('Vecna Psychic Grip activated:', {
-        content: message.content,
-        freeze_duration: message.freeze_duration,
-        visual_effects: message.visual_effects
-    });
-    
-    // TODO: Disable input for freeze_duration seconds
-    // TODO: Apply visual effects (screen_flicker, inverted_colors, scanlines, static)
-    // TODO: Display narrative with character-by-character animation
+    if (vecnaHandler) {
+        vecnaHandler.handlePsychicGrip(message);
+    } else {
+        // Fallback if VecnaHandler not initialized
+        chatDisplay.addMessage({
+            type: 'system',
+            content: message.content,
+            timestamp: message.timestamp
+        });
+    }
 }
 
 /**
@@ -712,18 +711,15 @@ function handleVecnaPsychicGrip(message) {
  * @param {Object} message - Vecna release message object
  */
 function handleVecnaRelease(message) {
-    // TODO: Implement in task 14 - Implement frontend Vecna Handler
-    // For now, display as system message
-    chatDisplay.addMessage({
-        type: 'system',
-        content: message.content
-    });
-    
-    console.log('Vecna released control');
-    
-    // TODO: Remove all visual effects
-    // TODO: Re-enable input
-    // TODO: Restore normal terminal styling
+    if (vecnaHandler) {
+        vecnaHandler.handleGripRelease();
+    } else {
+        // Fallback if VecnaHandler not initialized
+        chatDisplay.addMessage({
+            type: 'system',
+            content: message.content || 'Control returned to SysOp. Continue your session.'
+        });
+    }
 }
 
 /**
