@@ -93,11 +93,13 @@ class CommandHandler:
         Requirements: 7.1
         """
         help_text = """Available Commands:
+
   /help          - Show this help message
   /rooms         - List all available rooms with user counts
   /users         - Show all active users and their current rooms
   /join <room>   - Join a different room (e.g., /join Techline)
   /clear         - Clear the terminal display
+  /logout        - Disconnect and return to login screen
 """
         
         return {
