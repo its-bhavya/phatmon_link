@@ -29,6 +29,11 @@ from backend.rate_limiter import RateLimiter
 from backend.config import get_config
 from backend.vecna.auto_router import on_message_hook
 from backend.vecna.gemini_service import GeminiService, GeminiServiceError
+from backend.sysop.brain import SysOpBrain
+from backend.vecna.module import VecnaModule, TriggerType
+from backend.vecna.sentiment import SentimentAnalyzer
+from backend.vecna.pattern_detector import PatternDetector
+from backend.vecna.user_profile import UserProfileService
 
 
 @asynccontextmanager
@@ -75,11 +80,34 @@ async def lifespan(app: FastAPI):
                 max_tokens=config.GEMINI_MAX_TOKENS
             )
             print("Gemini service initialized for auto-routing")
+            
+            # Initialize SysOp Brain
+            app.state.sysop_brain = SysOpBrain(
+                gemini_service=app.state.gemini_service,
+                room_service=app.state.room_service
+            )
+            print("SysOp Brain initialized")
+            
+            # Initialize Vecna Module components
+            app.state.sentiment_analyzer = SentimentAnalyzer()
+            app.state.pattern_detector = PatternDetector()
+            
+            app.state.vecna_module = VecnaModule(
+                gemini_service=app.state.gemini_service,
+                sentiment_analyzer=app.state.sentiment_analyzer,
+                pattern_detector=app.state.pattern_detector
+            )
+            print("Vecna Module initialized")
+            
         except GeminiServiceError as e:
             print(f"Warning: Gemini service initialization failed: {e}")
             app.state.gemini_service = None
+            app.state.sysop_brain = None
+            app.state.vecna_module = None
     else:
         app.state.gemini_service = None
+        app.state.sysop_brain = None
+        app.state.vecna_module = None
         print("Gemini service disabled (VECNA_ENABLED=false or no API key)")
     
     # Start session cleanup task
@@ -532,11 +560,14 @@ async def websocket_endpoint(
     5. Handles incoming messages (chat_message, command, join_room)
     6. Broadcasts messages to appropriate rooms
     7. Handles disconnection and session preservation
+    8. Integrates Vecna and SysOp Brain for message processing
     
-    Requirements: 4.2, 5.1, 5.2, 6.1, 6.2, 8.1, 8.3, 8.4, 8.5
+    Requirements: 4.2, 5.1, 5.2, 6.1, 6.2, 8.1, 8.3, 8.4, 8.5, 1.3, 6.1, 6.2, 6.3, 6.4, 6.5
     """
     auth_service = AuthService(db)
+    user_profile_service = UserProfileService(db)
     user = None
+    recent_messages = []  # Track recent messages for spam detection
     
     try:
         # Validate token
@@ -657,86 +688,190 @@ async def websocket_endpoint(
                 if not current_room:
                     continue
                 
-                # Auto-route user if Gemini service is available
-                if app.state.gemini_service:
+                # Track recent messages for spam detection
+                recent_messages.append((content, datetime.utcnow()))
+                # Keep only last 10 messages
+                recent_messages = recent_messages[-10:]
+                
+                # Update user profile with room visit and interests
+                user_profile_service.record_room_visit(user.id, current_room)
+                user_profile_service.update_interests(user.id, content)
+                
+                # Get user profile for Vecna and SysOp Brain
+                user_profile = user_profile_service.get_profile(user.id)
+                
+                # Message Processing Pipeline: SysOp Brain → Vecna Check → Conditional Activation → Return to SysOp
+                vecna_activated = False
+                
+                # Step 1: SysOp Brain initial routing (if available)
+                sysop_brain = getattr(app.state, 'sysop_brain', None)
+                if sysop_brain:
                     try:
-                        notification = await on_message_hook(
+                        sysop_result = await sysop_brain.process_message(
                             user=user,
                             message=content,
                             current_room=current_room,
-                            room_service=app.state.room_service,
-                            gemini_service=app.state.gemini_service
+                            user_profile=user_profile
                         )
                         
-                        # Send notification if user was moved
-                        if notification:
+                        # Handle SysOp Brain suggestions (room suggestions, board creation)
+                        if sysop_result.get("message"):
                             await app.state.websocket_manager.send_to_user(websocket, {
                                 "type": "system",
-                                "content": notification
+                                "content": sysop_result["message"]
                             })
+                    except Exception as e:
+                        print(f"SysOp Brain error: {e}")
+                
+                # Step 2: Vecna trigger evaluation (if available)
+                vecna_module = getattr(app.state, 'vecna_module', None)
+                if vecna_module:
+                    try:
+                        vecna_trigger = await vecna_module.evaluate_triggers(
+                            user_id=user.id,
+                            message=content,
+                            user_profile=user_profile,
+                            recent_messages=recent_messages
+                        )
+                        
+                        # Step 3: Conditional Vecna activation
+                        if vecna_trigger:
+                            vecna_activated = True
                             
-                            # Update current_room after potential move
-                            new_room = app.state.websocket_manager.get_user_room(user.username)
-                            if new_room and new_room != current_room:
-                                # User was moved - update room reference
-                                current_room = new_room
+                            if vecna_trigger.trigger_type == TriggerType.EMOTIONAL:
+                                # Execute emotional trigger (text corruption + hostile response)
+                                vecna_response = await vecna_module.execute_emotional_trigger(
+                                    user_id=user.id,
+                                    message=content,
+                                    user_profile=user_profile
+                                )
                                 
-                                # Update WebSocket manager's room tracking
-                                app.state.websocket_manager.update_user_room(websocket, new_room)
-                                
-                                # Broadcast updated room list
-                                rooms = app.state.room_service.get_rooms()
-                                await app.state.websocket_manager.broadcast_to_all({
-                                    "type": "room_list",
-                                    "rooms": [
-                                        {
-                                            "name": room.name,
-                                            "count": app.state.room_service.get_room_count(room.name),
-                                            "description": room.description
-                                        }
-                                        for room in rooms
-                                    ]
+                                # Send Vecna emotional trigger message
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "vecna_emotional",
+                                    "content": vecna_response.content,
+                                    "corrupted_text": vecna_response.corrupted_text,
+                                    "visual_effects": vecna_response.visual_effects,
+                                    "timestamp": vecna_response.timestamp.isoformat()
                                 })
                                 
-                                # Send room_change message to user
-                                room = app.state.room_service.get_room(new_room)
-                                if room:
+                            elif vecna_trigger.trigger_type == TriggerType.SYSTEM:
+                                # Execute Psychic Grip (thread freeze + narrative)
+                                vecna_response = await vecna_module.execute_psychic_grip(
+                                    user_id=user.id,
+                                    user_profile=user_profile
+                                )
+                                
+                                # Send Vecna Psychic Grip message
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "vecna_psychic_grip",
+                                    "content": vecna_response.content,
+                                    "freeze_duration": vecna_response.freeze_duration,
+                                    "visual_effects": vecna_response.visual_effects,
+                                    "timestamp": vecna_response.timestamp.isoformat()
+                                })
+                                
+                                # Schedule grip release message
+                                async def send_grip_release():
+                                    await asyncio.sleep(vecna_response.freeze_duration)
                                     await app.state.websocket_manager.send_to_user(websocket, {
-                                        "type": "room_change",
-                                        "room": new_room,
-                                        "content": f"You are now in: {new_room}"
+                                        "type": "vecna_release",
+                                        "content": "[SYSTEM] Control returned to SysOp. Continue your session."
                                     })
-                                    
-                                    # Send room entry message
-                                    await app.state.websocket_manager.send_to_user(websocket, {
-                                        "type": "system",
-                                        "content": f"\n=== {room.name} ===\n{room.description}\n"
-                                    })
-                                    
-                                    # Notify new room of user entry
-                                    await app.state.websocket_manager.broadcast_to_room(
-                                        new_room,
-                                        {
-                                            "type": "system",
-                                            "content": f"* {user.username} has entered the room"
-                                        },
-                                        exclude_websocket=websocket
-                                    )
+                                
+                                # Start grip release task
+                                asyncio.create_task(send_grip_release())
+                            
+                            # Log Vecna activation
+                            print(f"Vecna activated for user {user.username}: {vecna_trigger.trigger_type.value} - {vecna_trigger.reason}")
+                    
                     except Exception as e:
-                        # Log error but don't break message flow
-                        print(f"Auto-routing error: {e}")
+                        print(f"Vecna evaluation error: {e}")
                 
-                # Create message with timestamp
-                message = {
-                    "type": "chat_message",
-                    "username": user.username,
-                    "content": content,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "room": current_room
-                }
-                
-                # Broadcast to room (including sender)
-                await app.state.websocket_manager.broadcast_to_room(current_room, message)
+                # Step 4: Return to SysOp Brain / Normal operation
+                # If Vecna was not activated, continue with normal message flow
+                if not vecna_activated:
+                    # Auto-route user if Gemini service is available (legacy auto-routing)
+                    gemini_service = getattr(app.state, 'gemini_service', None)
+                    if gemini_service:
+                        try:
+                            notification = await on_message_hook(
+                                user=user,
+                                message=content,
+                                current_room=current_room,
+                                room_service=app.state.room_service,
+                                gemini_service=app.state.gemini_service
+                            )
+                            
+                            # Send notification if user was moved
+                            if notification:
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "system",
+                                    "content": notification
+                                })
+                                
+                                # Update current_room after potential move
+                                new_room = app.state.websocket_manager.get_user_room(user.username)
+                                if new_room and new_room != current_room:
+                                    # User was moved - update room reference
+                                    current_room = new_room
+                                    
+                                    # Update WebSocket manager's room tracking
+                                    app.state.websocket_manager.update_user_room(websocket, new_room)
+                                    
+                                    # Broadcast updated room list
+                                    rooms = app.state.room_service.get_rooms()
+                                    await app.state.websocket_manager.broadcast_to_all({
+                                        "type": "room_list",
+                                        "rooms": [
+                                            {
+                                                "name": room.name,
+                                                "count": app.state.room_service.get_room_count(room.name),
+                                                "description": room.description
+                                            }
+                                            for room in rooms
+                                        ]
+                                    })
+                                    
+                                    # Send room_change message to user
+                                    room = app.state.room_service.get_room(new_room)
+                                    if room:
+                                        await app.state.websocket_manager.send_to_user(websocket, {
+                                            "type": "room_change",
+                                            "room": new_room,
+                                            "content": f"You are now in: {new_room}"
+                                        })
+                                        
+                                        # Send room entry message
+                                        await app.state.websocket_manager.send_to_user(websocket, {
+                                            "type": "system",
+                                            "content": f"\n=== {room.name} ===\n{room.description}\n"
+                                        })
+                                        
+                                        # Notify new room of user entry
+                                        await app.state.websocket_manager.broadcast_to_room(
+                                            new_room,
+                                            {
+                                                "type": "system",
+                                                "content": f"* {user.username} has entered the room"
+                                            },
+                                            exclude_websocket=websocket
+                                        )
+                        except Exception as e:
+                            # Log error but don't break message flow
+                            print(f"Auto-routing error: {e}")
+                    
+                    # Create message with timestamp
+                    message = {
+                        "type": "chat_message",
+                        "username": user.username,
+                        "content": content,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "room": current_room
+                    }
+                    
+                    # Broadcast to room (including sender)
+                    await app.state.websocket_manager.broadcast_to_room(current_room, message)
             
             elif message_type == "command":
                 # Handle command
@@ -769,6 +904,9 @@ async def websocket_endpoint(
                 parts = command.split(maxsplit=1)
                 cmd_name = parts[0] if parts else ""
                 cmd_args = parts[1] if len(parts) > 1 else None
+                
+                # Track command in user profile
+                user_profile_service.record_command(user.id, cmd_name)
                 
                 # Execute command
                 response = app.state.command_handler.handle_command(cmd_name, user, cmd_args)

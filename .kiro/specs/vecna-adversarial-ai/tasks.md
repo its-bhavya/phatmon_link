@@ -158,7 +158,12 @@
   - **Property 16: Profile data in narrative**
   - **Validates: Requirements 4.3**
 
-- [ ] 8. Implement SysOp Brain Service
+- [x] 8. Implement SysOp Brain Service
+
+
+
+
+
   - Create SysOpBrain class with normal routing logic
   - Implement process_message method for message routing and board creation
   - Implement suggest_rooms method using user profile analysis
@@ -182,7 +187,15 @@
   - **Property 5: Board persistence**
   - **Validates: Requirements 1.5**
 
-- [ ] 9. Integrate Vecna and SysOp Brain into message processing pipeline
+- [x] 9. Integrate Vecna and SysOp Brain into message processing pipeline
+
+
+
+
+
+
+
+
   - Modify WebSocket message handler in backend/main.py to include Vecna evaluation
   - Implement message flow: SysOp Brain → Vecna Check → Conditional Activation → Return to SysOp
   - Add Vecna trigger evaluation after SysOp Brain routing
