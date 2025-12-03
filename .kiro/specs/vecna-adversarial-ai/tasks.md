@@ -316,7 +316,12 @@
   - **Property 15: Input disabling during Psychic Grip**
   - **Validates: Requirements 4.2**
 
-- [ ] 16. Add Vecna CSS styling to terminal.css
+- [x] 16. Add Vecna CSS styling to terminal.css
+
+
+
+
+
   - Add .vecna-corrupted class with red glow and glitch animation
   - Add .vecna-psychic-grip class with screen flicker animation
   - Add .vecna-inverted class with color inversion
