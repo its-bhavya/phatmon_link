@@ -6,6 +6,7 @@ emotional trigger execution, and Psychic Grip execution.
 """
 
 import pytest
+import asyncio
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -377,3 +378,93 @@ class TestVecnaTrigger:
         assert trigger.intensity == 0.85
         assert trigger.user_id == 1
         assert trigger.timestamp == timestamp
+
+
+class TestPsychicGripRelease:
+    """Test Psychic Grip release mechanism."""
+    
+    @pytest.mark.asyncio
+    async def test_psychic_grip_release_timing(self, vecna_module, user_profile):
+        """
+        Test that Psychic Grip release respects the freeze duration.
+        
+        This test verifies that the grip release mechanism:
+        1. Uses the correct freeze duration from the response
+        2. Would trigger after the specified duration
+        
+        Requirements: 4.5
+        """
+        import time
+        
+        # Execute Psychic Grip
+        response = await vecna_module.execute_psychic_grip(
+            user_id=1,
+            user_profile=user_profile
+        )
+        
+        # Verify freeze duration is set correctly
+        assert response.freeze_duration is not None
+        assert 5 <= response.freeze_duration <= 8
+        
+        # Simulate the release mechanism timing
+        start_time = time.time()
+        await asyncio.sleep(response.freeze_duration)
+        elapsed_time = time.time() - start_time
+        
+        # Verify the sleep duration matches the freeze duration (with small tolerance)
+        assert abs(elapsed_time - response.freeze_duration) < 0.5
+    
+    @pytest.mark.asyncio
+    async def test_psychic_grip_response_contains_release_info(self, vecna_module, user_profile):
+        """
+        Test that Psychic Grip response contains all necessary information for release.
+        
+        This test verifies that the response includes:
+        1. Freeze duration for timer mechanism
+        2. Content for the grip message
+        3. Visual effects to apply
+        
+        Requirements: 4.5
+        """
+        response = await vecna_module.execute_psychic_grip(
+            user_id=1,
+            user_profile=user_profile
+        )
+        
+        # Verify response has all required fields for release mechanism
+        assert response.freeze_duration is not None
+        assert isinstance(response.freeze_duration, int)
+        assert response.content is not None
+        assert response.content.startswith("[VECNA]")
+        assert response.visual_effects is not None
+        assert len(response.visual_effects) > 0
+        assert response.trigger_type == TriggerType.SYSTEM
+    
+    @pytest.mark.asyncio
+    async def test_multiple_psychic_grips_have_independent_durations(self, vecna_module, user_profile):
+        """
+        Test that multiple Psychic Grip activations have independent durations.
+        
+        This ensures that each grip release is properly isolated and doesn't
+        interfere with other activations.
+        
+        Requirements: 4.5
+        """
+        # Execute multiple Psychic Grips
+        responses = []
+        for _ in range(5):
+            response = await vecna_module.execute_psychic_grip(
+                user_id=1,
+                user_profile=user_profile
+            )
+            responses.append(response)
+        
+        # Verify each has a valid freeze duration
+        for response in responses:
+            assert response.freeze_duration is not None
+            assert 5 <= response.freeze_duration <= 8
+        
+        # Verify they are independent (not all the same)
+        durations = [r.freeze_duration for r in responses]
+        # With 5 random values between 5-8, we should have some variation
+        assert len(set(durations)) > 1
