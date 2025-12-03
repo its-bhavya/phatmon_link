@@ -90,27 +90,23 @@ class SysOpBrain:
             room = self.room_service.get_room(current_room)
             room_description = room.description if room else "Unknown room"
             
-            # Analyze message relevance to current room
-            relevance = await self.gemini.analyze_message_relevance(
+            # Always check if there's a better room for this message
+            # (Skip relevance check to ensure routing always happens)
+            # Get available rooms
+            available_rooms = {
+                r.name: r.description 
+                for r in self.room_service.get_rooms()
+            }
+            
+            # Suggest best room for this message
+            suggestion = await self.gemini.suggest_best_room(
                 message=message,
-                current_room=current_room,
-                room_description=room_description
+                available_rooms=available_rooms,
+                user_profile=profile_data
             )
             
-            # If message is not relevant to current room, suggest better room
-            if not relevance["is_relevant"] and relevance["confidence"] > 0.7:
-                # Get available rooms
-                available_rooms = {
-                    r.name: r.description 
-                    for r in self.room_service.get_rooms()
-                }
-                
-                # Suggest best room for this message
-                suggestion = await self.gemini.suggest_best_room(
-                    message=message,
-                    available_rooms=available_rooms,
-                    user_profile=profile_data
-                )
+            # Only route if suggested room is different from current room
+            if suggestion["suggested_room"] and suggestion["suggested_room"] != current_room:
                 
                 # Check if we should create a new board
                 if suggestion["should_create_new"] and suggestion["new_room_topic"]:

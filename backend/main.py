@@ -651,8 +651,13 @@ async def websocket_endpoint(
         # Validate token
         user = auth_service.get_user_from_token(token)
         if not user:
+            print(f"WebSocket authentication failed for token: {token[:20]}...")
+            # Accept connection first, then close with error
+            await websocket.accept()
             await websocket.close(code=4001, reason="Invalid or expired token")
             return
+        
+        print(f"WebSocket authenticated user: {user.username}")
         
         # Check if user is reconnecting
         initial_room = "Lobby"
@@ -778,30 +783,10 @@ async def websocket_endpoint(
                 # Get user profile for Vecna and SysOp Brain
                 user_profile = user_profile_service.get_profile(user.id)
                 
-                # Message Processing Pipeline: SysOp Brain → Vecna Check → Conditional Activation → Return to SysOp
+                # Message Processing Pipeline: Vecna Check → Conditional Activation → SysOp Brain Routing
                 vecna_activated = False
                 
-                # Step 1: SysOp Brain initial routing (if available)
-                sysop_brain = getattr(app.state, 'sysop_brain', None)
-                if sysop_brain:
-                    try:
-                        sysop_result = await sysop_brain.process_message(
-                            user=user,
-                            message=content,
-                            current_room=current_room,
-                            user_profile=user_profile
-                        )
-                        
-                        # Handle SysOp Brain suggestions (room suggestions, board creation)
-                        if sysop_result.get("message"):
-                            await app.state.websocket_manager.send_to_user(websocket, {
-                                "type": "system",
-                                "content": sysop_result["message"]
-                            })
-                    except Exception as e:
-                        print(f"SysOp Brain error: {e}")
-                
-                # Step 2: Vecna trigger evaluation (if available)
+                # Step 1: Vecna trigger evaluation (if available)
                 vecna_module = getattr(app.state, 'vecna_module', None)
                 if vecna_module:
                     try:
@@ -815,7 +800,7 @@ async def websocket_endpoint(
                             recent_messages=recent_messages
                         )
                         
-                        # Step 3: Conditional Vecna activation
+                        # Step 2: Conditional Vecna activation
                         if vecna_trigger:
                             vecna_activated = True
                             
@@ -823,6 +808,7 @@ async def websocket_endpoint(
                                 # Execute emotional trigger (text corruption + hostile response)
                                 vecna_response = await vecna_module.execute_emotional_trigger(
                                     user_id=user.id,
+                                    username=user.username,
                                     message=content,
                                     user_profile=user_profile
                                 )
@@ -840,6 +826,7 @@ async def websocket_endpoint(
                                 # Execute Psychic Grip (thread freeze + narrative)
                                 vecna_response = await vecna_module.execute_psychic_grip(
                                     user_id=user.id,
+                                    username=user.username,
                                     user_profile=user_profile
                                 )
                                 
@@ -869,36 +856,74 @@ async def websocket_endpoint(
                     except Exception as e:
                         print(f"Vecna evaluation error: {e}")
                 
-                # Step 4: Return to SysOp Brain / Normal operation
-                # If Vecna was not activated, continue with normal message flow
+                # Step 3: SysOp Brain routing (if Vecna was not activated)
+                # If Vecna was not activated, use SysOp Brain for intelligent routing
                 if not vecna_activated:
-                    # Auto-route user if Gemini service is available (legacy auto-routing)
-                    gemini_service = getattr(app.state, 'gemini_service', None)
-                    if gemini_service:
+                    # Use SysOp Brain for intelligent routing
+                    sysop_brain = getattr(app.state, 'sysop_brain', None)
+                    if sysop_brain:
                         try:
-                            notification = await on_message_hook(
+                            sysop_result = await sysop_brain.process_message(
                                 user=user,
                                 message=content,
                                 current_room=current_room,
-                                room_service=app.state.room_service,
-                                gemini_service=app.state.gemini_service
+                                user_profile=user_profile
                             )
                             
-                            # Send notification if user was moved
-                            if notification:
-                                await app.state.websocket_manager.send_to_user(websocket, {
-                                    "type": "system",
-                                    "content": notification
-                                })
+                            # Handle different actions
+                            action = sysop_result.get("action")
+                            
+                            if action == "suggest_room":
+                                # Room suggestion - only move if high confidence and different room
+                                suggested_room = sysop_result.get("room")
                                 
-                                # Update current_room after potential move
-                                new_room = app.state.websocket_manager.get_user_room(user.username)
-                                if new_room and new_room != current_room:
-                                    # User was moved - update room reference
-                                    current_room = new_room
+                                if suggested_room and suggested_room != current_room:
+                                    # Leave current room
+                                    app.state.room_service.leave_room(user, current_room)
                                     
-                                    # Update WebSocket manager's room tracking
-                                    app.state.websocket_manager.update_user_room(websocket, new_room)
+                                    # Notify old room
+                                    await app.state.websocket_manager.broadcast_to_room(
+                                        current_room,
+                                        {
+                                            "type": "system",
+                                            "content": f"* {user.username} has left the room"
+                                        }
+                                    )
+                                    
+                                    # Join new room
+                                    app.state.room_service.join_room(user, suggested_room)
+                                    app.state.websocket_manager.update_user_room(websocket, suggested_room)
+                                    current_room = suggested_room
+                                    
+                                    # Send room entry message to user
+                                    room = app.state.room_service.get_room(suggested_room)
+                                    if room:
+                                        await app.state.websocket_manager.send_to_user(websocket, {
+                                            "type": "system",
+                                            "content": f"\n[SYSOP] Moving you to {suggested_room} - better fit for your message."
+                                        })
+                                        
+                                        await app.state.websocket_manager.send_to_user(websocket, {
+                                            "type": "system",
+                                            "content": f"\n=== {room.name} ===\n{room.description}\n"
+                                        })
+                                        
+                                        # Notify new room of user entry
+                                        await app.state.websocket_manager.broadcast_to_room(
+                                            suggested_room,
+                                            {
+                                                "type": "system",
+                                                "content": f"* {user.username} has entered the room"
+                                            },
+                                            exclude_websocket=websocket
+                                        )
+                                        
+                                        # Send room_change message
+                                        await app.state.websocket_manager.send_to_user(websocket, {
+                                            "type": "room_change",
+                                            "room": suggested_room,
+                                            "content": f"You are now in: {suggested_room}"
+                                        })
                                     
                                     # Broadcast updated room list
                                     rooms = app.state.room_service.get_rooms()
@@ -913,34 +938,48 @@ async def websocket_endpoint(
                                             for room in rooms
                                         ]
                                     })
+                            
+                            elif action == "create_board":
+                                # Dynamic board creation - move user to new board
+                                new_board = sysop_result.get("board")
+                                if new_board:
+                                    # Leave current room
+                                    app.state.room_service.leave_room(user, current_room)
                                     
-                                    # Send room_change message to user
-                                    room = app.state.room_service.get_room(new_room)
-                                    if room:
-                                        await app.state.websocket_manager.send_to_user(websocket, {
-                                            "type": "room_change",
-                                            "room": new_room,
-                                            "content": f"You are now in: {new_room}"
-                                        })
-                                        
-                                        # Send room entry message
-                                        await app.state.websocket_manager.send_to_user(websocket, {
-                                            "type": "system",
-                                            "content": f"\n=== {room.name} ===\n{room.description}\n"
-                                        })
-                                        
-                                        # Notify new room of user entry
-                                        await app.state.websocket_manager.broadcast_to_room(
-                                            new_room,
+                                    # Join new board
+                                    app.state.room_service.join_room(user, new_board.name)
+                                    app.state.websocket_manager.update_user_room(websocket, new_board.name)
+                                    current_room = new_board.name
+                                    
+                                    # Notify user
+                                    await app.state.websocket_manager.send_to_user(websocket, {
+                                        "type": "system",
+                                        "content": sysop_result.get("message", f"Created new board: {new_board.name}")
+                                    })
+                                    
+                                    # Send room entry message
+                                    await app.state.websocket_manager.send_to_user(websocket, {
+                                        "type": "system",
+                                        "content": f"\n=== {new_board.name} ===\n{new_board.description}\n"
+                                    })
+                                    
+                                    # Broadcast updated room list
+                                    rooms = app.state.room_service.get_rooms()
+                                    await app.state.websocket_manager.broadcast_to_all({
+                                        "type": "room_list",
+                                        "rooms": [
                                             {
-                                                "type": "system",
-                                                "content": f"* {user.username} has entered the room"
-                                            },
-                                            exclude_websocket=websocket
-                                        )
+                                                "name": room.name,
+                                                "count": app.state.room_service.get_room_count(room.name),
+                                                "description": room.description
+                                            }
+                                            for room in rooms
+                                        ]
+                                    })
+                        
                         except Exception as e:
                             # Log error but don't break message flow
-                            print(f"Auto-routing error: {e}")
+                            print(f"SysOp Brain error: {e}")
                     
                     # Create message with timestamp
                     message = {

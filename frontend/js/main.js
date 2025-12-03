@@ -57,10 +57,11 @@ function init() {
     if (!token) {
         // User not authenticated - they'll see the login prompt already in HTML
         // No need to show dial-up sequence yet
+        authState.isAuthenticated = false;
         return;
     }
     
-    // User has token, show welcome back message and dial-up
+    // User has token, attempt to connect
     authState.isAuthenticated = true;
     chatDisplay.clear();
     
@@ -768,6 +769,40 @@ function handleWebSocketConnect(event) {
  * @param {Event} event - Disconnection event
  */
 function handleWebSocketDisconnect(event) {
+    // Check if this is an authentication failure
+    if (event.code === 4001) {
+        // Clear the display and reset to login state
+        chatDisplay.clear();
+        chatDisplay.addMessage({
+            type: 'system',
+            content: 'GATEKEEPER'
+        });
+        chatDisplay.addMessage({
+            type: 'system',
+            content: ''
+        });
+        chatDisplay.addMessage({
+            type: 'system',
+            content: '> USERNAME:'
+        });
+        chatDisplay.addMessage({
+            type: 'system',
+            content: '  (Type "register" if you need to create an account)'
+        });
+        
+        // Reset auth state
+        authState = {
+            isAuthenticated: false,
+            mode: null,
+            username: null,
+            awaitingPassword: false
+        };
+        
+        // Enable command bar for login
+        commandBar.enable();
+        return;
+    }
+    
     chatDisplay.addMessage({
         type: 'system',
         content: 'Disconnected from server'

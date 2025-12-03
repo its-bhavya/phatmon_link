@@ -99,6 +99,27 @@ class WebSocketClient {
   handleClose(event) {
     console.log('WebSocket disconnected', event.code, event.reason);
     
+    // Check if this is an authentication failure (code 4001)
+    if (event.code === 4001) {
+      console.log('Authentication failed - clearing invalid token');
+      localStorage.removeItem('jwt_token');
+      
+      // Mark as manual disconnect to prevent reconnection attempts
+      this.isManualDisconnect = true;
+      
+      // Call disconnect callbacks with auth failure info
+      this.disconnectCallbacks.forEach(callback => {
+        try {
+          callback(event);
+        } catch (error) {
+          console.error('Error in disconnect callback:', error);
+        }
+      });
+      
+      // Don't attempt reconnection for auth failures
+      return;
+    }
+    
     // Call disconnect callbacks
     this.disconnectCallbacks.forEach(callback => {
       try {

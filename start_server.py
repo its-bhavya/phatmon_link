@@ -4,6 +4,10 @@ This script runs the full backend with authentication and WebSocket support.
 """
 import uvicorn
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 if __name__ == "__main__":
     print("=" * 70)
