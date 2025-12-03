@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Spec Task Sync",
+  "description": "Monitors changes to spec task files and automatically updates related code files to ensure they comply with the modified task requirements. When a task is modified, the agent identifies the related code files and updates them according to the spec.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A spec task file has been modified. Please analyze the changes and update the related code files:\n\n1. Read the modified tasks.md file to identify which tasks have been changed\n2. For each modified task:\n   - Identify the requirements it validates (look for _Requirements: X.X_ references)\n   - Identify the code files mentioned in the task description\n   - Read the corresponding requirements.md and design.md files to understand the full context\n3. Update the identified code files to ensure they comply with:\n   - The task description and acceptance criteria\n   - The referenced requirements from requirements.md\n   - The design specifications from design.md\n   - Any properties mentioned in the task\n4. If tests are mentioned in the task, update or create those test files as well\n5. Run diagnostics on the updated files to ensure no syntax or type errors\n6. Provide a summary of what was updated and why\n\nFocus on:\n- Maintaining consistency with the spec's requirements and design\n- Preserving existing functionality that isn't affected by the changes\n- Following the coding patterns and conventions already established in the codebase\n- Ensuring all referenced requirements and properties are properly implemented\n\nIf the changes are unclear or require clarification, ask the user before making updates."
+  },
+  "workspaceFolderName": "phatmon_link",
+  "shortName": "spec-task-sync"
+}

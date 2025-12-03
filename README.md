@@ -327,6 +327,7 @@ Commands are prefixed with `/` and entered in the command line bar:
 | `/users` | Display active users and their rooms | `/users` |
 | `/join <room>` | Switch to a different room | `/join techline` |
 | `/clear` | Clear the terminal display | `/clear` |
+| `/logout` | Disconnect and return to login screen | `/logout` |
 
 ### Default Rooms
 

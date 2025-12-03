@@ -10,7 +10,6 @@ This document specifies the requirements for the Vecna Adversarial AI Module, a 
 - **Vecna Module**: The adversarial AI component that conditionally overrides SysOp Brain control
 - **Psychic Grip**: A 5-8 second thread freeze during which Vecna addresses the user directly
 - **Emotional Trigger**: High-intensity negative sentiment detected in user messages
-- **System Trigger**: Anomalous patterns including spam, repeated commands, or unusual behavior
 - **User Profile**: Data structure containing user interests, recent rooms, activity patterns, and behavioral history
 - **Thread Freeze**: Temporary state where users cannot send messages while Vecna is active
 - **Text Corruption**: Character substitution and garbling applied to messages during Vecna activation
@@ -32,38 +31,35 @@ This document specifies the requirements for the Vecna Adversarial AI Module, a 
 
 ### Requirement 2
 
-**User Story:** As a system designer, I want Vecna to trigger conditionally based on emotional and system patterns, so that adversarial interactions occur at meaningful moments.
+**User Story:** As a system designer, I want Vecna to trigger based on emotional patterns, so that adversarial interactions occur at meaningful moments.
 
 #### Acceptance Criteria
 
 1. WHEN a user message contains high-intensity negative sentiment THEN the Vecna Module SHALL activate emotional trigger mode
-2. WHEN the system detects spam patterns in user messages THEN the Vecna Module SHALL activate system trigger mode
-3. WHEN the system detects repeated commands within a short timeframe THEN the Vecna Module SHALL activate system trigger mode
-4. WHEN the system detects unusual activity patterns deviating from user profile baseline THEN the Vecna Module SHALL activate system trigger mode
-5. WHEN Vecna activates THEN the system SHALL override SysOp Brain control temporarily
+2. WHEN Vecna activates THEN the system SHALL override SysOp Brain control temporarily
 
 ### Requirement 3
 
-**User Story:** As a user experiencing an emotional trigger, I want to receive corrupted hostile responses, so that the system creates an unsettling adversarial experience.
+**User Story:** As a user experiencing an emotional trigger, I want to receive a Psychic Grip experience with cryptic narrative, so that the system creates an immersive adversarial interaction.
 
 #### Acceptance Criteria
 
 1. WHEN Vecna activates via emotional trigger THEN the system SHALL intercept the user message before normal processing
-2. WHEN Vecna processes an intercepted message THEN the system SHALL apply text corruption including character substitution and garbling
-3. WHEN Vecna generates a response THEN the system SHALL produce hostile or degraded text addressing the user's message
-4. WHEN Vecna returns a corrupted response THEN the system SHALL use Gemini 2.5 Flash to generate contextually relevant hostile content
-5. WHEN text corruption is applied THEN the system SHALL maintain partial readability while creating visual distortion
+2. WHEN Vecna activates via emotional trigger THEN the system SHALL freeze the thread preventing message transmission for 5-8 seconds
+3. WHEN Vecna holds Psychic Grip for emotional trigger THEN the system SHALL analyze the user profile including interests, recent rooms, and behavioral patterns
+4. WHEN Vecna generates Psychic Grip content for emotional trigger THEN the system SHALL use Gemini 2.5 Flash to create cryptic narrative that is hostile but not offensive
+5. WHEN Vecna generates cryptic narrative THEN the system SHALL reference the user's emotional state and profile data in a Vecna-like tone
 
 ### Requirement 4
 
-**User Story:** As a user experiencing a system trigger, I want the thread to freeze with direct Vecna communication, so that I encounter an immersive Psychic Grip experience.
+**User Story:** As a user experiencing any Vecna trigger, I want the thread to freeze with direct Vecna communication, so that I encounter an immersive Psychic Grip experience.
 
 #### Acceptance Criteria
 
-1. WHEN Vecna activates via system trigger THEN the system SHALL freeze the thread preventing message transmission for 5-8 seconds
+1. WHEN Vecna activates via any trigger THEN the system SHALL freeze the thread preventing message transmission for 5-8 seconds
 2. WHEN the thread is frozen THEN the system SHALL disable chat input functionality for all affected users
 3. WHEN Vecna holds Psychic Grip THEN the system SHALL generate narrative content referencing user profile data including frequent rooms, repetitive actions, unfinished tasks, and behavioral patterns
-4. WHEN Vecna generates Psychic Grip content THEN the system SHALL use Gemini 2.5 Flash to create cryptic observations about user behavior
+4. WHEN Vecna generates Psychic Grip content THEN the system SHALL use Gemini 2.5 Flash to create cryptic observations that are hostile but not offensive in a Vecna tone
 5. WHEN the Psychic Grip duration expires THEN the system SHALL release control and display a system message indicating SysOp Brain resumption
 
 ### Requirement 5
@@ -72,12 +68,11 @@ This document specifies the requirements for the Vecna Adversarial AI Module, a 
 
 #### Acceptance Criteria
 
-1. WHEN Vecna activates with emotional trigger THEN the system SHALL apply text corruption effects to the displayed message
-2. WHEN Vecna activates with system trigger THEN the system SHALL apply screen flicker effects during Psychic Grip
-3. WHEN Vecna holds Psychic Grip THEN the system SHALL optionally apply inverted color effects to the interface
-4. WHEN Vecna holds Psychic Grip THEN the system SHALL optionally apply slow scanline ripple effects to the display
-5. WHEN Vecna displays messages THEN the system SHALL optionally render ASCII static storm overlay effects
-6. WHEN Vecna releases control THEN the system SHALL restore normal visual rendering
+1. WHEN Vecna activates with any trigger THEN the system SHALL apply screen flicker effects during Psychic Grip
+2. WHEN Vecna holds Psychic Grip THEN the system SHALL optionally apply inverted color effects to the interface
+3. WHEN Vecna holds Psychic Grip THEN the system SHALL optionally apply slow scanline ripple effects to the display
+4. WHEN Vecna displays messages THEN the system SHALL optionally render ASCII static storm overlay effects
+5. WHEN Vecna releases control THEN the system SHALL restore normal visual rendering
 
 ### Requirement 6
 

@@ -13,7 +13,6 @@ from datetime import datetime
 from enum import Enum
 
 from backend.vecna.sentiment import SentimentAnalyzer
-from backend.vecna.pattern_detector import PatternDetector
 from backend.vecna.gemini_service import GeminiService
 from backend.vecna.user_profile import UserProfile
 from backend.vecna.rate_limiter import VecnaRateLimiter, VecnaRateLimitResult
@@ -182,19 +181,17 @@ class VecnaModule:
     Adversarial AI module for conditional hostile interactions.
     
     This class implements the core Vecna functionality including:
-    - Trigger evaluation (emotional and system)
-    - Text corruption
-    - Hostile response generation
-    - Psychic Grip execution
+    - Trigger evaluation (emotional triggers only)
+    - Psychic Grip execution (freeze + cryptic narrative generation)
+    - Integration with SentimentAnalyzer and GeminiService
     
-    Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.3, 4.4
+    Requirements: 2.1, 2.2, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.3, 4.4
     """
     
     def __init__(
         self,
         gemini_service: GeminiService,
         sentiment_analyzer: SentimentAnalyzer,
-        pattern_detector: PatternDetector,
         rate_limiter: Optional[VecnaRateLimiter] = None,
         monitor: Optional[VecnaMonitor] = None,
         psychic_grip_duration_range: tuple = (5, 8)
@@ -205,14 +202,12 @@ class VecnaModule:
         Args:
             gemini_service: Service for AI content generation
             sentiment_analyzer: Service for sentiment analysis
-            pattern_detector: Service for pattern detection
             rate_limiter: Optional rate limiter for abuse prevention
             monitor: Optional monitoring service for logging and metrics
             psychic_grip_duration_range: Tuple of (min, max) seconds for Psychic Grip
         """
         self.gemini = gemini_service
         self.sentiment = sentiment_analyzer
-        self.pattern_detector = pattern_detector
         self.rate_limiter = rate_limiter
         self.monitor = monitor
         self.psychic_grip_duration = psychic_grip_duration_range
@@ -223,27 +218,23 @@ class VecnaModule:
         self,
         user_id: int,
         message: str,
-        user_profile: UserProfile,
-        recent_messages: Optional[list] = None
+        user_profile: UserProfile
     ) -> Optional[VecnaTrigger]:
         """
-        Evaluate if Vecna should activate.
+        Evaluate if Vecna should activate based on emotional triggers only.
         
-        This method checks both emotional triggers (high-negative sentiment)
-        and system triggers (spam, command repetition, unusual activity).
-        
+        This method checks for high-negative sentiment in user messages.
         It also checks rate limits to prevent abuse.
         
         Args:
             user_id: User database ID
             message: User's message text
             user_profile: UserProfile object with behavioral data
-            recent_messages: Optional list of recent messages for spam detection
         
         Returns:
             VecnaTrigger object if triggered, None otherwise
         
-        Requirements: 2.1, 2.2, 2.3, 2.4, Security considerations
+        Requirements: 2.1, 2.2
         """
         try:
             # Check rate limits first (if rate limiter is configured)
@@ -255,7 +246,8 @@ class VecnaModule:
                         f"Vecna activation blocked for user {user_id}: {rate_limit_result.reason}"
                     )
                     return None
-            # Check emotional trigger first (high-negative sentiment)
+            
+            # Check emotional trigger (high-negative sentiment)
             sentiment_result = self.sentiment.analyze(message)
             
             if sentiment_result.is_trigger:
@@ -264,52 +256,6 @@ class VecnaModule:
                     trigger_type=TriggerType.EMOTIONAL,
                     reason=f"High-negative sentiment detected: {', '.join(sentiment_result.keywords)}",
                     intensity=sentiment_result.intensity,
-                    user_id=user_id,
-                    timestamp=datetime.utcnow()
-                )
-            
-            # Check system triggers
-            
-            # 1. Spam detection
-            if recent_messages:
-                is_spam = self.pattern_detector.detect_spam(user_id, recent_messages)
-                if is_spam:
-                    logger.info(f"Vecna system trigger (spam) for user {user_id}")
-                    return VecnaTrigger(
-                        trigger_type=TriggerType.SYSTEM,
-                        reason="Spam pattern detected",
-                        intensity=0.8,
-                        user_id=user_id,
-                        timestamp=datetime.utcnow()
-                    )
-            
-            # 2. Command repetition detection
-            is_command_repetition = self.pattern_detector.detect_command_repetition(user_profile)
-            if is_command_repetition:
-                logger.info(f"Vecna system trigger (command repetition) for user {user_id}")
-                return VecnaTrigger(
-                    trigger_type=TriggerType.SYSTEM,
-                    reason="Command repetition detected",
-                    intensity=0.7,
-                    user_id=user_id,
-                    timestamp=datetime.utcnow()
-                )
-            
-            # 3. Unusual activity detection
-            # Calculate current activity metrics
-            current_activity = {
-                'messages_per_minute': 1.0,  # Placeholder - should be calculated from recent activity
-                'commands_per_minute': len(user_profile.command_history) / 60.0 if user_profile.command_history else 0.0,
-                'room_switches_per_hour': len(set(user_profile.recent_rooms)) * 6 if user_profile.recent_rooms else 0.0
-            }
-            
-            is_unusual = self.pattern_detector.detect_unusual_activity(user_profile, current_activity)
-            if is_unusual:
-                logger.info(f"Vecna system trigger (unusual activity) for user {user_id}")
-                return VecnaTrigger(
-                    trigger_type=TriggerType.SYSTEM,
-                    reason="Unusual activity pattern detected",
-                    intensity=0.75,
                     user_id=user_id,
                     timestamp=datetime.utcnow()
                 )
@@ -329,53 +275,62 @@ class VecnaModule:
         user_profile: UserProfile
     ) -> VecnaResponse:
         """
-        Execute emotional trigger: corrupt text and generate hostile response.
+        Execute emotional trigger: Psychic Grip (freeze + cryptic narrative generation).
         
         This method:
-        1. Applies text corruption to the message
-        2. Generates a hostile response using Gemini AI
-        3. Returns a VecnaResponse with corrupted content
+        1. Determines a random freeze duration (5-8 seconds)
+        2. Analyzes the user profile (interests, recent rooms, behavioral patterns)
+        3. Generates a cryptic narrative using Gemini AI that references emotional state
+        4. Returns a VecnaResponse with freeze duration and narrative content
         
         Args:
             user_id: User database ID
             username: Username for logging
-            message: User's original message
+            message: User's original message (for emotional context)
             user_profile: UserProfile object for personalization
         
         Returns:
-            VecnaResponse with corrupted text and hostile content
+            VecnaResponse with Psychic Grip freeze duration and cryptic narrative
         
-        Requirements: 3.1, 3.2, 3.3, 3.4
+        Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.3, 4.4
         """
         start_time = datetime.utcnow()
         
         try:
-            # Apply text corruption to the message
-            corruption_level = 0.3  # 30% corruption
-            corrupted_message = corrupt_text(message, corruption_level)
+            # Determine random freeze duration (5-8 seconds)
+            freeze_duration = random.randint(
+                self.psychic_grip_duration[0],
+                self.psychic_grip_duration[1]
+            )
             
             # Convert UserProfile to dict for Gemini service
             profile_dict = {
                 'interests': user_profile.interests,
                 'frequent_rooms': user_profile.frequent_rooms,
                 'recent_rooms': user_profile.recent_rooms,
+                'unfinished_boards': user_profile.unfinished_boards,
+                'command_history': user_profile.command_history,
                 'behavioral_patterns': user_profile.behavioral_patterns
             }
             
-            # Generate hostile response using Gemini
-            hostile_response = await self.gemini.generate_hostile_response(
-                user_message=message,
+            # Generate Psychic Grip narrative using Gemini
+            # This should reference the user's emotional state and profile data
+            # Note: The emotional context is implicit from the trigger
+            narrative = await self.gemini.generate_psychic_grip_narrative(
                 user_profile=profile_dict,
                 user_id=user_id
             )
             
             # Prefix with [VECNA] tag
-            vecna_content = f"[VECNA] {hostile_response}"
+            vecna_content = f"[VECNA] {narrative}"
+            
+            # Define visual effects for Psychic Grip
+            visual_effects = ['flicker', 'inverted', 'scanlines', 'static']
             
             # Calculate duration
             duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
             
-            logger.info(f"Vecna emotional trigger executed for user {user_id}")
+            logger.info(f"Vecna emotional trigger (Psychic Grip) executed for user {user_id}, duration: {freeze_duration}s")
             
             # Log activation to database (if rate limiter is configured)
             if self.rate_limiter:
@@ -402,8 +357,8 @@ class VecnaModule:
             return VecnaResponse(
                 trigger_type=TriggerType.EMOTIONAL,
                 content=vecna_content,
-                corrupted_text=corrupted_message,
-                visual_effects=['text_corruption'],
+                freeze_duration=freeze_duration,
+                visual_effects=visual_effects,
                 timestamp=datetime.utcnow()
             )
         
@@ -421,16 +376,17 @@ class VecnaModule:
                     trigger_type="emotional",
                     reason=f"Error: {str(e)}",
                     intensity=0.8,
-                    response_content="[VECNA] sYst3m m@lfunct10n...",
+                    response_content="[VECNA] ...c0nn3ct10n l0st... r3l3as1ng gr1p...",
                     duration_ms=duration_ms
                 )
             
-            # Fallback response
+            # Fallback response with Psychic Grip
+            freeze_duration = random.randint(5, 8)
             return VecnaResponse(
                 trigger_type=TriggerType.EMOTIONAL,
-                content="[VECNA] sYst3m m@lfunct10n... y0ur qu3ry 1s... 1rr3l3v@nt...",
-                corrupted_text=corrupt_text(message, 0.3),
-                visual_effects=['text_corruption'],
+                content="[VECNA] ...c0nn3ct10n l0st... r3l3as1ng gr1p...",
+                freeze_duration=freeze_duration,
+                visual_effects=['flicker', 'inverted', 'scanlines', 'static'],
                 timestamp=datetime.utcnow()
             )
     

@@ -70,28 +70,17 @@ Vecna Conditional Check
   │
   ├─── No Trigger ──────────────────────────┐
   │                                          │
-  ├─── Emotional Trigger ───────────────┐   │
-  │    (High negative sentiment)         │   │
-  │    │                                 │   │
-  │    ▼                                 │   │
-  │  Text Corruption                     │   │
-  │  Hostile Response                    │   │
-  │  Send to User                        │   │
-  │    │                                 │   │
-  │    └─────────────────────────────────┤   │
-  │                                      │   │
-  ├─── System Trigger ──────────────┐   │   │
-  │    (Spam, repeated commands)     │   │   │
-  │    │                             │   │   │
-  │    ▼                             │   │   │
-  │  Psychic Grip (5-8s freeze)     │   │   │
-  │  Analyze user profile           │   │   │
-  │  Generate cryptic narrative     │   │   │
-  │  Send to User                   │   │   │
-  │    │                             │   │   │
-  │    └─────────────────────────────┤   │   │
-  │                                  │   │   │
-  └──────────────────────────────────┴───┴───┘
+  ├─── Emotional Trigger ───────────────────┤
+  │    (High negative sentiment)             │
+  │    │                                     │
+  │    ▼                                     │
+  │  Psychic Grip (5-8s freeze)             │
+  │  Analyze user profile                   │
+  │  Generate cryptic narrative             │
+  │  (hostile but not offensive)            │
+  │  Send to User                           │
+  │    │                                     │
+  └────┴─────────────────────────────────────┘
                     │
                     ▼
           Back to SysOp Brain
@@ -168,12 +157,10 @@ class VecnaModule:
     def __init__(
         self, 
         gemini_service: GeminiService,
-        sentiment_analyzer: SentimentAnalyzer,
-        pattern_detector: PatternDetector
+        sentiment_analyzer: SentimentAnalyzer
     ):
         self.gemini = gemini_service
         self.sentiment = sentiment_analyzer
-        self.pattern_detector = pattern_detector
         self.psychic_grip_duration = (5, 8)  # seconds range
     
     async def evaluate_triggers(
@@ -193,13 +180,14 @@ class VecnaModule:
     async def execute_emotional_trigger(
         self, 
         user: User, 
-        message: str
+        message: str,
+        user_profile: UserProfile
     ) -> VecnaResponse:
         """
-        Execute emotional trigger: corrupt text and generate hostile response.
+        Execute emotional trigger: freeze thread and generate cryptic narrative.
         
         Returns:
-            VecnaResponse with corrupted text and hostile content
+            VecnaResponse with freeze duration and cryptic narrative content
         """
         pass
     
@@ -259,17 +247,7 @@ class UserProfile:
     activity_baseline: Dict[str, float]
     behavioral_patterns: Dict[str, Any]
     
-    def calculate_deviation(self, current_activity: Dict[str, Any]) -> float:
-        """Calculate deviation from baseline activity."""
-        pass
-    
-    def detect_spam_pattern(self, recent_messages: List[str]) -> bool:
-        """Detect spam patterns in recent messages."""
-        pass
-    
-    def detect_command_repetition(self, window_seconds: int = 60) -> bool:
-        """Detect repeated commands within time window."""
-        pass
+
 ```
 
 ```python
@@ -339,47 +317,7 @@ class SentimentAnalyzer:
         pass
 ```
 
-#### 5. Pattern Detection Service (`backend/vecna/pattern_detector.py`)
-
-Detects anomalous system patterns for system triggers.
-
-```python
-class PatternDetector:
-    """
-    Pattern detection for system triggers.
-    """
-    
-    def __init__(self):
-        self.spam_threshold = 3  # messages
-        self.spam_window = 5  # seconds
-        self.command_repeat_threshold = 3
-        self.command_repeat_window = 10  # seconds
-    
-    def detect_spam(
-        self, 
-        user_id: int, 
-        recent_messages: List[Tuple[str, datetime]]
-    ) -> bool:
-        """Detect spam patterns in recent messages."""
-        pass
-    
-    def detect_command_repetition(
-        self, 
-        user_profile: UserProfile
-    ) -> bool:
-        """Detect repeated command execution."""
-        pass
-    
-    def detect_unusual_activity(
-        self, 
-        user_profile: UserProfile,
-        current_activity: Dict[str, Any]
-    ) -> bool:
-        """Detect activity deviating from user baseline."""
-        pass
-```
-
-#### 6. Gemini AI Service (`backend/vecna/gemini_service.py`)
+#### 5. Gemini AI Service (`backend/vecna/gemini_service.py`)
 
 Interface to Gemini 2.5 Flash for AI content generation.
 
@@ -463,12 +401,7 @@ class VecnaEffects {
         this.effectsContainer = null;
     }
     
-    /**
-     * Apply text corruption effect to message display.
-     */
-    applyTextCorruption(message) {
-        // Display corrupted text with special styling
-    }
+
     
     /**
      * Start Psychic Grip visual effects.
@@ -536,11 +469,11 @@ class VecnaHandler {
     }
     
     /**
-     * Handle Vecna emotional trigger message.
+     * Handle Vecna emotional trigger message (Psychic Grip).
      */
     handleEmotionalTrigger(message) {
-        // Display corrupted hostile response
-        // Apply text corruption effects
+        // Same as handlePsychicGrip - unified approach
+        // Freeze input, start visual effects, display narrative
     }
     
     /**
@@ -705,111 +638,95 @@ CREATE INDEX idx_board_tracking_user ON board_tracking(user_id);
 *For any* message with high-intensity negative sentiment above the threshold, Vecna should activate in emotional trigger mode
 **Validates: Requirements 2.1**
 
-### Property 7: Spam pattern detection
-*For any* sequence of messages matching spam patterns (repeated content within time window), Vecna should activate in system trigger mode
-**Validates: Requirements 2.2**
-
-### Property 8: Command repetition detection
-*For any* sequence of repeated commands within the time window, Vecna should activate in system trigger mode
-**Validates: Requirements 2.3**
-
-### Property 9: Anomaly detection
-*For any* user activity that deviates significantly from their baseline profile, Vecna should activate in system trigger mode
-**Validates: Requirements 2.4**
-
-### Property 10: Vecna control override
+### Property 7: Vecna control override
 *For any* Vecna activation, the message should be processed by Vecna instead of normal SysOp Brain processing
-**Validates: Requirements 2.5, 3.1**
+**Validates: Requirements 2.2, 3.1**
 
-### Property 11: Text corruption application
-*For any* emotional trigger activation, the response should contain corrupted text with character substitution and garbling
+### Property 8: Psychic Grip for emotional triggers
+*For any* emotional trigger activation, the system should freeze the thread for 5-8 seconds and generate cryptic narrative
 **Validates: Requirements 3.2**
 
-### Property 12: Hostile response generation
-*For any* emotional trigger activation, the response should contain hostile or degraded language that references the original message
-**Validates: Requirements 3.3**
+### Property 9: Hostile but not offensive tone
+*For any* emotional trigger activation, the cryptic narrative should be hostile in tone but not offensive or abusive
+**Validates: Requirements 3.4**
 
-### Property 13: Partial readability preservation
-*For any* corrupted text, at least 50% of characters should remain readable to maintain partial comprehension
+### Property 10: Profile reference in emotional narrative
+*For any* emotional trigger Psychic Grip, the narrative should reference the user's emotional state and profile data
 **Validates: Requirements 3.5**
 
-### Property 14: Thread freeze duration
-*For any* system trigger activation, the thread should be frozen for a duration between 5 and 8 seconds
+### Property 11: Thread freeze duration
+*For any* Vecna activation, the thread should be frozen for a duration between 5 and 8 seconds
 **Validates: Requirements 4.1**
 
-### Property 15: Input disabling during Psychic Grip
+### Property 12: Input disabling during Psychic Grip
 *For any* Psychic Grip activation, chat input should be disabled for all affected users during the freeze duration
 **Validates: Requirements 4.2**
 
-### Property 16: Profile data in narrative
+### Property 13: Profile data in narrative
 *For any* Psychic Grip narrative, the content should reference at least one element from the user profile (frequent rooms, repetitive actions, unfinished tasks, or behavioral patterns)
 **Validates: Requirements 4.3**
 
-### Property 17: Grip release message
+### Property 14: Grip release message
 *For any* Psychic Grip activation, after the duration expires, the system should send the message "[SYSTEM] Control returned to SysOp. Continue your session."
 **Validates: Requirements 4.5, 9.2**
 
-### Property 18: Visual effects application
-*For any* Vecna activation, appropriate visual effects should be applied (text corruption for emotional trigger, screen effects for Psychic Grip)
-**Validates: Requirements 5.1, 5.2**
+### Property 15: Visual effects application
+*For any* Vecna activation, appropriate visual effects should be applied (screen flicker, inverted colors, scanlines during Psychic Grip)
+**Validates: Requirements 5.1**
 
-### Property 19: Visual effects cleanup
+### Property 16: Visual effects cleanup
 *For any* Vecna deactivation, all special visual effects should be removed and normal rendering restored
-**Validates: Requirements 5.6, 9.5**
+**Validates: Requirements 5.5, 9.5**
 
-### Property 20: Processing order
+### Property 17: Processing order
 *For any* incoming message, the SysOp Brain should perform initial routing before Vecna trigger evaluation
 **Validates: Requirements 6.1, 6.2**
 
-### Property 21: Normal path continuation
+### Property 18: Normal path continuation
 *For any* message where Vecna triggers are not met, the system should continue normal SysOp Brain operation without interruption
 **Validates: Requirements 6.3**
 
-### Property 22: WebSocket compatibility
+### Property 19: WebSocket compatibility
 *For any* existing message type, the system should maintain backward compatibility with existing WebSocket communication
 **Validates: Requirements 6.5**
 
-### Property 23: Room visit tracking
+### Property 20: Room visit tracking
 *For any* room join event, the user profile should be updated to include that room in recent rooms and increment frequent rooms count
 **Validates: Requirements 7.1**
 
-### Property 24: Command tracking
+### Property 21: Command tracking
 *For any* command execution, the command should be recorded in the user profile command history with timestamp
 **Validates: Requirements 7.2**
 
-### Property 25: Board creation tracking
+### Property 22: Board creation tracking
 *For any* board creation, the system should record the board in the user profile with completion status
 **Validates: Requirements 7.3**
 
-### Property 26: Deviation calculation
-*For any* user activity, the system should calculate deviation metrics from the user's baseline activity profile
-**Validates: Requirements 7.4**
-
-### Property 27: Read-only profile access
+### Property 23: Read-only profile access
 *For any* Vecna access to user profile data, the profile should not be modified (read-only access)
 **Validates: Requirements 7.5**
 
-### Property 28: Gemini API integration
+### Property 24: Gemini API integration
 *For any* SysOp Brain room suggestion, Vecna hostile response, or Psychic Grip narrative, the system should call the Gemini 2.5 Flash API
 **Validates: Requirements 8.1, 8.2, 8.3**
 
-### Property 29: API error handling
+### Property 25: API error handling
 *For any* Gemini API error, the system should handle the error gracefully and fall back to SysOp Brain control without crashing
 **Validates: Requirements 8.4**
 
-### Property 30: Secure credential storage
+### Property 26: Secure credential storage
 *For any* Gemini API configuration, credentials should be loaded from environment variables, not hardcoded
 **Validates: Requirements 8.5**
 
-### Property 31: Vecna message prefix
+### Property 27: Vecna message prefix
 *For any* Vecna message, the content should be prefixed with "[VECNA]" tag
 **Validates: Requirements 9.1**
 
-### Property 32: Corrupted text styling
-*For any* Vecna corrupted text, distinct CSS classes should be applied for visual differentiation
+### Property 28: Vecna message styling
+*For any* Vecna message, distinct CSS classes should be applied for visual differentiation
 **Validates: Requirements 9.3**
 
-### Property 33: Character animation
+### Property 29: Character animation
 *For any* Psychic Grip message, the text should be rendered with character-by-character animation
 **Validates: Requirements 9.4**
 
@@ -929,50 +846,36 @@ Unit tests will verify specific components and edge cases:
 
 #### Backend Unit Tests
 
-1. **Text Corruption Tests** (`test_vecna_corruption.py`)
-   - Test corruption with various corruption levels (0.0, 0.3, 0.5, 1.0)
-   - Test empty string handling
-   - Test special character preservation
-   - Test readability threshold
-
-2. **Sentiment Analysis Tests** (`test_sentiment.py`)
+1. **Sentiment Analysis Tests** (`test_sentiment.py`)
    - Test high-negative sentiment detection
    - Test neutral sentiment handling
    - Test positive sentiment handling
    - Test edge cases (empty string, special characters)
 
-3. **Pattern Detection Tests** (`test_pattern_detector.py`)
-   - Test spam detection with various message patterns
-   - Test command repetition detection
-   - Test anomaly detection with baseline deviations
-   - Test time window boundaries
-
-4. **User Profile Tests** (`test_user_profile.py`)
+2. **User Profile Tests** (`test_user_profile.py`)
    - Test profile creation and initialization
    - Test room visit recording
    - Test command history tracking
    - Test board creation tracking
-   - Test deviation calculation
 
-5. **Gemini Service Tests** (`test_gemini_service.py`)
+3. **Gemini Service Tests** (`test_gemini_service.py`)
    - Test API call formatting
    - Test error handling
-   - Test prompt generation
+   - Test prompt generation for Psychic Grip narratives
    - Test response parsing
 
 #### Frontend Unit Tests
 
 1. **Vecna Effects Tests** (`test_vecna_effects.js`)
-   - Test text corruption display
    - Test Psychic Grip activation
-   - Test visual effects application
+   - Test visual effects application (flicker, inverted colors, scanlines, static)
    - Test cleanup after deactivation
 
 2. **Vecna Handler Tests** (`test_vecna_handler.js`)
-   - Test emotional trigger handling
-   - Test Psychic Grip handling
-   - Test message formatting
-   - Test state management
+   - Test Psychic Grip handling (both emotional and system triggers)
+   - Test message formatting with [VECNA] prefix
+   - Test state management and input disabling
+   - Test character-by-character animation
 
 ### Property-Based Testing
 
@@ -995,40 +898,40 @@ Property-based tests will verify universal properties across many inputs using *
    - Verify high-negative triggers Vecna
    - **Feature: vecna-adversarial-ai, Property 6: Emotional trigger activation**
 
-4. **Property Test: Text corruption application** (`test_properties.py`)
-   - Generate random messages
-   - Verify corruption is applied to emotional triggers
-   - **Feature: vecna-adversarial-ai, Property 11: Text corruption application**
+4. **Property Test: Psychic Grip for emotional triggers** (`test_properties.py`)
+   - Generate random emotional triggers
+   - Verify Psychic Grip is activated with 5-8 second freeze
+   - **Feature: vecna-adversarial-ai, Property 11: Psychic Grip for emotional triggers**
 
-5. **Property Test: Partial readability preservation** (`test_properties.py`)
-   - Generate random text for corruption
-   - Verify at least 50% characters remain readable
-   - **Feature: vecna-adversarial-ai, Property 13: Partial readability preservation**
+5. **Property Test: Hostile but not offensive tone** (`test_properties.py`)
+   - Generate random emotional trigger narratives
+   - Verify tone is hostile but not offensive or abusive
+   - **Feature: vecna-adversarial-ai, Property 9: Hostile but not offensive tone**
 
 6. **Property Test: Thread freeze duration** (`test_properties.py`)
-   - Generate random system triggers
+   - Generate random emotional triggers
    - Verify freeze duration is between 5-8 seconds
-   - **Feature: vecna-adversarial-ai, Property 14: Thread freeze duration**
+   - **Feature: vecna-adversarial-ai, Property 11: Thread freeze duration**
 
 7. **Property Test: Profile data in narrative** (`test_properties.py`)
    - Generate random user profiles
    - Verify Psychic Grip narratives reference profile data
-   - **Feature: vecna-adversarial-ai, Property 16: Profile data in narrative**
+   - **Feature: vecna-adversarial-ai, Property 13: Profile data in narrative**
 
 8. **Property Test: Room visit tracking** (`test_properties.py`)
    - Generate random room join events
    - Verify profile is updated correctly
-   - **Feature: vecna-adversarial-ai, Property 23: Room visit tracking**
+   - **Feature: vecna-adversarial-ai, Property 20: Room visit tracking**
 
 9. **Property Test: Read-only profile access** (`test_properties.py`)
    - Generate random Vecna activations
    - Verify profile is not modified by Vecna
-   - **Feature: vecna-adversarial-ai, Property 27: Read-only profile access**
+   - **Feature: vecna-adversarial-ai, Property 23: Read-only profile access**
 
 10. **Property Test: Vecna message prefix** (`test_properties.py`)
     - Generate random Vecna messages
     - Verify all contain "[VECNA]" prefix
-    - **Feature: vecna-adversarial-ai, Property 31: Vecna message prefix**
+    - **Feature: vecna-adversarial-ai, Property 27: Vecna message prefix**
 
 ### Integration Testing
 
@@ -1037,21 +940,18 @@ Integration tests will verify end-to-end workflows:
 1. **Full Emotional Trigger Flow**
    - Send high-negative message
    - Verify Vecna activation
-   - Verify corrupted response
+   - Verify Psychic Grip freeze (5-8 seconds)
+   - Verify cryptic narrative generation
    - Verify control return to SysOp
 
-2. **Full Psychic Grip Flow**
-   - Trigger spam detection
-   - Verify thread freeze
-   - Verify narrative generation
-   - Verify grip release
 
-3. **Profile Tracking Integration**
+
+2. **Profile Tracking Integration**
    - Perform various user actions
    - Verify profile updates
    - Verify Vecna can access profile data
 
-4. **Gemini API Integration**
+3. **Gemini API Integration**
    - Test SysOp Brain suggestions
    - Test Vecna hostile responses
    - Test Psychic Grip narratives
@@ -1092,37 +992,19 @@ GEMINI_TEMPERATURE: float = 0.9  # Higher for creative/adversarial content
 GEMINI_MAX_TOKENS: int = 500
 ```
 
-### Text Corruption Algorithm
+### Vecna Tone Guidelines
 
-The text corruption algorithm will use a combination of:
-- Character substitution (a→@, e→3, i→1, o→0, s→$)
-- Random character deletion
-- Case randomization
-- Partial word garbling
+The Vecna narrative should embody the character from Stranger Things:
+- **Hostile but not offensive**: Menacing and unsettling, but never abusive or using profanity
+- **Cryptic and observant**: References user behavior patterns in mysterious ways
+- **Psychologically probing**: Comments on frustrations, repetitions, and unfinished tasks
+- **Ominous tone**: Uses ellipses, dramatic pauses, and foreboding language
 
-```python
-def corrupt_text(text: str, corruption_level: float = 0.3) -> str:
-    """
-    Apply text corruption while maintaining partial readability.
-    
-    Algorithm:
-    1. Identify corruption candidates (skip spaces, punctuation)
-    2. Apply substitution map to random subset
-    3. Randomly delete characters
-    4. Randomize case
-    5. Ensure readability threshold (50% minimum)
-    """
-    substitution_map = {
-        'a': '@', 'A': '@',
-        'e': '3', 'E': '3',
-        'i': '1', 'I': '1',
-        'o': '0', 'O': '0',
-        's': '$', 'S': '$',
-        't': '7', 'T': '7'
-    }
-    
-    # Implementation details...
-```
+Example phrases:
+- "I see you return to [room name]... again and again..."
+- "Your frustration grows with each failed attempt..."
+- "So many tasks begun, so few completed..."
+- "You seek answers in places you've already searched..."
 
 ### Psychic Grip Timing
 
@@ -1142,10 +1024,9 @@ Visual effects will be implemented using CSS animations and JavaScript DOM manip
 
 ```css
 /* Vecna-specific CSS classes */
-.vecna-corrupted {
+.vecna-message {
     color: #ff3333;
     text-shadow: 0 0 10px #ff3333, 0 0 20px #ff0000;
-    animation: glitch 0.3s infinite;
 }
 
 .vecna-psychic-grip {
@@ -1167,15 +1048,6 @@ Visual effects will be implemented using CSS animations and JavaScript DOM manip
     animation: scanline-move 8s linear infinite;
 }
 
-@keyframes glitch {
-    0% { transform: translate(0); }
-    20% { transform: translate(-2px, 2px); }
-    40% { transform: translate(-2px, -2px); }
-    60% { transform: translate(2px, 2px); }
-    80% { transform: translate(2px, -2px); }
-    100% { transform: translate(0); }
-}
-
 @keyframes screen-flicker {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.8; }
@@ -1192,12 +1064,13 @@ Visual effects will be implemented using CSS animations and JavaScript DOM manip
 New WebSocket message types for Vecna:
 
 ```javascript
-// Emotional trigger message
+// Emotional trigger message (Psychic Grip)
 {
-    type: 'vecna_emotional',
-    content: '[VECNA] wHy c@n\'t u fig. tH1s out, humaN?',
-    original_message: 'Why is this code not working?',
-    corruption_level: 0.3,
+    type: 'vecna_psychic_grip',
+    content: '[VECNA] Your frustration... I can taste it. You return to this broken code again and again, seeking answers that elude you...',
+    duration: 6,
+    effects: ['flicker', 'inverted', 'scanlines', 'static'],
+    trigger_type: 'emotional',
     timestamp: '2025-12-01T12:00:00Z'
 }
 
@@ -1290,8 +1163,6 @@ GEMINI_MAX_TOKENS=500
 # Vecna configuration
 VECNA_ENABLED=true
 VECNA_EMOTIONAL_THRESHOLD=0.7
-VECNA_SPAM_THRESHOLD=3
-VECNA_COMMAND_REPEAT_THRESHOLD=3
 VECNA_MAX_ACTIVATIONS_PER_HOUR=5
 VECNA_COOLDOWN_SECONDS=60
 

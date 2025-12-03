@@ -32,7 +32,6 @@ from backend.vecna.gemini_service import GeminiService, GeminiServiceError
 from backend.sysop.brain import SysOpBrain
 from backend.vecna.module import VecnaModule, TriggerType
 from backend.vecna.sentiment import SentimentAnalyzer
-from backend.vecna.pattern_detector import PatternDetector
 from backend.vecna.user_profile import UserProfileService
 from backend.vecna.rate_limiter import VecnaRateLimiter
 
@@ -91,7 +90,6 @@ async def lifespan(app: FastAPI):
             
             # Initialize Vecna Module components
             app.state.sentiment_analyzer = SentimentAnalyzer()
-            app.state.pattern_detector = PatternDetector()
             
             # Note: VecnaRateLimiter will be initialized per-request with database session
             # Store configuration for later use
@@ -104,7 +102,6 @@ async def lifespan(app: FastAPI):
             app.state.vecna_module = VecnaModule(
                 gemini_service=app.state.gemini_service,
                 sentiment_analyzer=app.state.sentiment_analyzer,
-                pattern_detector=app.state.pattern_detector,
                 rate_limiter=None  # Will be set per-request
             )
             print("Vecna Module initialized")
@@ -806,8 +803,7 @@ async def websocket_endpoint(
                         vecna_trigger = await vecna_module.evaluate_triggers(
                             user_id=user.id,
                             message=content,
-                            user_profile=user_profile,
-                            recent_messages=recent_messages
+                            user_profile=user_profile
                         )
                         
                         # Step 2: Conditional Vecna activation
@@ -815,7 +811,7 @@ async def websocket_endpoint(
                             vecna_activated = True
                             
                             if vecna_trigger.trigger_type == TriggerType.EMOTIONAL:
-                                # Execute emotional trigger (text corruption + hostile response)
+                                # Execute emotional trigger (Psychic Grip with cryptic narrative)
                                 vecna_response = await vecna_module.execute_emotional_trigger(
                                     user_id=user.id,
                                     username=user.username,
@@ -823,11 +819,11 @@ async def websocket_endpoint(
                                     user_profile=user_profile
                                 )
                                 
-                                # Send Vecna emotional trigger message
+                                # Send Vecna Psychic Grip message (emotional trigger)
                                 await app.state.websocket_manager.send_to_user(websocket, {
-                                    "type": "vecna_emotional",
+                                    "type": "vecna_psychic_grip",
                                     "content": vecna_response.content,
-                                    "corrupted_text": vecna_response.corrupted_text,
+                                    "freeze_duration": vecna_response.freeze_duration,
                                     "visual_effects": vecna_response.visual_effects,
                                     "timestamp": vecna_response.timestamp.isoformat()
                                 })

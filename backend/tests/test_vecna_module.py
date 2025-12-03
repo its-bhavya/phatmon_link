@@ -18,7 +18,6 @@ from backend.vecna.module import (
     corrupt_text
 )
 from backend.vecna.sentiment import SentimentAnalyzer
-from backend.vecna.pattern_detector import PatternDetector
 from backend.vecna.gemini_service import GeminiService
 from backend.vecna.user_profile import UserProfile
 
@@ -41,23 +40,11 @@ def sentiment_analyzer():
 
 
 @pytest.fixture
-def pattern_detector():
-    """Create a pattern detector."""
-    return PatternDetector(
-        spam_threshold=3,
-        spam_window=5,
-        command_repeat_threshold=3,
-        command_repeat_window=10
-    )
-
-
-@pytest.fixture
-def vecna_module(mock_gemini_service, sentiment_analyzer, pattern_detector):
+def vecna_module(mock_gemini_service, sentiment_analyzer):
     """Create a VecnaModule instance."""
     return VecnaModule(
         gemini_service=mock_gemini_service,
         sentiment_analyzer=sentiment_analyzer,
-        pattern_detector=pattern_detector,
         psychic_grip_duration_range=(5, 8)
     )
 
@@ -92,7 +79,6 @@ class TestVecnaModuleInitialization:
         assert vecna_module is not None
         assert vecna_module.gemini is not None
         assert vecna_module.sentiment is not None
-        assert vecna_module.pattern_detector is not None
         assert vecna_module.psychic_grip_duration == (5, 8)
 
 
@@ -138,58 +124,15 @@ class TestTriggerEvaluation:
         
         assert trigger is None
     
-    @pytest.mark.asyncio
-    async def test_spam_trigger_detection(self, vecna_module, user_profile):
-        """Test that spam patterns trigger system response."""
-        message = "test"
-        now = datetime.utcnow()
-        recent_messages = [
-            ("test", now),
-            ("test", now - timedelta(seconds=1)),
-            ("test", now - timedelta(seconds=2))
-        ]
-        
-        trigger = await vecna_module.evaluate_triggers(
-            user_id=1,
-            message=message,
-            user_profile=user_profile,
-            recent_messages=recent_messages
-        )
-        
-        assert trigger is not None
-        assert trigger.trigger_type == TriggerType.SYSTEM
-        assert "spam" in trigger.reason.lower()
-    
-    @pytest.mark.asyncio
-    async def test_command_repetition_trigger(self, vecna_module):
-        """Test that command repetition triggers system response."""
-        now = datetime.utcnow()
-        profile = UserProfile(
-            user_id=1,
-            command_history=[
-                ("/help", now),
-                ("/help", now - timedelta(seconds=5)),
-                ("/help", now - timedelta(seconds=10))
-            ]
-        )
-        
-        trigger = await vecna_module.evaluate_triggers(
-            user_id=1,
-            message="/help",
-            user_profile=profile
-        )
-        
-        assert trigger is not None
-        assert trigger.trigger_type == TriggerType.SYSTEM
-        assert "command repetition" in trigger.reason.lower()
+
 
 
 class TestEmotionalTriggerExecution:
-    """Test emotional trigger execution."""
+    """Test emotional trigger execution (Psychic Grip)."""
     
     @pytest.mark.asyncio
     async def test_execute_emotional_trigger(self, vecna_module, user_profile):
-        """Test emotional trigger execution returns proper response."""
+        """Test emotional trigger execution returns Psychic Grip response."""
         message = "This is terrible!"
         
         response = await vecna_module.execute_emotional_trigger(
@@ -202,29 +145,16 @@ class TestEmotionalTriggerExecution:
         assert response is not None
         assert response.trigger_type == TriggerType.EMOTIONAL
         assert response.content.startswith("[VECNA]")
-        assert response.corrupted_text is not None
-        assert 'text_corruption' in response.visual_effects
-    
-    @pytest.mark.asyncio
-    async def test_emotional_trigger_corrupts_text(self, vecna_module, user_profile):
-        """Test that emotional trigger corrupts the message text."""
-        message = "Hello World"
-        
-        response = await vecna_module.execute_emotional_trigger(
-            user_id=1,
-            username="testuser",
-            message=message,
-            user_profile=user_profile
-        )
-        
-        # Corrupted text should be different from original
-        assert response.corrupted_text != message
-        # But should have same length
-        assert len(response.corrupted_text) == len(message)
+        assert response.freeze_duration is not None
+        assert 5 <= response.freeze_duration <= 8
+        assert 'flicker' in response.visual_effects
+        assert 'inverted' in response.visual_effects
+        assert 'scanlines' in response.visual_effects
+        assert 'static' in response.visual_effects
     
     @pytest.mark.asyncio
     async def test_emotional_trigger_calls_gemini(self, vecna_module, user_profile):
-        """Test that emotional trigger calls Gemini service."""
+        """Test that emotional trigger calls Gemini service for Psychic Grip narrative."""
         message = "This is awful!"
         
         response = await vecna_module.execute_emotional_trigger(
@@ -234,15 +164,15 @@ class TestEmotionalTriggerExecution:
             user_profile=user_profile
         )
         
-        # Verify Gemini was called
-        vecna_module.gemini.generate_hostile_response.assert_called_once()
+        # Verify Gemini was called for Psychic Grip narrative
+        vecna_module.gemini.generate_psychic_grip_narrative.assert_called_once()
         assert response.content.startswith("[VECNA]")
     
     @pytest.mark.asyncio
     async def test_emotional_trigger_fallback_on_error(self, vecna_module, user_profile):
         """Test that emotional trigger has fallback when Gemini fails."""
         # Make Gemini service raise an error
-        vecna_module.gemini.generate_hostile_response.side_effect = Exception("API Error")
+        vecna_module.gemini.generate_psychic_grip_narrative.side_effect = Exception("API Error")
         
         message = "This is terrible!"
         
@@ -253,10 +183,11 @@ class TestEmotionalTriggerExecution:
             user_profile=user_profile
         )
         
-        # Should still return a response
+        # Should still return a response with Psychic Grip
         assert response is not None
         assert response.content.startswith("[VECNA]")
-        assert response.corrupted_text is not None
+        assert response.freeze_duration is not None
+        assert 5 <= response.freeze_duration <= 8
 
 
 class TestPsychicGripExecution:

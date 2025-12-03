@@ -8,14 +8,15 @@
 
 /* Root variables - Stranger Things inspired theme */
 :root {
-    --terminal-red: #ff0000;
-    --terminal-dark-red: #cc0000;
-    --terminal-orange: #ff6600;
-    --terminal-bg: #000000;
-    --terminal-yellow: #ffaa00;
-    --terminal-white: #ffffff;
-    --terminal-gray: #666666;
-    --glow-intensity: 8px;
+    --terminal-red: #d32f2f;
+    --terminal-dark-red: #8b0000;
+    --terminal-orange: #ff6b35;
+    --terminal-bg: #0a0a0a;
+    --terminal-yellow: #ffd700;
+    --terminal-white: #e0e0e0;
+    --terminal-gray: #757575;
+    --terminal-upside-down: #1a0505;
+    --glow-intensity: 0px;
 }
 
 /* Base terminal screen with CRT curvature */
@@ -71,23 +72,12 @@ body,
     font-smooth: never;
 }
 
-/* Red phosphor glow effect on all text */
+/* Clear text without glow for better readability */
 .terminal-screen,
 .chat-display,
 .command-line-bar {
-    color: var(--terminal-red);
-    /* Red phosphor glow using text-shadow */
-    text-shadow: 
-        0 0 var(--glow-intensity) var(--terminal-red),
-        0 0 calc(var(--glow-intensity) * 2) var(--terminal-red);
-}
-
-/* Enhanced glow for chat display text */
-.chat-display {
-    text-shadow: 
-        0 0 5px var(--terminal-red),
-        0 0 10px var(--terminal-red),
-        0 0 15px rgba(255, 0, 0, 0.5);
+    color: var(--terminal-white);
+    text-shadow: none;
 }
 
 /* Command line bar with fixed bottom position */
@@ -96,16 +86,13 @@ body,
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: var(--terminal-bg);
-    border-top: 2px solid var(--terminal-red);
+    background-color: var(--terminal-upside-down);
+    border-top: 2px solid var(--terminal-dark-red);
     padding: 15px 20px;
     display: flex;
     align-items: center;
     z-index: 100;
-    /* Add glow to border */
-    box-shadow: 
-        0 -2px 10px rgba(255, 0, 0, 0.4),
-        inset 0 0 20px rgba(255, 0, 0, 0.05);
+    box-shadow: 0 -2px 10px rgba(139, 0, 0, 0.3);
 }
 
 /* Command prompt symbol */
@@ -114,9 +101,7 @@ body,
     margin-right: 10px;
     font-weight: bold;
     font-size: 19px;
-    text-shadow: 
-        0 0 5px var(--terminal-red),
-        0 0 10px var(--terminal-red);
+    text-shadow: none;
 }
 
 /* Command input field */
@@ -124,18 +109,16 @@ body,
     flex: 1;
     background: transparent;
     border: none;
-    color: var(--terminal-red);
+    color: var(--terminal-white);
     font-family: 'VT323', 'Courier New', monospace;
     font-size: 19px;
     outline: none;
     caret-color: var(--terminal-red);
-    text-shadow: 
-        0 0 5px var(--terminal-red),
-        0 0 10px var(--terminal-red);
+    text-shadow: none;
 }
 
 .command-input::placeholder {
-    color: var(--terminal-dark-red);
+    color: var(--terminal-gray);
     opacity: 0.6;
 }
 
@@ -148,9 +131,7 @@ body,
     margin-left: 2px;
     /* Blinking cursor with smooth animation */
     animation: cursor-blink 1s step-end infinite;
-    box-shadow: 
-        0 0 5px var(--terminal-red),
-        0 0 10px var(--terminal-red);
+    box-shadow: none;
 }
 
 @keyframes cursor-blink {
@@ -170,37 +151,29 @@ body,
     font-size: 17px;
 }
 
-/* System messages in orange with glow */
+/* System messages in orange */
 .message.system {
     color: var(--terminal-orange);
-    text-shadow: 
-        0 0 5px var(--terminal-orange),
-        0 0 10px var(--terminal-orange);
+    text-shadow: none;
 }
 
-/* Error messages in bright red with glow */
+/* Error messages in bright red */
 .message.error {
-    color: #ff3333;
-    text-shadow: 
-        0 0 5px #ff3333,
-        0 0 10px #ff3333;
+    color: var(--terminal-red);
+    text-shadow: none;
 }
 
 /* Timestamp styling */
 .timestamp {
     color: var(--terminal-gray);
-    text-shadow: 
-        0 0 3px var(--terminal-gray),
-        0 0 6px var(--terminal-gray);
+    text-shadow: none;
 }
 
 /* Username styling */
 .username {
     color: var(--terminal-yellow);
     font-weight: bold;
-    text-shadow: 
-        0 0 5px var(--terminal-yellow),
-        0 0 10px var(--terminal-yellow);
+    text-shadow: none;
 }
 
 /* Screen glow effect - outer glow around entire terminal */
