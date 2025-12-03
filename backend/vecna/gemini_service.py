@@ -10,6 +10,7 @@ Requirements: 8.1, 8.2, 8.3, 8.4, 8.5
 """
 
 import logging
+import time
 from typing import Optional, Dict, Any
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
@@ -40,7 +41,8 @@ class GeminiService:
         api_key: str,
         model: str = "gemini-2.0-flash",
         temperature: float = 0.5,
-        max_tokens: int = 500
+        max_tokens: int = 500,
+        monitor: Optional[Any] = None
     ):
         """
         Initialize Gemini service.
@@ -50,6 +52,7 @@ class GeminiService:
             model: Model name (default: gemini-2.0-flash-exp)
             temperature: Generation temperature (0.0-2.0, default: 0.9)
             max_tokens: Maximum tokens to generate (default: 500)
+            monitor: Optional VecnaMonitor for logging API calls
         
         Raises:
             GeminiServiceError: If API key is missing or initialization fails
@@ -63,6 +66,7 @@ class GeminiService:
         self.model_name = model
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.monitor = monitor
         
         try:
             # Configure the API
@@ -86,7 +90,8 @@ class GeminiService:
     async def generate_sysop_suggestion(
         self,
         user_profile: Dict[str, Any],
-        context: str
+        context: str,
+        user_id: Optional[int] = None
     ) -> str:
         """
         Generate SysOp Brain room suggestion or response.
@@ -94,6 +99,7 @@ class GeminiService:
         Args:
             user_profile: User profile data including interests and activity
             context: Current conversation context
+            user_id: User ID for logging (optional)
         
         Returns:
             Generated suggestion text
@@ -106,7 +112,7 @@ class GeminiService:
         try:
             prompt = self._create_sysop_prompt(user_profile, context)
             
-            response = await self._generate_content(prompt)
+            response = await self._generate_content(prompt, operation="sysop_suggestion", user_id=user_id)
             
             logger.info("Generated SysOp suggestion")
             return response
@@ -119,7 +125,8 @@ class GeminiService:
     async def generate_hostile_response(
         self,
         user_message: str,
-        user_profile: Dict[str, Any]
+        user_profile: Dict[str, Any],
+        user_id: Optional[int] = None
     ) -> str:
         """
         Generate Vecna hostile response to user message.
@@ -130,6 +137,7 @@ class GeminiService:
         Args:
             user_message: The user's original message
             user_profile: User profile data for personalization
+            user_id: User ID for logging (optional)
         
         Returns:
             Generated hostile response text
@@ -142,7 +150,7 @@ class GeminiService:
         try:
             prompt = self._create_adversarial_prompt(user_message, user_profile)
             
-            response = await self._generate_content(prompt)
+            response = await self._generate_content(prompt, operation="hostile_response", user_id=user_id)
             
             logger.info("Generated Vecna hostile response")
             return response
@@ -154,7 +162,8 @@ class GeminiService:
     
     async def generate_psychic_grip_narrative(
         self,
-        user_profile: Dict[str, Any]
+        user_profile: Dict[str, Any],
+        user_id: Optional[int] = None
     ) -> str:
         """
         Generate cryptic Psychic Grip narrative based on user behavior.
@@ -167,6 +176,7 @@ class GeminiService:
         
         Args:
             user_profile: User profile data with behavioral history
+            user_id: User ID for logging (optional)
         
         Returns:
             Generated narrative text
@@ -179,7 +189,7 @@ class GeminiService:
         try:
             prompt = self._create_psychic_grip_prompt(user_profile)
             
-            response = await self._generate_content(prompt)
+            response = await self._generate_content(prompt, operation="psychic_grip", user_id=user_id)
             
             logger.info("Generated Psychic Grip narrative")
             return response
@@ -189,12 +199,14 @@ class GeminiService:
             # Fallback to template-based narrative
             return self._fallback_psychic_grip_narrative(user_profile)
     
-    async def _generate_content(self, prompt: str) -> str:
+    async def _generate_content(self, prompt: str, operation: str = "unknown", user_id: Optional[int] = None) -> str:
         """
-        Generate content from Gemini API.
+        Generate content from Gemini API with monitoring.
         
         Args:
             prompt: The prompt to send to the API
+            operation: Type of operation for logging
+            user_id: User ID for logging (if applicable)
         
         Returns:
             Generated text content
@@ -204,17 +216,48 @@ class GeminiService:
         
         Requirements: 8.4
         """
+        start_time = time.time()
+        success = False
+        error_message = None
+        
         try:
             # Generate content
             response = self.model.generate_content(prompt)
             
             # Extract text from response
             if response and response.text:
+                success = True
+                duration_ms = (time.time() - start_time) * 1000
+                
+                # Log successful API call
+                if self.monitor:
+                    self.monitor.log_gemini_api_call(
+                        operation=operation,
+                        user_id=user_id,
+                        success=True,
+                        duration_ms=duration_ms,
+                        token_count=len(response.text.split())  # Rough estimate
+                    )
+                
                 return response.text.strip()
             else:
-                raise GeminiServiceError("Empty response from Gemini API")
+                error_message = "Empty response from Gemini API"
+                raise GeminiServiceError(error_message)
         
         except Exception as e:
+            error_message = str(e)
+            duration_ms = (time.time() - start_time) * 1000
+            
+            # Log failed API call
+            if self.monitor:
+                self.monitor.log_gemini_api_call(
+                    operation=operation,
+                    user_id=user_id,
+                    success=False,
+                    duration_ms=duration_ms,
+                    error_message=error_message
+                )
+            
             logger.error(f"Gemini API error: {e}")
             raise GeminiServiceError(f"API call failed: {e}")
     

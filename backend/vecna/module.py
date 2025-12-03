@@ -17,6 +17,7 @@ from backend.vecna.pattern_detector import PatternDetector
 from backend.vecna.gemini_service import GeminiService
 from backend.vecna.user_profile import UserProfile
 from backend.vecna.rate_limiter import VecnaRateLimiter, VecnaRateLimitResult
+from backend.vecna.monitoring import VecnaMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +196,7 @@ class VecnaModule:
         sentiment_analyzer: SentimentAnalyzer,
         pattern_detector: PatternDetector,
         rate_limiter: Optional[VecnaRateLimiter] = None,
+        monitor: Optional[VecnaMonitor] = None,
         psychic_grip_duration_range: tuple = (5, 8)
     ):
         """
@@ -205,12 +207,14 @@ class VecnaModule:
             sentiment_analyzer: Service for sentiment analysis
             pattern_detector: Service for pattern detection
             rate_limiter: Optional rate limiter for abuse prevention
+            monitor: Optional monitoring service for logging and metrics
             psychic_grip_duration_range: Tuple of (min, max) seconds for Psychic Grip
         """
         self.gemini = gemini_service
         self.sentiment = sentiment_analyzer
         self.pattern_detector = pattern_detector
         self.rate_limiter = rate_limiter
+        self.monitor = monitor
         self.psychic_grip_duration = psychic_grip_duration_range
         
         logger.info("VecnaModule initialized")
@@ -320,6 +324,7 @@ class VecnaModule:
     async def execute_emotional_trigger(
         self,
         user_id: int,
+        username: str,
         message: str,
         user_profile: UserProfile
     ) -> VecnaResponse:
@@ -333,6 +338,7 @@ class VecnaModule:
         
         Args:
             user_id: User database ID
+            username: Username for logging
             message: User's original message
             user_profile: UserProfile object for personalization
         
@@ -341,6 +347,8 @@ class VecnaModule:
         
         Requirements: 3.1, 3.2, 3.3, 3.4
         """
+        start_time = datetime.utcnow()
+        
         try:
             # Apply text corruption to the message
             corruption_level = 0.3  # 30% corruption
@@ -357,11 +365,15 @@ class VecnaModule:
             # Generate hostile response using Gemini
             hostile_response = await self.gemini.generate_hostile_response(
                 user_message=message,
-                user_profile=profile_dict
+                user_profile=profile_dict,
+                user_id=user_id
             )
             
             # Prefix with [VECNA] tag
             vecna_content = f"[VECNA] {hostile_response}"
+            
+            # Calculate duration
+            duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
             
             logger.info(f"Vecna emotional trigger executed for user {user_id}")
             
@@ -375,6 +387,18 @@ class VecnaModule:
                     response_content=vecna_content
                 )
             
+            # Log activation to monitoring (if monitor is configured)
+            if self.monitor:
+                self.monitor.log_activation(
+                    user_id=user_id,
+                    username=username,
+                    trigger_type="emotional",
+                    reason="High-negative sentiment in message",
+                    intensity=0.8,
+                    response_content=vecna_content,
+                    duration_ms=duration_ms
+                )
+            
             return VecnaResponse(
                 trigger_type=TriggerType.EMOTIONAL,
                 content=vecna_content,
@@ -385,6 +409,22 @@ class VecnaModule:
         
         except Exception as e:
             logger.error(f"Error executing emotional trigger: {e}")
+            
+            # Calculate duration even for errors
+            duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
+            
+            # Log error to monitoring
+            if self.monitor:
+                self.monitor.log_activation(
+                    user_id=user_id,
+                    username=username,
+                    trigger_type="emotional",
+                    reason=f"Error: {str(e)}",
+                    intensity=0.8,
+                    response_content="[VECNA] sYst3m m@lfunct10n...",
+                    duration_ms=duration_ms
+                )
+            
             # Fallback response
             return VecnaResponse(
                 trigger_type=TriggerType.EMOTIONAL,
@@ -397,6 +437,7 @@ class VecnaModule:
     async def execute_psychic_grip(
         self,
         user_id: int,
+        username: str,
         user_profile: UserProfile
     ) -> VecnaResponse:
         """
@@ -409,6 +450,7 @@ class VecnaModule:
         
         Args:
             user_id: User database ID
+            username: Username for logging
             user_profile: UserProfile object with behavioral history
         
         Returns:
@@ -416,6 +458,8 @@ class VecnaModule:
         
         Requirements: 4.1, 4.3, 4.4
         """
+        start_time = datetime.utcnow()
+        
         try:
             # Determine random freeze duration
             freeze_duration = random.randint(
@@ -435,7 +479,8 @@ class VecnaModule:
             
             # Generate Psychic Grip narrative using Gemini
             narrative = await self.gemini.generate_psychic_grip_narrative(
-                user_profile=profile_dict
+                user_profile=profile_dict,
+                user_id=user_id
             )
             
             # Prefix with [VECNA] tag
@@ -443,6 +488,9 @@ class VecnaModule:
             
             # Define visual effects for Psychic Grip
             visual_effects = ['flicker', 'inverted', 'scanlines', 'static']
+            
+            # Calculate duration
+            duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
             
             logger.info(f"Vecna Psychic Grip executed for user {user_id}, duration: {freeze_duration}s")
             
@@ -456,6 +504,18 @@ class VecnaModule:
                     response_content=vecna_content
                 )
             
+            # Log activation to monitoring (if monitor is configured)
+            if self.monitor:
+                self.monitor.log_activation(
+                    user_id=user_id,
+                    username=username,
+                    trigger_type="system",
+                    reason="System trigger (spam/repetition/anomaly)",
+                    intensity=0.75,
+                    response_content=vecna_content,
+                    duration_ms=duration_ms
+                )
+            
             return VecnaResponse(
                 trigger_type=TriggerType.SYSTEM,
                 content=vecna_content,
@@ -466,6 +526,22 @@ class VecnaModule:
         
         except Exception as e:
             logger.error(f"Error executing Psychic Grip: {e}")
+            
+            # Calculate duration even for errors
+            duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
+            
+            # Log error to monitoring
+            if self.monitor:
+                self.monitor.log_activation(
+                    user_id=user_id,
+                    username=username,
+                    trigger_type="system",
+                    reason=f"Error: {str(e)}",
+                    intensity=0.75,
+                    response_content="[VECNA] ...1 s33 y0u w@nd3r...",
+                    duration_ms=duration_ms
+                )
+            
             # Fallback response
             freeze_duration = random.randint(5, 8)
             return VecnaResponse(

@@ -194,6 +194,7 @@ class TestEmotionalTriggerExecution:
         
         response = await vecna_module.execute_emotional_trigger(
             user_id=1,
+            username="testuser",
             message=message,
             user_profile=user_profile
         )
@@ -211,6 +212,7 @@ class TestEmotionalTriggerExecution:
         
         response = await vecna_module.execute_emotional_trigger(
             user_id=1,
+            username="testuser",
             message=message,
             user_profile=user_profile
         )
@@ -227,6 +229,7 @@ class TestEmotionalTriggerExecution:
         
         response = await vecna_module.execute_emotional_trigger(
             user_id=1,
+            username="testuser",
             message=message,
             user_profile=user_profile
         )
@@ -245,6 +248,7 @@ class TestEmotionalTriggerExecution:
         
         response = await vecna_module.execute_emotional_trigger(
             user_id=1,
+            username="testuser",
             message=message,
             user_profile=user_profile
         )
@@ -263,6 +267,7 @@ class TestPsychicGripExecution:
         """Test Psychic Grip execution returns proper response."""
         response = await vecna_module.execute_psychic_grip(
             user_id=1,
+            username="testuser",
             user_profile=user_profile
         )
         
@@ -284,6 +289,7 @@ class TestPsychicGripExecution:
         for _ in range(10):
             response = await vecna_module.execute_psychic_grip(
                 user_id=1,
+                username="testuser",
                 user_profile=user_profile
             )
             durations.append(response.freeze_duration)
@@ -298,6 +304,7 @@ class TestPsychicGripExecution:
         """Test that Psychic Grip calls Gemini service."""
         response = await vecna_module.execute_psychic_grip(
             user_id=1,
+            username="testuser",
             user_profile=user_profile
         )
         
@@ -313,6 +320,7 @@ class TestPsychicGripExecution:
         
         response = await vecna_module.execute_psychic_grip(
             user_id=1,
+            username="testuser",
             user_profile=user_profile
         )
         
@@ -399,6 +407,7 @@ class TestPsychicGripRelease:
         # Execute Psychic Grip
         response = await vecna_module.execute_psychic_grip(
             user_id=1,
+            username="testuser",
             user_profile=user_profile
         )
         
@@ -428,6 +437,7 @@ class TestPsychicGripRelease:
         """
         response = await vecna_module.execute_psychic_grip(
             user_id=1,
+            username="testuser",
             user_profile=user_profile
         )
         
@@ -455,6 +465,7 @@ class TestPsychicGripRelease:
         for _ in range(5):
             response = await vecna_module.execute_psychic_grip(
                 user_id=1,
+                username="testuser",
                 user_profile=user_profile
             )
             responses.append(response)

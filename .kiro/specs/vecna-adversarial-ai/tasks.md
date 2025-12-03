@@ -346,13 +346,19 @@
 
 
 
+
   - Add rate limiting for Vecna activations (max 5 per hour per user)
   - Implement cooldown period between activations (60 seconds)
   - Add activation logging to vecna_activations table
   - Implement admin controls to disable Vecna globally
   - _Requirements: Security considerations_
+-
 
-- [ ] 19. Add monitoring and logging for Vecna
+- [x] 19. Add monitoring and logging for Vecna
+
+
+
+
   - Log all Vecna activations with trigger type, reason, and intensity
   - Log Gemini API calls and errors
   - Add metrics for activation rates per user
