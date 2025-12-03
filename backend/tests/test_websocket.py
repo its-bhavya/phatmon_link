@@ -53,30 +53,11 @@ def override_get_db():
         db.close()
 
 
-# Create a test app with custom lifespan
-@asynccontextmanager
-async def app_lifespan(app: FastAPI):
-    """App lifespan - initializes services only (database managed by fixtures)."""
-    # Initialize services
-    app.state.room_service = RoomService()
-    app.state.room_service.create_default_rooms()
-    app.state.websocket_manager = WebSocketManager()
-    app.state.command_handler = CommandHandler(
-        app.state.room_service,
-        app.state.websocket_manager
-    )
-    
-    yield
-    
-    # No cleanup needed - handled by fixtures
-
-
-# Create test app
+# Create test app without lifespan (will be initialized in fixture)
 test_app = FastAPI(
     title="Phantom Link BBS - WebSocket Test",
     description="Test instance for WebSocket tests",
-    version="1.0.0",
-    lifespan=app_lifespan
+    version="1.0.0"
 )
 
 # Add CORS
@@ -104,17 +85,18 @@ def client():
     # Create tables in test database BEFORE creating the client
     Base.metadata.create_all(bind=engine)
     
-    # Manually initialize app state since lifespan may not run in tests
-    test_app.state.room_service = RoomService()
-    test_app.state.room_service.create_default_rooms()
-    test_app.state.websocket_manager = WebSocketManager()
-    test_app.state.command_handler = CommandHandler(
-        test_app.state.room_service,
-        test_app.state.websocket_manager
-    )
-    
     try:
         with TestClient(test_app) as test_client:
+            # Manually initialize app state on the client's app instance
+            # TestClient wraps the app, so we need to access it through client.app
+            test_client.app.state.room_service = RoomService()
+            test_client.app.state.room_service.create_default_rooms()
+            test_client.app.state.websocket_manager = WebSocketManager()
+            test_client.app.state.command_handler = CommandHandler(
+                test_client.app.state.room_service,
+                test_client.app.state.websocket_manager
+            )
+            
             yield test_client
     finally:
         # Drop tables after test

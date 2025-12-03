@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VecnaEffects Test</title>
+    <link rel="stylesheet" href="../css/terminal.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .terminal-screen {
+            background-color: #000;
+            padding: 20px;
+            min-height: 400px;
+            border: 2px solid var(--terminal-red);
+        }
+        
+        .chat-display {
+            margin-bottom: 20px;
+        }
+        
+        .test-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border: 2px solid var(--terminal-red);
+            z-index: 10000;
+        }
+        
+        .test-controls button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--terminal-red);
+            color: var(--terminal-red);
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        .test-controls button:hover {
+            background: var(--terminal-red);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-screen">
+        <div class="chat-display" id="chatDisplay">
+            <div class="message">
+                <span class="timestamp">[12:00:00]</span>
+                <span>Welcome to VecnaEffects Test</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-controls">
+        <h3 style="color: var(--terminal-red); margin-top: 0;">Test Controls</h3>
+        <button id="testCorruption">Test Text Corruption</button>
+        <button id="testPsychicGrip">Test Psychic Grip (5s)</button>
+        <button id="testFlickerOnly">Test Flicker Only</button>
+        <button id="testInvertedOnly">Test Inverted Only</button>
+        <button id="testScanlinesOnly">Test Scanlines Only</button>
+        <button id="testStaticOnly">Test Static Only</button>
+        <button id="endEffects">End All Effects</button>
+    </div>
+    
+    <script type="module">
+        import { VecnaEffects } from './vecnaEffects.js';
+        
+        const chatDisplay = document.getElementById('chatDisplay');
+        const vecnaEffects = new VecnaEffects(chatDisplay);
+        
+        // Test text corruption
+        document.getElementById('testCorruption').addEventListener('click', () => {
+            const corruptedMessage = vecnaEffects.applyTextCorruption('wHy c@n\'t u fig. tH1s out, humaN?');
+            chatDisplay.appendChild(corruptedMessage);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+        });
+        
+        // Test full Psychic Grip
+        document.getElementById('testPsychicGrip').addEventListener('click', () => {
+            const message = document.createElement('div');
+            message.className = 'message system';
+            message.innerHTML = '<span class="timestamp">[12:00:00]</span> <span>[VECNA] I see you return to the Archives... again and again...</span>';
+            chatDisplay.appendChild(message);
+            
+            vecnaEffects.startPsychicGrip(5, ['flicker', 'inverted', 'scanlines', 'static']);
+        });
+        
+        // Test individual effects
+        document.getElementById('testFlickerOnly').addEventListener('click', () => {
+            vecnaEffects.startPsychicGrip(3, ['flicker']);
+        });
+        
+        document.getElementById('testInvertedOnly').addEventListener('click', () => {
+            vecnaEffects.startPsychicGrip(3, ['inverted']);
+        });
+        
+        document.getElementById('testScanlinesOnly').addEventListener('click', () => {
+            vecnaEffects.startPsychicGrip(3, ['scanlines']);
+        });
+        
+        document.getElementById('testStaticOnly').addEventListener('click', () => {
+            vecnaEffects.startPsychicGrip(3, ['static']);
+        });
+        
+        // End all effects manually
+        document.getElementById('endEffects').addEventListener('click', () => {
+            vecnaEffects.endPsychicGrip();
+        });
+        
+        console.log('VecnaEffects test page loaded');
+        console.log('VecnaEffects instance:', vecnaEffects);
+    </script>
+</body>
+</html>

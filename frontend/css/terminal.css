@@ -634,3 +634,184 @@ body {
         animation: none;
     }
 }
+
+/* ============================================
+   VECNA EFFECTS STYLES
+   Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 9.3
+   ============================================ */
+
+/* Vecna corrupted text styling (Requirements 5.1, 9.3) */
+.vecna-corrupted {
+    color: #ff3333 !important;
+    text-shadow: 
+        0 0 10px #ff3333,
+        0 0 20px #ff0000,
+        0 0 30px #ff0000 !important;
+    animation: glitch 0.3s infinite;
+}
+
+.vecna-text {
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* Glitch animation for corrupted text */
+@keyframes glitch {
+    0% { 
+        transform: translate(0);
+        text-shadow: 
+            0 0 10px #ff3333,
+            0 0 20px #ff0000,
+            0 0 30px #ff0000;
+    }
+    20% { 
+        transform: translate(-2px, 2px);
+        text-shadow: 
+            2px 0 10px #ff3333,
+            -2px 0 20px #ff0000,
+            0 0 30px #ff0000;
+    }
+    40% { 
+        transform: translate(-2px, -2px);
+        text-shadow: 
+            -2px 0 10px #ff3333,
+            2px 0 20px #ff0000,
+            0 0 30px #ff0000;
+    }
+    60% { 
+        transform: translate(2px, 2px);
+        text-shadow: 
+            0 2px 10px #ff3333,
+            0 -2px 20px #ff0000,
+            0 0 30px #ff0000;
+    }
+    80% { 
+        transform: translate(2px, -2px);
+        text-shadow: 
+            0 -2px 10px #ff3333,
+            0 2px 20px #ff0000,
+            0 0 30px #ff0000;
+    }
+    100% { 
+        transform: translate(0);
+        text-shadow: 
+            0 0 10px #ff3333,
+            0 0 20px #ff0000,
+            0 0 30px #ff0000;
+    }
+}
+
+/* Psychic Grip screen flicker effect (Requirement 5.2) */
+.vecna-psychic-grip {
+    animation: screen-flicker 0.1s infinite !important;
+}
+
+@keyframes screen-flicker {
+    0%, 100% { 
+        opacity: 1;
+        filter: brightness(1);
+    }
+    25% { 
+        opacity: 0.8;
+        filter: brightness(0.9);
+    }
+    50% { 
+        opacity: 0.9;
+        filter: brightness(1.1);
+    }
+    75% { 
+        opacity: 0.85;
+        filter: brightness(0.95);
+    }
+}
+
+/* Inverted colors effect (Requirement 5.3) */
+.vecna-inverted {
+    filter: invert(1) hue-rotate(180deg) !important;
+    transition: filter 0.3s ease;
+}
+
+/* Vecna effects container */
+.vecna-effects-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Scanline ripple effect (Requirement 5.4) */
+.vecna-scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(255, 0, 0, 0.1),
+        rgba(255, 0, 0, 0.1) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+    animation: scanline-move 2s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes scanline-move {
+    0% { 
+        background-position: 0 0;
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% { 
+        background-position: 0 100px;
+        opacity: 0.6;
+    }
+}
+
+/* ASCII static storm overlay (Requirement 5.5) */
+.vecna-static {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    color: rgba(255, 51, 51, 0.3);
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: pre;
+    overflow: hidden;
+    text-shadow: 
+        0 0 5px rgba(255, 51, 51, 0.5),
+        0 0 10px rgba(255, 0, 0, 0.3);
+    animation: static-flicker 0.05s infinite;
+}
+
+@keyframes static-flicker {
+    0%, 100% { 
+        opacity: 0.3;
+    }
+    50% { 
+        opacity: 0.5;
+    }
+}
+
+/* Reduced motion for Vecna effects */
+@media (prefers-reduced-motion: reduce) {
+    .vecna-corrupted,
+    .vecna-psychic-grip,
+    .vecna-scanlines,
+    .vecna-static {
+        animation: none !important;
+    }
+    
+    .vecna-inverted {
+        transition: none;
+    }
+}
