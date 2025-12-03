@@ -704,6 +704,16 @@ async def websocket_endpoint(
                 "type": "system",
                 "content": f"\n=== {room.name} ===\n{room.description}\n"
             })
+            
+            # Send recent message history
+            recent_messages = room.get_recent_messages(limit=20)
+            if recent_messages:
+                await app.state.websocket_manager.send_to_user(websocket, {
+                    "type": "system",
+                    "content": "--- Recent messages ---"
+                })
+                for msg in recent_messages:
+                    await app.state.websocket_manager.send_to_user(websocket, msg)
         
         # Broadcast user join to room
         await app.state.websocket_manager.broadcast_to_room(
@@ -895,6 +905,13 @@ async def websocket_endpoint(
                                     app.state.websocket_manager.update_user_room(websocket, suggested_room)
                                     current_room = suggested_room
                                     
+                                    # Send room_change message FIRST to update side panel
+                                    await app.state.websocket_manager.send_to_user(websocket, {
+                                        "type": "room_change",
+                                        "room": suggested_room,
+                                        "content": f"You are now in: {suggested_room}"
+                                    })
+                                    
                                     # Send room entry message to user
                                     room = app.state.room_service.get_room(suggested_room)
                                     if room:
@@ -908,6 +925,16 @@ async def websocket_endpoint(
                                             "content": f"\n=== {room.name} ===\n{room.description}\n"
                                         })
                                         
+                                        # Send recent message history
+                                        recent_messages = room.get_recent_messages(limit=20)
+                                        if recent_messages:
+                                            await app.state.websocket_manager.send_to_user(websocket, {
+                                                "type": "system",
+                                                "content": "--- Recent messages ---"
+                                            })
+                                            for msg in recent_messages:
+                                                await app.state.websocket_manager.send_to_user(websocket, msg)
+                                        
                                         # Notify new room of user entry
                                         await app.state.websocket_manager.broadcast_to_room(
                                             suggested_room,
@@ -917,13 +944,6 @@ async def websocket_endpoint(
                                             },
                                             exclude_websocket=websocket
                                         )
-                                        
-                                        # Send room_change message
-                                        await app.state.websocket_manager.send_to_user(websocket, {
-                                            "type": "room_change",
-                                            "room": suggested_room,
-                                            "content": f"You are now in: {suggested_room}"
-                                        })
                                     
                                     # Broadcast updated room list
                                     rooms = app.state.room_service.get_rooms()
@@ -989,6 +1009,11 @@ async def websocket_endpoint(
                         "timestamp": datetime.utcnow().isoformat(),
                         "room": current_room
                     }
+                    
+                    # Store message in room history
+                    room = app.state.room_service.get_room(current_room)
+                    if room:
+                        room.add_message(message)
                     
                     # Broadcast to room (including sender)
                     await app.state.websocket_manager.broadcast_to_room(current_room, message)
@@ -1087,6 +1112,16 @@ async def websocket_endpoint(
                     "type": "system",
                     "content": f"\n=== {room.name} ===\n{room.description}\n"
                 })
+                
+                # Send recent message history
+                recent_messages = room.get_recent_messages(limit=20)
+                if recent_messages:
+                    await app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "system",
+                        "content": "--- Recent messages ---"
+                    })
+                    for msg in recent_messages:
+                        await app.state.websocket_manager.send_to_user(websocket, msg)
                 
                 # Notify new room
                 await app.state.websocket_manager.broadcast_to_room(

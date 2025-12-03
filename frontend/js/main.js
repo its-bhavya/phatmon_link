@@ -651,8 +651,9 @@ function handleRoomChange(message) {
         }
     }
     
+    // Display room change in yellow
     chatDisplay.addMessage({
-        type: 'system',
+        type: 'room_change',
         content: message.content || `You are now in: ${currentRoom}`,
         timestamp: message.timestamp
     });

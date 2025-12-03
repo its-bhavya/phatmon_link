@@ -68,6 +68,9 @@ export class ChatDisplay {
         if (message.type === 'system') {
             div.classList.add('system');
             div.innerHTML = `<span class="timestamp">${timestamp}</span> <span>* SYSTEM: ${this.escapeHtml(message.content)}</span>`;
+        } else if (message.type === 'room_change') {
+            div.classList.add('room_change');
+            div.innerHTML = `<span class="timestamp">${timestamp}</span> <span>* ROOM: ${this.escapeHtml(message.content)}</span>`;
         } else if (message.type === 'error') {
             div.classList.add('error');
             div.innerHTML = `<span class="timestamp">${timestamp}</span> <span>* ERROR: ${this.escapeHtml(message.content)}</span>`;
