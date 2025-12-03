@@ -185,3 +185,344 @@ class TestConfig:
         finally:
             if "JWT_SECRET_KEY" in os.environ:
                 del os.environ["JWT_SECRET_KEY"]
+    
+    def test_vecna_configuration_defaults(self):
+        """Test that Vecna configuration defaults are set correctly."""
+        config = Config()
+        
+        # Check Vecna defaults
+        assert config.VECNA_ENABLED == True
+        assert config.VECNA_EMOTIONAL_THRESHOLD == 0.7
+        assert config.VECNA_SPAM_THRESHOLD == 3
+        assert config.VECNA_COMMAND_REPEAT_THRESHOLD == 3
+        assert config.VECNA_MAX_ACTIVATIONS_PER_HOUR == 5
+        assert config.VECNA_COOLDOWN_SECONDS == 60
+    
+    def test_vecna_configuration_loading(self):
+        """Test that Vecna environment variables are loaded correctly."""
+        os.environ["VECNA_ENABLED"] = "false"
+        os.environ["VECNA_EMOTIONAL_THRESHOLD"] = "0.8"
+        os.environ["VECNA_SPAM_THRESHOLD"] = "5"
+        os.environ["VECNA_COMMAND_REPEAT_THRESHOLD"] = "4"
+        os.environ["VECNA_MAX_ACTIVATIONS_PER_HOUR"] = "10"
+        os.environ["VECNA_COOLDOWN_SECONDS"] = "120"
+        
+        try:
+            config = Config()
+            
+            assert config.VECNA_ENABLED == False
+            assert config.VECNA_EMOTIONAL_THRESHOLD == 0.8
+            assert config.VECNA_SPAM_THRESHOLD == 5
+            assert config.VECNA_COMMAND_REPEAT_THRESHOLD == 4
+            assert config.VECNA_MAX_ACTIVATIONS_PER_HOUR == 10
+            assert config.VECNA_COOLDOWN_SECONDS == 120
+        
+        finally:
+            for var in ["VECNA_ENABLED", "VECNA_EMOTIONAL_THRESHOLD", 
+                       "VECNA_SPAM_THRESHOLD", "VECNA_COMMAND_REPEAT_THRESHOLD",
+                       "VECNA_MAX_ACTIVATIONS_PER_HOUR", "VECNA_COOLDOWN_SECONDS"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_invalid_vecna_emotional_threshold(self):
+        """Test that invalid VECNA_EMOTIONAL_THRESHOLD raises error."""
+        os.environ["VECNA_EMOTIONAL_THRESHOLD"] = "not-a-float"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_EMOTIONAL_THRESHOLD must be a float" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_EMOTIONAL_THRESHOLD", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_vecna_emotional_threshold_out_of_range(self):
+        """Test that VECNA_EMOTIONAL_THRESHOLD outside valid range raises error."""
+        os.environ["VECNA_EMOTIONAL_THRESHOLD"] = "1.5"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_EMOTIONAL_THRESHOLD must be between 0.0 and 1.0" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_EMOTIONAL_THRESHOLD", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_invalid_vecna_spam_threshold(self):
+        """Test that invalid VECNA_SPAM_THRESHOLD raises error."""
+        os.environ["VECNA_SPAM_THRESHOLD"] = "not-an-int"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_SPAM_THRESHOLD must be an integer" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_SPAM_THRESHOLD", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_negative_vecna_spam_threshold(self):
+        """Test that negative VECNA_SPAM_THRESHOLD raises error."""
+        os.environ["VECNA_SPAM_THRESHOLD"] = "-1"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_SPAM_THRESHOLD must be positive" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_SPAM_THRESHOLD", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_invalid_vecna_command_repeat_threshold(self):
+        """Test that invalid VECNA_COMMAND_REPEAT_THRESHOLD raises error."""
+        os.environ["VECNA_COMMAND_REPEAT_THRESHOLD"] = "not-an-int"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_COMMAND_REPEAT_THRESHOLD must be an integer" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_COMMAND_REPEAT_THRESHOLD", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_negative_vecna_command_repeat_threshold(self):
+        """Test that negative VECNA_COMMAND_REPEAT_THRESHOLD raises error."""
+        os.environ["VECNA_COMMAND_REPEAT_THRESHOLD"] = "0"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_COMMAND_REPEAT_THRESHOLD must be positive" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_COMMAND_REPEAT_THRESHOLD", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_invalid_vecna_max_activations(self):
+        """Test that invalid VECNA_MAX_ACTIVATIONS_PER_HOUR raises error."""
+        os.environ["VECNA_MAX_ACTIVATIONS_PER_HOUR"] = "not-an-int"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_MAX_ACTIVATIONS_PER_HOUR must be an integer" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_MAX_ACTIVATIONS_PER_HOUR", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_negative_vecna_max_activations(self):
+        """Test that negative VECNA_MAX_ACTIVATIONS_PER_HOUR raises error."""
+        os.environ["VECNA_MAX_ACTIVATIONS_PER_HOUR"] = "-1"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_MAX_ACTIVATIONS_PER_HOUR must be positive" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_MAX_ACTIVATIONS_PER_HOUR", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_invalid_vecna_cooldown(self):
+        """Test that invalid VECNA_COOLDOWN_SECONDS raises error."""
+        os.environ["VECNA_COOLDOWN_SECONDS"] = "not-an-int"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_COOLDOWN_SECONDS must be an integer" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_COOLDOWN_SECONDS", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_negative_vecna_cooldown(self):
+        """Test that negative VECNA_COOLDOWN_SECONDS raises error."""
+        os.environ["VECNA_COOLDOWN_SECONDS"] = "-1"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "VECNA_COOLDOWN_SECONDS must be non-negative" in str(exc_info.value)
+        
+        finally:
+            for var in ["VECNA_COOLDOWN_SECONDS", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_gemini_configuration_defaults(self):
+        """Test that Gemini configuration defaults are set correctly."""
+        config = Config()
+        
+        assert config.GEMINI_MODEL == "gemini-2.0-flash"
+        assert config.GEMINI_TEMPERATURE == 0.9
+        assert config.GEMINI_MAX_TOKENS == 500
+    
+    def test_invalid_gemini_temperature(self):
+        """Test that invalid GEMINI_TEMPERATURE raises error."""
+        os.environ["GEMINI_TEMPERATURE"] = "not-a-float"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "GEMINI_TEMPERATURE must be a float" in str(exc_info.value)
+        
+        finally:
+            for var in ["GEMINI_TEMPERATURE", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_gemini_temperature_out_of_range(self):
+        """Test that GEMINI_TEMPERATURE outside valid range raises error."""
+        os.environ["GEMINI_TEMPERATURE"] = "3.0"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "GEMINI_TEMPERATURE must be between 0.0 and 2.0" in str(exc_info.value)
+        
+        finally:
+            for var in ["GEMINI_TEMPERATURE", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_invalid_gemini_max_tokens(self):
+        """Test that invalid GEMINI_MAX_TOKENS raises error."""
+        os.environ["GEMINI_MAX_TOKENS"] = "not-an-int"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "GEMINI_MAX_TOKENS must be an integer" in str(exc_info.value)
+        
+        finally:
+            for var in ["GEMINI_MAX_TOKENS", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_negative_gemini_max_tokens(self):
+        """Test that negative GEMINI_MAX_TOKENS raises error."""
+        os.environ["GEMINI_MAX_TOKENS"] = "-1"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "GEMINI_MAX_TOKENS must be positive" in str(exc_info.value)
+        
+        finally:
+            for var in ["GEMINI_MAX_TOKENS", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_profile_tracking_defaults(self):
+        """Test that profile tracking configuration defaults are set correctly."""
+        config = Config()
+        
+        assert config.PROFILE_RETENTION_DAYS == 30
+        assert config.PROFILE_CACHE_TTL_SECONDS == 300
+    
+    def test_invalid_profile_retention_days(self):
+        """Test that invalid PROFILE_RETENTION_DAYS raises error."""
+        os.environ["PROFILE_RETENTION_DAYS"] = "not-an-int"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "PROFILE_RETENTION_DAYS must be an integer" in str(exc_info.value)
+        
+        finally:
+            for var in ["PROFILE_RETENTION_DAYS", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_negative_profile_retention_days(self):
+        """Test that negative PROFILE_RETENTION_DAYS raises error."""
+        os.environ["PROFILE_RETENTION_DAYS"] = "0"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "PROFILE_RETENTION_DAYS must be positive" in str(exc_info.value)
+        
+        finally:
+            for var in ["PROFILE_RETENTION_DAYS", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_invalid_profile_cache_ttl(self):
+        """Test that invalid PROFILE_CACHE_TTL_SECONDS raises error."""
+        os.environ["PROFILE_CACHE_TTL_SECONDS"] = "not-an-int"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "PROFILE_CACHE_TTL_SECONDS must be an integer" in str(exc_info.value)
+        
+        finally:
+            for var in ["PROFILE_CACHE_TTL_SECONDS", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]
+    
+    def test_negative_profile_cache_ttl(self):
+        """Test that negative PROFILE_CACHE_TTL_SECONDS raises error."""
+        os.environ["PROFILE_CACHE_TTL_SECONDS"] = "-1"
+        os.environ["JWT_SECRET_KEY"] = "test-secret-key-1234567890"
+        
+        try:
+            with pytest.raises(ConfigurationError) as exc_info:
+                Config()
+            
+            assert "PROFILE_CACHE_TTL_SECONDS must be non-negative" in str(exc_info.value)
+        
+        finally:
+            for var in ["PROFILE_CACHE_TTL_SECONDS", "JWT_SECRET_KEY"]:
+                if var in os.environ:
+                    del os.environ[var]

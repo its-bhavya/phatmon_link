@@ -330,7 +330,11 @@
   - Add @keyframes for glitch, screen-flicker, and scanline-move animations
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 9.3_
 
-- [ ] 17. Add environment configuration for Vecna
+- [x] 17. Add environment configuration for Vecna
+
+
+
+
   - Add GEMINI_API_KEY to .env.example
   - Add Vecna configuration variables (thresholds, limits, cooldowns)
   - Update backend/config.py to load Vecna configuration
