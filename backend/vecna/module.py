@@ -16,6 +16,7 @@ from backend.vecna.sentiment import SentimentAnalyzer
 from backend.vecna.pattern_detector import PatternDetector
 from backend.vecna.gemini_service import GeminiService
 from backend.vecna.user_profile import UserProfile
+from backend.vecna.rate_limiter import VecnaRateLimiter, VecnaRateLimitResult
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +194,7 @@ class VecnaModule:
         gemini_service: GeminiService,
         sentiment_analyzer: SentimentAnalyzer,
         pattern_detector: PatternDetector,
+        rate_limiter: Optional[VecnaRateLimiter] = None,
         psychic_grip_duration_range: tuple = (5, 8)
     ):
         """
@@ -202,11 +204,13 @@ class VecnaModule:
             gemini_service: Service for AI content generation
             sentiment_analyzer: Service for sentiment analysis
             pattern_detector: Service for pattern detection
+            rate_limiter: Optional rate limiter for abuse prevention
             psychic_grip_duration_range: Tuple of (min, max) seconds for Psychic Grip
         """
         self.gemini = gemini_service
         self.sentiment = sentiment_analyzer
         self.pattern_detector = pattern_detector
+        self.rate_limiter = rate_limiter
         self.psychic_grip_duration = psychic_grip_duration_range
         
         logger.info("VecnaModule initialized")
@@ -224,6 +228,8 @@ class VecnaModule:
         This method checks both emotional triggers (high-negative sentiment)
         and system triggers (spam, command repetition, unusual activity).
         
+        It also checks rate limits to prevent abuse.
+        
         Args:
             user_id: User database ID
             message: User's message text
@@ -233,9 +239,18 @@ class VecnaModule:
         Returns:
             VecnaTrigger object if triggered, None otherwise
         
-        Requirements: 2.1, 2.2, 2.3, 2.4
+        Requirements: 2.1, 2.2, 2.3, 2.4, Security considerations
         """
         try:
+            # Check rate limits first (if rate limiter is configured)
+            if self.rate_limiter:
+                rate_limit_result = self.rate_limiter.check_rate_limit(user_id)
+                
+                if not rate_limit_result.allowed:
+                    logger.info(
+                        f"Vecna activation blocked for user {user_id}: {rate_limit_result.reason}"
+                    )
+                    return None
             # Check emotional trigger first (high-negative sentiment)
             sentiment_result = self.sentiment.analyze(message)
             
@@ -350,6 +365,16 @@ class VecnaModule:
             
             logger.info(f"Vecna emotional trigger executed for user {user_id}")
             
+            # Log activation to database (if rate limiter is configured)
+            if self.rate_limiter:
+                self.rate_limiter.record_activation(
+                    user_id=user_id,
+                    trigger_type="emotional",
+                    reason=f"High-negative sentiment in message",
+                    intensity=0.8,  # Default intensity for emotional triggers
+                    response_content=vecna_content
+                )
+            
             return VecnaResponse(
                 trigger_type=TriggerType.EMOTIONAL,
                 content=vecna_content,
@@ -420,6 +445,16 @@ class VecnaModule:
             visual_effects = ['flicker', 'inverted', 'scanlines', 'static']
             
             logger.info(f"Vecna Psychic Grip executed for user {user_id}, duration: {freeze_duration}s")
+            
+            # Log activation to database (if rate limiter is configured)
+            if self.rate_limiter:
+                self.rate_limiter.record_activation(
+                    user_id=user_id,
+                    trigger_type="system",
+                    reason=f"System trigger (spam/repetition/anomaly)",
+                    intensity=0.75,  # Default intensity for system triggers
+                    response_content=vecna_content
+                )
             
             return VecnaResponse(
                 trigger_type=TriggerType.SYSTEM,

@@ -34,6 +34,7 @@ from backend.vecna.module import VecnaModule, TriggerType
 from backend.vecna.sentiment import SentimentAnalyzer
 from backend.vecna.pattern_detector import PatternDetector
 from backend.vecna.user_profile import UserProfileService
+from backend.vecna.rate_limiter import VecnaRateLimiter
 
 
 @asynccontextmanager
@@ -92,10 +93,19 @@ async def lifespan(app: FastAPI):
             app.state.sentiment_analyzer = SentimentAnalyzer()
             app.state.pattern_detector = PatternDetector()
             
+            # Note: VecnaRateLimiter will be initialized per-request with database session
+            # Store configuration for later use
+            app.state.vecna_rate_limiter_config = {
+                'max_activations_per_hour': config.VECNA_MAX_ACTIVATIONS_PER_HOUR,
+                'cooldown_seconds': config.VECNA_COOLDOWN_SECONDS,
+                'enabled': config.VECNA_ENABLED
+            }
+            
             app.state.vecna_module = VecnaModule(
                 gemini_service=app.state.gemini_service,
                 sentiment_analyzer=app.state.sentiment_analyzer,
-                pattern_detector=app.state.pattern_detector
+                pattern_detector=app.state.pattern_detector,
+                rate_limiter=None  # Will be set per-request
             )
             print("Vecna Module initialized")
             
@@ -340,6 +350,66 @@ async def api_root():
     }
 
 
+@app.get("/api/admin/vecna/status")
+async def get_vecna_status():
+    """
+    Get Vecna system status (admin endpoint).
+    
+    Returns:
+        Dictionary with Vecna enabled status and configuration
+    """
+    config = get_config()
+    
+    return {
+        "enabled": config.VECNA_ENABLED,
+        "max_activations_per_hour": config.VECNA_MAX_ACTIVATIONS_PER_HOUR,
+        "cooldown_seconds": config.VECNA_COOLDOWN_SECONDS,
+        "emotional_threshold": config.VECNA_EMOTIONAL_THRESHOLD
+    }
+
+
+class VecnaControlRequest(BaseModel):
+    """Request model for Vecna control."""
+    enabled: bool = Field(..., description="Whether Vecna should be enabled")
+
+
+@app.post("/api/admin/vecna/control")
+async def control_vecna(
+    control_data: VecnaControlRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Control Vecna global enabled status (admin endpoint).
+    
+    This endpoint allows administrators to enable or disable Vecna globally.
+    
+    Args:
+        control_data: Request with enabled status
+        db: Database session
+    
+    Returns:
+        Dictionary with updated status
+    
+    Requirements: Security considerations
+    """
+    # Update global configuration
+    config = get_config()
+    config.VECNA_ENABLED = control_data.enabled
+    
+    # Update rate limiter config if it exists
+    if hasattr(app.state, 'vecna_rate_limiter_config'):
+        app.state.vecna_rate_limiter_config['enabled'] = control_data.enabled
+    
+    status_message = "enabled" if control_data.enabled else "disabled"
+    logger.info(f"Vecna globally {status_message} by admin")
+    
+    return {
+        "success": True,
+        "enabled": control_data.enabled,
+        "message": f"Vecna has been {status_message} globally"
+    }
+
+
 @app.post(
     "/api/auth/register",
     response_model=AuthResponse,
@@ -569,6 +639,14 @@ async def websocket_endpoint(
     user = None
     recent_messages = []  # Track recent messages for spam detection
     
+    # Initialize Vecna rate limiter for this connection (if Vecna is enabled)
+    vecna_rate_limiter = None
+    if hasattr(app.state, 'vecna_rate_limiter_config'):
+        vecna_rate_limiter = VecnaRateLimiter(
+            db=db,
+            **app.state.vecna_rate_limiter_config
+        )
+    
     try:
         # Validate token
         user = auth_service.get_user_from_token(token)
@@ -727,6 +805,9 @@ async def websocket_endpoint(
                 vecna_module = getattr(app.state, 'vecna_module', None)
                 if vecna_module:
                     try:
+                        # Attach rate limiter to vecna module for this request
+                        vecna_module.rate_limiter = vecna_rate_limiter
+                        
                         vecna_trigger = await vecna_module.evaluate_triggers(
                             user_id=user.id,
                             message=content,
