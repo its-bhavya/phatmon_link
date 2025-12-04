@@ -113,9 +113,10 @@ export class GameManager {
                 const { TetrisGame } = await import('./tetris.js');
                 return new TetrisGame(this.canvas, ctx);
             }
-            case 'breakout':
-                console.warn('Breakout not yet implemented');
-                return null;
+            case 'breakout': {
+                const { BreakoutGame } = await import('./breakout.js');
+                return new BreakoutGame(this.canvas, ctx);
+            }
             default:
                 console.error('Unknown game:', gameName);
                 return null;

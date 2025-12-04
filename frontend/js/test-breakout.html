@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breakout Game Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #0f0;
+            display: block;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            background-color: #000;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 10px 20px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #0f0;
+            color: #000;
+        }
+        
+        .info {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #0f0;
+            min-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Breakout Game Test</h1>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div class="controls">
+        <button id="startBtn">Start Game</button>
+        <button id="resetBtn">Reset</button>
+        <button id="exitBtn">Exit Game</button>
+    </div>
+    
+    <div class="info">
+        <div>Controls: Arrow Keys to move paddle, Space to launch ball</div>
+        <div class="status" id="status">Ready to start</div>
+    </div>
+    
+    <script type="module">
+        import { BreakoutGame } from './breakout.js';
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusDiv = document.getElementById('status');
+        
+        let game = null;
+        let animationFrameId = null;
+        let lastFrameTime = 0;
+        let isRunning = false;
+        
+        // Initialize game
+        function initGame() {
+            game = new BreakoutGame(canvas, ctx);
+            game.init();
+            game.start();
+            updateStatus();
+        }
+        
+        // Start game loop
+        function startGame() {
+            if (!game) {
+                initGame();
+            }
+            
+            if (!isRunning) {
+                isRunning = true;
+                lastFrameTime = performance.now();
+                gameLoop();
+            }
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!isRunning) return;
+            
+            const currentTime = performance.now();
+            const deltaTime = currentTime - lastFrameTime;
+            lastFrameTime = currentTime;
+            
+            // Update and render
+            game.update(deltaTime);
+            game.render();
+            
+            // Update status
+            updateStatus();
+            
+            // Continue loop
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        
+        // Stop game loop
+        function stopGame() {
+            isRunning = false;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+        
+        // Reset game
+        function resetGame() {
+            stopGame();
+            initGame();
+        }
+        
+        // Exit game
+        function exitGame() {
+            stopGame();
+            if (game) {
+                game.stop();
+                game = null;
+            }
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            statusDiv.textContent = 'Game exited';
+        }
+        
+        // Update status display
+        function updateStatus() {
+            if (!game) {
+                statusDiv.textContent = 'No game active';
+                return;
+            }
+            
+            let status = `Score: ${game.getScore()} | `;
+            
+            if (game.isGameOver()) {
+                status += 'GAME OVER';
+            } else if (game.levelComplete) {
+                status += 'LEVEL COMPLETE!';
+            } else if (game.ballLaunched) {
+                status += 'Playing';
+            } else {
+                status += 'Press SPACE to launch';
+            }
+            
+            statusDiv.textContent = status;
+        }
+        
+        // Button event listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+        document.getElementById('exitBtn').addEventListener('click', exitGame);
+        
+        // Keyboard event listeners
+        document.addEventListener('keydown', (e) => {
+            if (game && isRunning) {
+                game.handleKeyDown(e.key);
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (game && isRunning) {
+                game.handleKeyUp(e.key);
+                e.preventDefault();
+            }
+        });
+        
+        // Initialize on load
+        initGame();
+        
+        console.log('Breakout game test loaded');
+        console.log('Click "Start Game" to begin');
+    </script>
+</body>
+</html>
