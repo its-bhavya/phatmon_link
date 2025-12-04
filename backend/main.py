@@ -30,10 +30,7 @@ from backend.config import get_config
 from backend.vecna.auto_router import on_message_hook
 from backend.vecna.gemini_service import GeminiService, GeminiServiceError
 from backend.sysop.brain import SysOpBrain
-from backend.vecna.module import VecnaModule, TriggerType
-from backend.vecna.sentiment import SentimentAnalyzer
 from backend.vecna.user_profile import UserProfileService
-from backend.vecna.rate_limiter import VecnaRateLimiter
 
 
 @asynccontextmanager
@@ -71,7 +68,7 @@ async def lifespan(app: FastAPI):
     print("Rate limiter initialized")
     
     # Initialize Gemini service for auto-routing (if enabled)
-    if config.VECNA_ENABLED and config.GEMINI_API_KEY:
+    if config.GEMINI_API_KEY:
         try:
             app.state.gemini_service = GeminiService(
                 api_key=config.GEMINI_API_KEY,
@@ -88,34 +85,14 @@ async def lifespan(app: FastAPI):
             )
             print("SysOp Brain initialized")
             
-            # Initialize Vecna Module components
-            app.state.sentiment_analyzer = SentimentAnalyzer()
-            
-            # Note: VecnaRateLimiter will be initialized per-request with database session
-            # Store configuration for later use
-            app.state.vecna_rate_limiter_config = {
-                'max_activations_per_hour': config.VECNA_MAX_ACTIVATIONS_PER_HOUR,
-                'cooldown_seconds': config.VECNA_COOLDOWN_SECONDS,
-                'enabled': config.VECNA_ENABLED
-            }
-            
-            app.state.vecna_module = VecnaModule(
-                gemini_service=app.state.gemini_service,
-                sentiment_analyzer=app.state.sentiment_analyzer,
-                rate_limiter=None  # Will be set per-request
-            )
-            print("Vecna Module initialized")
-            
         except GeminiServiceError as e:
             print(f"Warning: Gemini service initialization failed: {e}")
             app.state.gemini_service = None
             app.state.sysop_brain = None
-            app.state.vecna_module = None
     else:
         app.state.gemini_service = None
         app.state.sysop_brain = None
-        app.state.vecna_module = None
-        print("Gemini service disabled (VECNA_ENABLED=false or no API key)")
+        print("Gemini service disabled (no API key)")
     
     # Start session cleanup task
     cleanup_task = asyncio.create_task(cleanup_expired_sessions(app))
@@ -347,64 +324,7 @@ async def api_root():
     }
 
 
-@app.get("/api/admin/vecna/status")
-async def get_vecna_status():
-    """
-    Get Vecna system status (admin endpoint).
-    
-    Returns:
-        Dictionary with Vecna enabled status and configuration
-    """
-    config = get_config()
-    
-    return {
-        "enabled": config.VECNA_ENABLED,
-        "max_activations_per_hour": config.VECNA_MAX_ACTIVATIONS_PER_HOUR,
-        "cooldown_seconds": config.VECNA_COOLDOWN_SECONDS,
-        "emotional_threshold": config.VECNA_EMOTIONAL_THRESHOLD
-    }
 
-
-class VecnaControlRequest(BaseModel):
-    """Request model for Vecna control."""
-    enabled: bool = Field(..., description="Whether Vecna should be enabled")
-
-
-@app.post("/api/admin/vecna/control")
-async def control_vecna(
-    control_data: VecnaControlRequest,
-    db: Session = Depends(get_db)
-):
-    """
-    Control Vecna global enabled status (admin endpoint).
-    
-    This endpoint allows administrators to enable or disable Vecna globally.
-    
-    Args:
-        control_data: Request with enabled status
-        db: Database session
-    
-    Returns:
-        Dictionary with updated status
-    
-    Requirements: Security considerations
-    """
-    # Update global configuration
-    config = get_config()
-    config.VECNA_ENABLED = control_data.enabled
-    
-    # Update rate limiter config if it exists
-    if hasattr(app.state, 'vecna_rate_limiter_config'):
-        app.state.vecna_rate_limiter_config['enabled'] = control_data.enabled
-    
-    status_message = "enabled" if control_data.enabled else "disabled"
-    logger.info(f"Vecna globally {status_message} by admin")
-    
-    return {
-        "success": True,
-        "enabled": control_data.enabled,
-        "message": f"Vecna has been {status_message} globally"
-    }
 
 
 @app.post(
@@ -787,126 +707,14 @@ async def websocket_endpoint(
                 user_profile_service.record_room_visit(user.id, current_room)
                 user_profile_service.update_interests(user.id, content)
                 
-                # Get user profile for Vecna and SysOp Brain
+                # Get user profile for SysOp Brain
                 user_profile = user_profile_service.get_profile(user.id)
                 
-                # Message Processing Pipeline: Vecna Check → Conditional Activation → SysOp Brain Routing
-                vecna_activated = False
-                
-                # Step 1: Vecna trigger evaluation (if available)
-                vecna_module = getattr(app.state, 'vecna_module', None)
-                if vecna_module:
+                # Use SysOp Brain for intelligent routing
+                sysop_brain = getattr(app.state, 'sysop_brain', None)
+                if sysop_brain:
                     try:
-                        # Attach rate limiter to vecna module for this request
-                        vecna_module.rate_limiter = vecna_rate_limiter
-                        
-                        vecna_trigger = await vecna_module.evaluate_triggers(
-                            user_id=user.id,
-                            message=content,
-                            user_profile=user_profile
-                        )
-                        
-                        # Step 2: Conditional Vecna activation
-                        if vecna_trigger:
-                            vecna_activated = True
-                            
-                            if vecna_trigger.trigger_type == TriggerType.EMOTIONAL:
-                                # Execute emotional trigger (Psychic Grip with cryptic narrative)
-                                vecna_response = await vecna_module.execute_emotional_trigger(
-                                    user_id=user.id,
-                                    username=user.username,
-                                    message=content,
-                                    user_profile=user_profile
-                                )
-                                
-                                # Send initial Vecna Psychic Grip message (emotional trigger)
-                                await app.state.websocket_manager.send_to_user(websocket, {
-                                    "type": "vecna_psychic_grip",
-                                    "content": vecna_response.content,
-                                    "freeze_duration": vecna_response.freeze_duration,
-                                    "visual_effects": vecna_response.visual_effects,
-                                    "timestamp": vecna_response.timestamp.isoformat()
-                                })
-                                
-                                # Schedule multiple messages over 15 seconds
-                                async def send_psychic_grip_messages():
-                                    messages = vecna_response.messages if vecna_response.messages else [vecna_response.content]
-                                    
-                                    # Send remaining messages at 5-second intervals
-                                    for i, message in enumerate(messages[1:], start=1):
-                                        await asyncio.sleep(5)
-                                        await app.state.websocket_manager.send_to_user(websocket, {
-                                            "type": "vecna_message",
-                                            "content": message,
-                                            "visual_effects": vecna_response.visual_effects,
-                                            "timestamp": datetime.utcnow().isoformat()
-                                        })
-                                    
-                                    # Send release message after all messages
-                                    await asyncio.sleep(5)
-                                    await app.state.websocket_manager.send_to_user(websocket, {
-                                        "type": "vecna_release",
-                                        "content": "[SYSTEM] Control returned to SysOp. Continue your session."
-                                    })
-                                
-                                # Start message sequence task
-                                asyncio.create_task(send_psychic_grip_messages())
-                                
-                            elif vecna_trigger.trigger_type == TriggerType.SYSTEM:
-                                # Execute Psychic Grip (thread freeze + narrative)
-                                vecna_response = await vecna_module.execute_psychic_grip(
-                                    user_id=user.id,
-                                    username=user.username,
-                                    user_profile=user_profile
-                                )
-                                
-                                # Send initial Vecna Psychic Grip message
-                                await app.state.websocket_manager.send_to_user(websocket, {
-                                    "type": "vecna_psychic_grip",
-                                    "content": vecna_response.content,
-                                    "freeze_duration": vecna_response.freeze_duration,
-                                    "visual_effects": vecna_response.visual_effects,
-                                    "timestamp": vecna_response.timestamp.isoformat()
-                                })
-                                
-                                # Schedule multiple messages over 15 seconds
-                                async def send_psychic_grip_messages():
-                                    messages = vecna_response.messages if vecna_response.messages else [vecna_response.content]
-                                    
-                                    # Send remaining messages at 5-second intervals
-                                    for i, message in enumerate(messages[1:], start=1):
-                                        await asyncio.sleep(5)
-                                        await app.state.websocket_manager.send_to_user(websocket, {
-                                            "type": "vecna_message",
-                                            "content": message,
-                                            "visual_effects": vecna_response.visual_effects,
-                                            "timestamp": datetime.utcnow().isoformat()
-                                        })
-                                    
-                                    # Send release message after all messages
-                                    await asyncio.sleep(5)
-                                    await app.state.websocket_manager.send_to_user(websocket, {
-                                        "type": "vecna_release",
-                                        "content": "[SYSTEM] Control returned to SysOp. Continue your session."
-                                    })
-                                
-                                # Start message sequence task
-                                asyncio.create_task(send_psychic_grip_messages())
-                            
-                            # Log Vecna activation
-                            print(f"Vecna activated for user {user.username}: {vecna_trigger.trigger_type.value} - {vecna_trigger.reason}")
-                    
-                    except Exception as e:
-                        print(f"Vecna evaluation error: {e}")
-                
-                # Step 3: SysOp Brain routing (if Vecna was not activated)
-                # If Vecna was not activated, use SysOp Brain for intelligent routing
-                if not vecna_activated:
-                    # Use SysOp Brain for intelligent routing
-                    sysop_brain = getattr(app.state, 'sysop_brain', None)
-                    if sysop_brain:
-                        try:
-                            sysop_result = await sysop_brain.process_message(
+                        sysop_result = await sysop_brain.process_message(
                                 user=user,
                                 message=content,
                                 current_room=current_room,
@@ -1030,26 +838,26 @@ async def websocket_endpoint(
                                         ]
                                     })
                         
-                        except Exception as e:
-                            # Log error but don't break message flow
-                            print(f"SysOp Brain error: {e}")
-                    
-                    # Create message with timestamp
-                    message = {
-                        "type": "chat_message",
-                        "username": user.username,
-                        "content": content,
-                        "timestamp": datetime.utcnow().isoformat(),
-                        "room": current_room
-                    }
-                    
-                    # Store message in room history
-                    room = app.state.room_service.get_room(current_room)
-                    if room:
-                        room.add_message(message)
-                    
-                    # Broadcast to room (including sender)
-                    await app.state.websocket_manager.broadcast_to_room(current_room, message)
+                    except Exception as e:
+                        # Log error but don't break message flow
+                        print(f"SysOp Brain error: {e}")
+                
+                # Create message with timestamp
+                message = {
+                    "type": "chat_message",
+                    "username": user.username,
+                    "content": content,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "room": current_room
+                }
+                
+                # Store message in room history
+                room = app.state.room_service.get_room(current_room)
+                if room:
+                    room.add_message(message)
+                
+                # Broadcast to room (including sender)
+                await app.state.websocket_manager.broadcast_to_room(current_room, message)
             
             elif message_type == "command":
                 # Handle command

@@ -8,6 +8,7 @@
   - Remove Vecna frontend components
   - Remove Vecna documentation files
   - Remove Vecna hooks
+  - Keep the auto-routing for normal messages to different rooms
   - _Requirements: All (cleanup)_
 
 - [ ] 2. Set up Support Bot infrastructure
