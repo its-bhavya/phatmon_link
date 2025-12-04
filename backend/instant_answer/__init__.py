@@ -14,6 +14,10 @@ from backend.instant_answer.tagger import (
     MessageTags,
     AutoTagger
 )
+from backend.instant_answer.search_engine import (
+    SearchResult,
+    SemanticSearchEngine
+)
 
 __all__ = [
     "MessageType",
@@ -22,4 +26,6 @@ __all__ = [
     "InstantAnswerConfig",
     "MessageTags",
     "AutoTagger",
+    "SearchResult",
+    "SemanticSearchEngine",
 ]
