@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High Score Manager Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #0f0;
+        }
+        .pass { color: #0f0; }
+        .fail { color: #f00; }
+        button {
+            background-color: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0f0;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>High Score Manager Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearAllScores()">Clear All Scores</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Current High Scores</h2>
+        <div id="scores"></div>
+    </div>
+    
+    <script type="module">
+        import { HighScoreManager } from './highScores.js';
+        
+        window.HighScoreManager = HighScoreManager;
+        
+        function log(message, isPass = true) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = isPass ? 'pass' : 'fail';
+            div.textContent = (isPass ? '✓ ' : '✗ ') + message;
+            results.appendChild(div);
+        }
+        
+        function displayScores() {
+            const scoresDiv = document.getElementById('scores');
+            scoresDiv.innerHTML = '';
+            
+            const games = ['snake', 'tetris', 'breakout'];
+            games.forEach(game => {
+                const score = HighScoreManager.getHighScore(game);
+                const div = document.createElement('div');
+                div.textContent = `${game}: ${score}`;
+                scoresDiv.appendChild(div);
+            });
+        }
+        
+        window.runAllTests = function() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h3>Running tests...</h3>';
+            
+            // Test 1: Get high score with no existing score (should default to 0)
+            localStorage.removeItem('arcade_highscore_test');
+            const defaultScore = HighScoreManager.getHighScore('test');
+            if (defaultScore === 0) {
+                log('Test 1: Default score is 0 - PASS');
+            } else {
+                log(`Test 1: Default score should be 0, got ${defaultScore} - FAIL`, false);
+            }
+            
+            // Test 2: Set high score
+            const setResult = HighScoreManager.setHighScore('test', 100);
+            if (setResult === true) {
+                log('Test 2: Set high score returns true - PASS');
+            } else {
+                log('Test 2: Set high score should return true - FAIL', false);
+            }
+            
+            // Test 3: Get high score after setting
+            const retrievedScore = HighScoreManager.getHighScore('test');
+            if (retrievedScore === 100) {
+                log('Test 3: Retrieved score matches set score - PASS');
+            } else {
+                log(`Test 3: Retrieved score should be 100, got ${retrievedScore} - FAIL`, false);
+            }
+            
+            // Test 4: Check if new high score (higher)
+            const isNewHigh = HighScoreManager.isNewHighScore('test', 150);
+            if (isNewHigh === true) {
+                log('Test 4: Higher score is recognized as new high - PASS');
+            } else {
+                log('Test 4: Higher score should be new high - FAIL', false);
+            }
+            
+            // Test 5: Check if new high score (lower)
+            const isNotNewHigh = HighScoreManager.isNewHighScore('test', 50);
+            if (isNotNewHigh === false) {
+                log('Test 5: Lower score is not recognized as new high - PASS');
+            } else {
+                log('Test 5: Lower score should not be new high - FAIL', false);
+            }
+            
+            // Test 6: Update high score with higher score
+            const updateResult = HighScoreManager.updateHighScore('test', 200);
+            if (updateResult === true) {
+                log('Test 6: Update with higher score returns true - PASS');
+            } else {
+                log('Test 6: Update with higher score should return true - FAIL', false);
+            }
+            
+            const updatedScore = HighScoreManager.getHighScore('test');
+            if (updatedScore === 200) {
+                log('Test 6b: Score was updated to 200 - PASS');
+            } else {
+                log(`Test 6b: Score should be 200, got ${updatedScore} - FAIL`, false);
+            }
+            
+            // Test 7: Update high score with lower score
+            const noUpdateResult = HighScoreManager.updateHighScore('test', 50);
+            if (noUpdateResult === false) {
+                log('Test 7: Update with lower score returns false - PASS');
+            } else {
+                log('Test 7: Update with lower score should return false - FAIL', false);
+            }
+            
+            const unchangedScore = HighScoreManager.getHighScore('test');
+            if (unchangedScore === 200) {
+                log('Test 7b: Score remains unchanged at 200 - PASS');
+            } else {
+                log(`Test 7b: Score should still be 200, got ${unchangedScore} - FAIL`, false);
+            }
+            
+            // Test 8: Game-specific localStorage keys
+            HighScoreManager.setHighScore('snake', 500);
+            HighScoreManager.setHighScore('tetris', 1000);
+            HighScoreManager.setHighScore('breakout', 750);
+            
+            const snakeKey = localStorage.getItem('arcade_highscore_snake');
+            const tetrisKey = localStorage.getItem('arcade_highscore_tetris');
+            const breakoutKey = localStorage.getItem('arcade_highscore_breakout');
+            
+            if (snakeKey === '500' && tetrisKey === '1000' && breakoutKey === '750') {
+                log('Test 8: Game-specific keys are correct - PASS');
+            } else {
+                log('Test 8: Game-specific keys are incorrect - FAIL', false);
+            }
+            
+            // Test 9: Case insensitivity
+            HighScoreManager.setHighScore('SNAKE', 600);
+            const caseScore = HighScoreManager.getHighScore('snake');
+            if (caseScore === 600) {
+                log('Test 9: Game names are case-insensitive - PASS');
+            } else {
+                log(`Test 9: Case-insensitive should work, got ${caseScore} - FAIL`, false);
+            }
+            
+            // Clean up test data
+            localStorage.removeItem('arcade_highscore_test');
+            
+            displayScores();
+        };
+        
+        window.clearAllScores = function() {
+            localStorage.removeItem('arcade_highscore_snake');
+            localStorage.removeItem('arcade_highscore_tetris');
+            localStorage.removeItem('arcade_highscore_breakout');
+            displayScores();
+            log('All high scores cleared');
+        };
+        
+        // Display initial scores
+        displayScores();
+    </script>
+</body>
+</html>
