@@ -1,37 +1,19 @@
 """
-Vecna Adversarial AI Module.
+Vecna Module - Shared Services.
 
-This module provides adversarial AI functionality for the Phantom Link BBS,
-including user profile tracking, sentiment analysis, pattern detection, and
-conditional hostile interactions.
+This module provides shared services for the Phantom Link BBS,
+including Gemini AI service, sentiment analysis, and user profile tracking.
+These services are used by SysOp Brain and will be used by the Support Bot.
 """
 
-from backend.vecna.module import (
-    VecnaModule,
-    TriggerType,
-    VecnaTrigger,
-    VecnaResponse,
-    corrupt_text
-)
 from backend.vecna.sentiment import SentimentAnalyzer, SentimentResult
-from backend.vecna.pattern_detector import PatternDetector
 from backend.vecna.gemini_service import GeminiService, GeminiServiceError
 from backend.vecna.user_profile import UserProfile, UserProfileService
 
 __all__ = [
-    # Core module
-    'VecnaModule',
-    'TriggerType',
-    'VecnaTrigger',
-    'VecnaResponse',
-    'corrupt_text',
-    
     # Sentiment analysis
     'SentimentAnalyzer',
     'SentimentResult',
-    
-    # Pattern detection
-    'PatternDetector',
     
     # Gemini service
     'GeminiService',

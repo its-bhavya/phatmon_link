@@ -49,14 +49,6 @@ class Config:
     GEMINI_TEMPERATURE: float
     GEMINI_MAX_TOKENS: int
     
-    # Vecna Configuration
-    VECNA_ENABLED: bool
-    VECNA_EMOTIONAL_THRESHOLD: float
-    VECNA_SPAM_THRESHOLD: int
-    VECNA_COMMAND_REPEAT_THRESHOLD: int
-    VECNA_MAX_ACTIVATIONS_PER_HOUR: int
-    VECNA_COOLDOWN_SECONDS: int
-    
     # Profile Tracking Configuration
     PROFILE_RETENTION_DAYS: int
     PROFILE_CACHE_TTL_SECONDS: int
@@ -132,55 +124,6 @@ class Config:
         except ValueError:
             raise ConfigurationError(
                 f"GEMINI_MAX_TOKENS must be an integer, got: {gemini_tokens_str}"
-            )
-        
-        # Vecna Configuration
-        vecna_enabled_str = os.getenv("VECNA_ENABLED", "true").lower()
-        self.VECNA_ENABLED = vecna_enabled_str in ("true", "1", "yes")
-        
-        # Parse Vecna emotional threshold
-        vecna_threshold_str = os.getenv("VECNA_EMOTIONAL_THRESHOLD", "0.7")
-        try:
-            self.VECNA_EMOTIONAL_THRESHOLD = float(vecna_threshold_str)
-        except ValueError:
-            raise ConfigurationError(
-                f"VECNA_EMOTIONAL_THRESHOLD must be a float, got: {vecna_threshold_str}"
-            )
-        
-        # Parse Vecna spam threshold
-        vecna_spam_str = os.getenv("VECNA_SPAM_THRESHOLD", "3")
-        try:
-            self.VECNA_SPAM_THRESHOLD = int(vecna_spam_str)
-        except ValueError:
-            raise ConfigurationError(
-                f"VECNA_SPAM_THRESHOLD must be an integer, got: {vecna_spam_str}"
-            )
-        
-        # Parse Vecna command repeat threshold
-        vecna_cmd_str = os.getenv("VECNA_COMMAND_REPEAT_THRESHOLD", "3")
-        try:
-            self.VECNA_COMMAND_REPEAT_THRESHOLD = int(vecna_cmd_str)
-        except ValueError:
-            raise ConfigurationError(
-                f"VECNA_COMMAND_REPEAT_THRESHOLD must be an integer, got: {vecna_cmd_str}"
-            )
-        
-        # Parse Vecna max activations per hour
-        vecna_max_str = os.getenv("VECNA_MAX_ACTIVATIONS_PER_HOUR", "5")
-        try:
-            self.VECNA_MAX_ACTIVATIONS_PER_HOUR = int(vecna_max_str)
-        except ValueError:
-            raise ConfigurationError(
-                f"VECNA_MAX_ACTIVATIONS_PER_HOUR must be an integer, got: {vecna_max_str}"
-            )
-        
-        # Parse Vecna cooldown seconds
-        vecna_cooldown_str = os.getenv("VECNA_COOLDOWN_SECONDS", "60")
-        try:
-            self.VECNA_COOLDOWN_SECONDS = int(vecna_cooldown_str)
-        except ValueError:
-            raise ConfigurationError(
-                f"VECNA_COOLDOWN_SECONDS must be an integer, got: {vecna_cooldown_str}"
             )
         
         # Profile Tracking Configuration
@@ -269,20 +212,8 @@ class Config:
         if not self.DATABASE_URL:
             errors.append("DATABASE_URL cannot be empty.")
         
-        # Validate Gemini configuration (only if Vecna is enabled)
-        if self.VECNA_ENABLED:
-            if not self.GEMINI_API_KEY:
-                if self._is_production():
-                    errors.append(
-                        "GEMINI_API_KEY is required when VECNA_ENABLED is true in production. "
-                        "Set the GEMINI_API_KEY environment variable."
-                    )
-                else:
-                    print(
-                        "WARNING: GEMINI_API_KEY not set. Vecna features will not work properly. "
-                        "Set GEMINI_API_KEY environment variable."
-                    )
-            
+        # Validate Gemini configuration
+        if self.GEMINI_API_KEY:
             # Validate Gemini temperature range
             if not (0.0 <= self.GEMINI_TEMPERATURE <= 2.0):
                 errors.append(
@@ -293,32 +224,6 @@ class Config:
             if self.GEMINI_MAX_TOKENS <= 0:
                 errors.append(
                     f"GEMINI_MAX_TOKENS must be positive, got: {self.GEMINI_MAX_TOKENS}"
-                )
-            
-            # Validate Vecna thresholds
-            if not (0.0 <= self.VECNA_EMOTIONAL_THRESHOLD <= 1.0):
-                errors.append(
-                    f"VECNA_EMOTIONAL_THRESHOLD must be between 0.0 and 1.0, got: {self.VECNA_EMOTIONAL_THRESHOLD}"
-                )
-            
-            if self.VECNA_SPAM_THRESHOLD <= 0:
-                errors.append(
-                    f"VECNA_SPAM_THRESHOLD must be positive, got: {self.VECNA_SPAM_THRESHOLD}"
-                )
-            
-            if self.VECNA_COMMAND_REPEAT_THRESHOLD <= 0:
-                errors.append(
-                    f"VECNA_COMMAND_REPEAT_THRESHOLD must be positive, got: {self.VECNA_COMMAND_REPEAT_THRESHOLD}"
-                )
-            
-            if self.VECNA_MAX_ACTIVATIONS_PER_HOUR <= 0:
-                errors.append(
-                    f"VECNA_MAX_ACTIVATIONS_PER_HOUR must be positive, got: {self.VECNA_MAX_ACTIVATIONS_PER_HOUR}"
-                )
-            
-            if self.VECNA_COOLDOWN_SECONDS < 0:
-                errors.append(
-                    f"VECNA_COOLDOWN_SECONDS must be non-negative, got: {self.VECNA_COOLDOWN_SECONDS}"
                 )
         
         # Validate profile tracking configuration

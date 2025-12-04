@@ -7,16 +7,12 @@
 import { CommandLineBar } from './commandBar.js';
 import { ChatDisplay } from './chatDisplay.js';
 import { SidePanel } from './sidePanel.js';
-import { VecnaHandler } from './vecnaHandler.js';
-import { VecnaEffects } from './vecnaEffects.js';
 
 // Application state
 let wsClient = null;
 let commandBar = null;
 let chatDisplay = null;
 let sidePanel = null;
-let vecnaEffects = null;
-let vecnaHandler = null;
 let currentRoom = 'Lobby';
 let activeUsers = [];
 
@@ -45,11 +41,6 @@ function init() {
     
     // Initialize SidePanel with room click handler (Requirement 4.3, 6.3, 6.4)
     sidePanel = new SidePanel('sidePanel', handleSidePanelRoomClick);
-    
-    // Initialize Vecna components (Requirements 4.2, 5.1, 5.2, 5.6)
-    const chatDisplayElement = document.getElementById('chatDisplay');
-    vecnaEffects = new VecnaEffects(chatDisplayElement);
-    vecnaHandler = new VecnaHandler(chatDisplay, commandBar, vecnaEffects);
     
     // Check if user is authenticated
     const token = localStorage.getItem('jwt_token');
@@ -504,9 +495,6 @@ function handleCommandSubmit(command, args, fullInput) {
  * - room_list: Room list updates
  * - room_change: Room change notifications
  * - help: Help command responses
- * - vecna_emotional: Vecna emotional trigger (Requirements 3.3, 9.1)
- * - vecna_psychic_grip: Vecna Psychic Grip with thread freeze (Requirements 4.1, 4.5, 9.1)
- * - vecna_release: Vecna control release (Requirements 4.5, 9.2)
  * 
  * @param {Object} message - The message object from server
  */
@@ -538,22 +526,6 @@ function handleWebSocketMessage(message) {
             
         case 'help':
             handleHelpMessage(message);
-            break;
-            
-        case 'vecna_emotional':
-            handleVecnaEmotional(message);
-            break;
-            
-        case 'vecna_psychic_grip':
-            handleVecnaPsychicGrip(message);
-            break;
-            
-        case 'vecna_message':
-            handleVecnaMessage(message);
-            break;
-            
-        case 'vecna_release':
-            handleVecnaRelease(message);
             break;
             
         default:
@@ -673,77 +645,6 @@ function handleHelpMessage(message) {
         content: message.content,
         timestamp: message.timestamp
     });
-}
-
-/**
- * Handle Vecna emotional trigger message (Requirements 3.3, 9.1)
- * Displays corrupted hostile response with text corruption effects
- * @param {Object} message - Vecna emotional message object
- */
-function handleVecnaEmotional(message) {
-    if (vecnaHandler) {
-        vecnaHandler.handleEmotionalTrigger(message);
-    } else {
-        // Fallback if VecnaHandler not initialized
-        chatDisplay.addMessage({
-            type: 'system',
-            content: message.content,
-            timestamp: message.timestamp
-        });
-    }
-}
-
-/**
- * Handle Vecna Psychic Grip message (Requirements 4.1, 4.5, 9.1)
- * Freezes input and applies visual effects for the specified duration
- * @param {Object} message - Vecna Psychic Grip message object
- */
-function handleVecnaPsychicGrip(message) {
-    if (vecnaHandler) {
-        vecnaHandler.handlePsychicGrip(message);
-    } else {
-        // Fallback if VecnaHandler not initialized
-        chatDisplay.addMessage({
-            type: 'system',
-            content: message.content,
-            timestamp: message.timestamp
-        });
-    }
-}
-
-/**
- * Handle additional Vecna messages during Psychic Grip
- * Displays subsequent messages with visual effects
- * @param {Object} message - Vecna message object
- */
-function handleVecnaMessage(message) {
-    if (vecnaHandler) {
-        vecnaHandler.displayVecnaMessage(message.content, false);
-    } else {
-        // Fallback if VecnaHandler not initialized
-        chatDisplay.addMessage({
-            type: 'system',
-            content: message.content,
-            timestamp: message.timestamp
-        });
-    }
-}
-
-/**
- * Handle Vecna release message (Requirements 4.5, 9.2)
- * Restores normal operation after Psychic Grip
- * @param {Object} message - Vecna release message object
- */
-function handleVecnaRelease(message) {
-    if (vecnaHandler) {
-        vecnaHandler.handleGripRelease();
-    } else {
-        // Fallback if VecnaHandler not initialized
-        chatDisplay.addMessage({
-            type: 'system',
-            content: message.content || 'Control returned to SysOp. Continue your session.'
-        });
-    }
 }
 
 /**

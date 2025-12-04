@@ -27,7 +27,6 @@ from backend.rooms.service import RoomService
 from backend.commands.handler import CommandHandler
 from backend.rate_limiter import RateLimiter
 from backend.config import get_config
-from backend.vecna.auto_router import on_message_hook
 from backend.vecna.gemini_service import GeminiService, GeminiServiceError
 from backend.sysop.brain import SysOpBrain
 from backend.vecna.user_profile import UserProfileService
@@ -547,7 +546,7 @@ async def websocket_endpoint(
     5. Handles incoming messages (chat_message, command, join_room)
     6. Broadcasts messages to appropriate rooms
     7. Handles disconnection and session preservation
-    8. Integrates Vecna and SysOp Brain for message processing
+    8. Integrates SysOp Brain for message processing
     
     Requirements: 4.2, 5.1, 5.2, 6.1, 6.2, 8.1, 8.3, 8.4, 8.5, 1.3, 6.1, 6.2, 6.3, 6.4, 6.5
     """
@@ -555,14 +554,6 @@ async def websocket_endpoint(
     user_profile_service = UserProfileService(db)
     user = None
     recent_messages = []  # Track recent messages for spam detection
-    
-    # Initialize Vecna rate limiter for this connection (if Vecna is enabled)
-    vecna_rate_limiter = None
-    if hasattr(app.state, 'vecna_rate_limiter_config'):
-        vecna_rate_limiter = VecnaRateLimiter(
-            db=db,
-            **app.state.vecna_rate_limiter_config
-        )
     
     try:
         # Validate token
@@ -715,129 +706,129 @@ async def websocket_endpoint(
                 if sysop_brain:
                     try:
                         sysop_result = await sysop_brain.process_message(
-                                user=user,
-                                message=content,
-                                current_room=current_room,
-                                user_profile=user_profile
-                            )
+                            user=user,
+                            message=content,
+                            current_room=current_room,
+                            user_profile=user_profile
+                        )
+                        
+                        # Handle different actions
+                        action = sysop_result.get("action")
+                        
+                        if action == "suggest_room":
+                            # Room suggestion - only move if high confidence and different room
+                            suggested_room = sysop_result.get("room")
                             
-                            # Handle different actions
-                            action = sysop_result.get("action")
-                            
-                            if action == "suggest_room":
-                                # Room suggestion - only move if high confidence and different room
-                                suggested_room = sysop_result.get("room")
+                            if suggested_room and suggested_room != current_room:
+                                # Leave current room
+                                app.state.room_service.leave_room(user, current_room)
                                 
-                                if suggested_room and suggested_room != current_room:
-                                    # Leave current room
-                                    app.state.room_service.leave_room(user, current_room)
+                                # Notify old room
+                                await app.state.websocket_manager.broadcast_to_room(
+                                    current_room,
+                                    {
+                                        "type": "system",
+                                        "content": f"* {user.username} has left the room"
+                                    }
+                                )
+                                
+                                # Join new room
+                                app.state.room_service.join_room(user, suggested_room)
+                                app.state.websocket_manager.update_user_room(websocket, suggested_room)
+                                current_room = suggested_room
+                                
+                                # Send room_change message FIRST to update side panel
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "room_change",
+                                    "room": suggested_room,
+                                    "content": f"You are now in: {suggested_room}"
+                                })
+                                
+                                # Send room entry message to user
+                                room = app.state.room_service.get_room(suggested_room)
+                                if room:
+                                    await app.state.websocket_manager.send_to_user(websocket, {
+                                        "type": "system",
+                                        "content": f"\n[SYSOP] Moving you to {suggested_room} - better fit for your message."
+                                    })
                                     
-                                    # Notify old room
+                                    await app.state.websocket_manager.send_to_user(websocket, {
+                                        "type": "system",
+                                        "content": f"\n=== {room.name} ===\n{room.description}\n"
+                                    })
+                                    
+                                    # Send recent message history
+                                    recent_messages = room.get_recent_messages(limit=20)
+                                    if recent_messages:
+                                        await app.state.websocket_manager.send_to_user(websocket, {
+                                            "type": "system",
+                                            "content": "--- Recent messages ---"
+                                        })
+                                        for msg in recent_messages:
+                                            await app.state.websocket_manager.send_to_user(websocket, msg)
+                                    
+                                    # Notify new room of user entry
                                     await app.state.websocket_manager.broadcast_to_room(
-                                        current_room,
+                                        suggested_room,
                                         {
                                             "type": "system",
-                                            "content": f"* {user.username} has left the room"
-                                        }
+                                            "content": f"* {user.username} has entered the room"
+                                        },
+                                        exclude_websocket=websocket
                                     )
-                                    
-                                    # Join new room
-                                    app.state.room_service.join_room(user, suggested_room)
-                                    app.state.websocket_manager.update_user_room(websocket, suggested_room)
-                                    current_room = suggested_room
-                                    
-                                    # Send room_change message FIRST to update side panel
-                                    await app.state.websocket_manager.send_to_user(websocket, {
-                                        "type": "room_change",
-                                        "room": suggested_room,
-                                        "content": f"You are now in: {suggested_room}"
-                                    })
-                                    
-                                    # Send room entry message to user
-                                    room = app.state.room_service.get_room(suggested_room)
-                                    if room:
-                                        await app.state.websocket_manager.send_to_user(websocket, {
-                                            "type": "system",
-                                            "content": f"\n[SYSOP] Moving you to {suggested_room} - better fit for your message."
-                                        })
-                                        
-                                        await app.state.websocket_manager.send_to_user(websocket, {
-                                            "type": "system",
-                                            "content": f"\n=== {room.name} ===\n{room.description}\n"
-                                        })
-                                        
-                                        # Send recent message history
-                                        recent_messages = room.get_recent_messages(limit=20)
-                                        if recent_messages:
-                                            await app.state.websocket_manager.send_to_user(websocket, {
-                                                "type": "system",
-                                                "content": "--- Recent messages ---"
-                                            })
-                                            for msg in recent_messages:
-                                                await app.state.websocket_manager.send_to_user(websocket, msg)
-                                        
-                                        # Notify new room of user entry
-                                        await app.state.websocket_manager.broadcast_to_room(
-                                            suggested_room,
-                                            {
-                                                "type": "system",
-                                                "content": f"* {user.username} has entered the room"
-                                            },
-                                            exclude_websocket=websocket
-                                        )
-                                    
-                                    # Broadcast updated room list
-                                    rooms = app.state.room_service.get_rooms()
-                                    await app.state.websocket_manager.broadcast_to_all({
-                                        "type": "room_list",
-                                        "rooms": [
-                                            {
-                                                "name": room.name,
-                                                "count": app.state.room_service.get_room_count(room.name),
-                                                "description": room.description
-                                            }
-                                            for room in rooms
-                                        ]
-                                    })
-                            
-                            elif action == "create_board":
-                                # Dynamic board creation - move user to new board
-                                new_board = sysop_result.get("board")
-                                if new_board:
-                                    # Leave current room
-                                    app.state.room_service.leave_room(user, current_room)
-                                    
-                                    # Join new board
-                                    app.state.room_service.join_room(user, new_board.name)
-                                    app.state.websocket_manager.update_user_room(websocket, new_board.name)
-                                    current_room = new_board.name
-                                    
-                                    # Notify user
-                                    await app.state.websocket_manager.send_to_user(websocket, {
-                                        "type": "system",
-                                        "content": sysop_result.get("message", f"Created new board: {new_board.name}")
-                                    })
-                                    
-                                    # Send room entry message
-                                    await app.state.websocket_manager.send_to_user(websocket, {
-                                        "type": "system",
-                                        "content": f"\n=== {new_board.name} ===\n{new_board.description}\n"
-                                    })
-                                    
-                                    # Broadcast updated room list
-                                    rooms = app.state.room_service.get_rooms()
-                                    await app.state.websocket_manager.broadcast_to_all({
-                                        "type": "room_list",
-                                        "rooms": [
-                                            {
-                                                "name": room.name,
-                                                "count": app.state.room_service.get_room_count(room.name),
-                                                "description": room.description
-                                            }
-                                            for room in rooms
-                                        ]
-                                    })
+                                
+                                # Broadcast updated room list
+                                rooms = app.state.room_service.get_rooms()
+                                await app.state.websocket_manager.broadcast_to_all({
+                                    "type": "room_list",
+                                    "rooms": [
+                                        {
+                                            "name": room.name,
+                                            "count": app.state.room_service.get_room_count(room.name),
+                                            "description": room.description
+                                        }
+                                        for room in rooms
+                                    ]
+                                })
                         
+                        elif action == "create_board":
+                            # Dynamic board creation - move user to new board
+                            new_board = sysop_result.get("board")
+                            if new_board:
+                                # Leave current room
+                                app.state.room_service.leave_room(user, current_room)
+                                
+                                # Join new board
+                                app.state.room_service.join_room(user, new_board.name)
+                                app.state.websocket_manager.update_user_room(websocket, new_board.name)
+                                current_room = new_board.name
+                                
+                                # Notify user
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "system",
+                                    "content": sysop_result.get("message", f"Created new board: {new_board.name}")
+                                })
+                                
+                                # Send room entry message
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "system",
+                                    "content": f"\n=== {new_board.name} ===\n{new_board.description}\n"
+                                })
+                                
+                                # Broadcast updated room list
+                                rooms = app.state.room_service.get_rooms()
+                                await app.state.websocket_manager.broadcast_to_all({
+                                    "type": "room_list",
+                                    "rooms": [
+                                        {
+                                            "name": room.name,
+                                            "count": app.state.room_service.get_room_count(room.name),
+                                            "description": room.description
+                                        }
+                                        for room in rooms
+                                    ]
+                                })
+                    
                     except Exception as e:
                         # Log error but don't break message flow
                         print(f"SysOp Brain error: {e}")

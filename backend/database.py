@@ -46,9 +46,6 @@ class User(Base):
     # Relationship to board tracking
     board_tracking = relationship("BoardTracking", back_populates="user", cascade="all, delete-orphan")
     
-    # Relationship to vecna activations
-    vecna_activations = relationship("VecnaActivation", back_populates="user", cascade="all, delete-orphan")
-    
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}')>"
 
@@ -89,7 +86,7 @@ Index('idx_token', Session.token)
 
 class UserProfile(Base):
     """
-    User profile model for behavioral tracking and Vecna analysis.
+    User profile model for behavioral tracking and analysis.
     
     Attributes:
         id: Primary key, auto-incrementing integer
@@ -171,39 +168,8 @@ class BoardTracking(Base):
         return f"<BoardTracking(id={self.id}, user_id={self.user_id}, board_name='{self.board_name}', completed={self.completed})>"
 
 
-class VecnaActivation(Base):
-    """
-    Vecna activation log model for tracking adversarial AI triggers.
-    
-    Attributes:
-        id: Primary key, auto-incrementing integer
-        user_id: Foreign key to users table
-        trigger_type: Type of trigger (emotional or system)
-        reason: Description of why Vecna was triggered
-        intensity: Intensity score of the trigger (0.0-1.0)
-        response_content: Content of Vecna's response
-        activated_at: Timestamp when Vecna was activated
-    """
-    __tablename__ = "vecna_activations"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    trigger_type = Column(Text, nullable=False)
-    reason = Column(Text, nullable=True)
-    intensity = Column(Float, nullable=True)
-    response_content = Column(Text, nullable=True)
-    activated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    
-    # Relationship to user
-    user = relationship("User", back_populates="vecna_activations")
-    
-    def __repr__(self):
-        return f"<VecnaActivation(id={self.id}, user_id={self.user_id}, trigger_type='{self.trigger_type}')>"
-
-
 # Indexes for performance optimization
 Index('idx_command_history_user_time', CommandHistory.user_id, CommandHistory.executed_at)
-Index('idx_vecna_activations_user', VecnaActivation.user_id)
 Index('idx_board_tracking_user', BoardTracking.user_id)
 
 
