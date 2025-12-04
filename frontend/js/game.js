@@ -2,6 +2,14 @@
  * Base Game Interface
  * All games must implement this interface
  * Requirements: 3.1, 3.2, 4.1, 4.2
+ * 
+ * SILENT DESIGN REQUIREMENT (Requirements 11.1, 11.2, 11.3, 11.4, 11.5):
+ * All games implementing this interface must be completely silent without any audio.
+ * - No audio elements should be created
+ * - No audio files should be loaded or referenced
+ * - No sound playback should occur during gameplay or events
+ * - All feedback must be provided through visual means only
+ * This maintains the quiet retro-terminal atmosphere of the BBS.
  */
 
 export class Game {

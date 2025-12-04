@@ -245,7 +245,8 @@
   - **Property 3: Sidebar game launch from any room**
   - **Validates: Requirements 2.5**
 
-- [x] 10. Implement performance optimizations
+- [ ] 10. Implement performance optimizations
+
 
 
 
@@ -268,7 +269,9 @@
   - **Property 33: Input responsiveness**
   - **Validates: Requirements 10.4**
 
-- [ ] 11. Ensure complete silence (no audio)
+
+- [x] 11. Ensure complete silence (no audio)
+
 
   - Verify no audio elements are created in any game code
   - Verify no audio files are loaded or referenced

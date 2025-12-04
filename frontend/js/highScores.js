@@ -2,6 +2,13 @@
  * High Score Manager
  * Manages localStorage-based score persistence
  * Requirements: 9.1, 9.2, 9.5
+ * 
+ * SILENT DESIGN REQUIREMENT (Requirements 11.1, 11.2, 11.3, 11.4, 11.5):
+ * High score updates are intentionally silent without any audio feedback.
+ * - No audio elements are created when scores are saved or updated
+ * - No sound effects play when achieving a new high score
+ * - All feedback is provided through visual means only
+ * This maintains the quiet retro-terminal atmosphere of the BBS.
  */
 
 export class HighScoreManager {

@@ -2,6 +2,14 @@
  * Breakout Game
  * Classic brick-breaking game with paddle and ball
  * Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7
+ * 
+ * SILENT DESIGN REQUIREMENT (Requirements 11.1, 11.2, 11.3, 11.4, 11.5):
+ * This game is intentionally designed to be completely silent without any audio.
+ * - No audio elements are created
+ * - No audio files are loaded or referenced
+ * - No sound playback occurs during gameplay or events
+ * - All feedback is provided through visual means only
+ * This maintains the quiet retro-terminal atmosphere of the BBS.
  */
 
 import { Game } from './game.js';

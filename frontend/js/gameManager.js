@@ -8,6 +8,14 @@
  * - FPS monitoring (Requirement 10.2): Tracks and maintains 30+ FPS
  * - Input debouncing (Requirement 10.3): Prevents input flooding at ~60Hz
  * - Input latency tracking (Requirement 10.4): Measures and warns if > 50ms
+ * 
+ * SILENT DESIGN REQUIREMENT (Requirements 11.1, 11.2, 11.3, 11.4, 11.5):
+ * All games managed by this system are intentionally designed to be completely silent.
+ * - No audio elements are created in any game code
+ * - No audio files are loaded or referenced
+ * - No sound playback occurs during gameplay or events
+ * - All feedback is provided through visual means only
+ * This maintains the quiet retro-terminal atmosphere of the BBS.
  */
 
 import { HighScoreManager } from './highScores.js';
