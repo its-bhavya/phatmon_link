@@ -31,13 +31,14 @@ class RoomService:
     
     def create_default_rooms(self) -> None:
         """
-        Create the four default rooms for the BBS.
+        Create the default rooms for the BBS.
         
         Default rooms:
         - Lobby: Main gathering space, default entry point
         - Techline: Technology and programming discussions
         - Arcade Hall: Gaming and entertainment
         - Archives: Historical BBS content and nostalgia
+        - Support: Empathetic support bot for emotional support
         
         This method is idempotent - calling it multiple times won't create duplicates.
         """
@@ -45,7 +46,8 @@ class RoomService:
             ("Lobby", "Main gathering space - Welcome to Gatekeeper!"),
             ("Techline", "Technology and programming discussions"),
             ("Arcade Hall", "Gaming and entertainment zone"),
-            ("Archives", "Historical BBS content and nostalgia")
+            ("Archives", "Historical BBS content and nostalgia"),
+            ("Support", "Private space for emotional support and listening")
         ]
         
         for name, description in default_rooms:

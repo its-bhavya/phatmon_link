@@ -110,18 +110,26 @@ export class SupportHandler {
         // Format timestamp
         const formattedTimestamp = this.formatTimestamp(timestamp);
         
-        // Create message with [SUPPORT] prefix
+        // Backend already sends [SUPPORT] prefix in content, so extract it
+        // Content format: "[SUPPORT] message text"
+        let prefixText = '[SUPPORT]';
+        let messageText = content;
+        
+        if (content.startsWith('[SUPPORT]')) {
+            messageText = content.substring(9).trim(); // Remove "[SUPPORT]" and trim
+        }
+        
         const timestampSpan = document.createElement('span');
         timestampSpan.className = 'timestamp';
         timestampSpan.textContent = formattedTimestamp;
         
         const supportPrefix = document.createElement('span');
         supportPrefix.className = 'support-prefix';
-        supportPrefix.textContent = '[SUPPORT]';
+        supportPrefix.textContent = prefixText;
         
         const contentSpan = document.createElement('span');
         contentSpan.className = 'support-content';
-        contentSpan.textContent = ` ${content}`;
+        contentSpan.textContent = ` ${messageText}`;
         
         div.appendChild(timestampSpan);
         div.appendChild(document.createTextNode(' '));

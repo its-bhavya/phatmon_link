@@ -77,6 +77,12 @@ export class ChatDisplay {
         } else if (message.type === 'chat_message' || message.username) {
             // Format messages as "[HH:MM:SS] <username> message" (Requirement 5.3)
             const username = message.username || 'Unknown';
+            
+            // Add special class for user messages in support rooms (plain white styling)
+            if (message.is_support_room) {
+                div.classList.add('support-user-message');
+            }
+            
             div.innerHTML = `<span class="timestamp">${timestamp}</span> <span class="username">&lt;${this.escapeHtml(username)}&gt;</span> ${this.escapeHtml(message.content)}`;
         } else {
             // Generic message

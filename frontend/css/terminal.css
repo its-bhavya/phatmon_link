@@ -6,15 +6,18 @@
 /* Import retro terminal font */
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-/* Root variables - Stranger Things inspired theme */
+/* Root variables - Monochrome retro theme */
 :root {
     --terminal-red: #d32f2f;
     --terminal-dark-red: #8b0000;
     --terminal-orange: #ff6b35;
-    --terminal-bg: #0a0a0a;
+    --terminal-bg: #000000;
     --terminal-yellow: #ffd700;
-    --terminal-white: #e0e0e0;
-    --terminal-gray: #757575;
+    --terminal-white: #FFFFFF;
+    --terminal-off-white: #E6E6E6;
+    --terminal-gray: #808080;
+    --terminal-light-gray: #A0A0A0;
+    --terminal-light-blue: #8ECFFF;
     --terminal-upside-down: #1a0505;
     --glow-intensity: 0px;
 }
@@ -78,6 +81,7 @@ body,
 .command-line-bar {
     color: var(--terminal-white);
     text-shadow: none;
+    font-weight: normal;
 }
 
 /* Command line bar with fixed bottom position */
@@ -86,18 +90,18 @@ body,
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: var(--terminal-upside-down);
-    border-top: 2px solid var(--terminal-dark-red);
+    background-color: var(--terminal-bg);
+    border-top: 2px solid var(--terminal-white);
     padding: 15px 20px;
     display: flex;
     align-items: center;
     z-index: 100;
-    box-shadow: 0 -2px 10px rgba(139, 0, 0, 0.3);
+    box-shadow: none;
 }
 
 /* Command prompt symbol */
 .command-prompt {
-    color: var(--terminal-red);
+    color: var(--terminal-white);
     margin-right: 10px;
     font-weight: bold;
     font-size: 19px;
@@ -113,7 +117,7 @@ body,
     font-family: 'VT323', 'Courier New', monospace;
     font-size: 19px;
     outline: none;
-    caret-color: var(--terminal-red);
+    caret-color: var(--terminal-white);
     text-shadow: none;
 }
 
@@ -127,7 +131,7 @@ body,
     display: inline-block;
     width: 10px;
     height: 20px;
-    background-color: var(--terminal-red);
+    background-color: var(--terminal-white);
     margin-left: 2px;
     /* Blinking cursor with smooth animation */
     animation: cursor-blink 1s step-end infinite;
@@ -143,53 +147,55 @@ body,
     }
 }
 
-/* Message styling with phosphor glow */
+/* Message styling - clean white text */
 .message {
     margin-bottom: 8px;
     word-wrap: break-word;
     line-height: 1.4;
     font-size: 17px;
-}
-
-/* System messages in orange */
-.message.system {
-    color: var(--terminal-orange);
+    color: var(--terminal-white);
     text-shadow: none;
+    font-weight: normal;
 }
 
-/* Error messages in bright red */
+/* System messages - keep existing support bot styling */
+.message.system {
+    color: rgba(135, 206, 235, 0.6);
+    text-shadow: none;
+    font-weight: normal;
+}
+
+/* Error messages in white */
 .message.error {
     color: var(--terminal-red);
     text-shadow: none;
+    font-weight: normal;
 }
 
-/* Timestamp styling */
+/* Timestamp styling - keep subtle grey */
 .timestamp {
     color: var(--terminal-gray);
     text-shadow: none;
+    font-weight: normal;
 }
 
-/* Username styling */
+/* Username styling - white, no glow */
 .username {
-    color: var(--terminal-yellow);
+    color: var(--terminal-white);
     font-weight: bold;
     text-shadow: none;
 }
 
-/* Screen glow effect - outer glow around entire terminal */
+/* Pure black background */
 body {
-    background-color: #0a0a0a;
-    background-image: radial-gradient(
-        ellipse at center,
-        rgba(255, 0, 0, 0.15) 0%,
-        rgba(0, 0, 0, 1) 70%
-    );
+    background-color: #000000;
+    background-image: none;
 }
 
 /* Additional CRT effects */
 .terminal-screen {
-    /* Slight vignette effect */
-    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8);
+    /* Remove vignette effect for clean look */
+    box-shadow: none;
 }
 
 /* Scrollbar styling for terminal aesthetic */
@@ -199,7 +205,7 @@ body {
 
 .chat-display::-webkit-scrollbar-track {
     background: var(--terminal-bg);
-    border-left: 1px solid var(--terminal-dark-red);
+    border-left: 1px solid var(--terminal-off-white);
 }
 
 .chat-display::-webkit-scrollbar-thumb {
@@ -207,14 +213,14 @@ body {
     border-radius: 4px;
     box-shadow: 
         0 0 5px var(--terminal-red),
-        inset 0 0 5px rgba(255, 0, 0, 0.5);
+        inset 0 0 5px rgba(169, 232, 255, 0.7);
 }
 
 .chat-display::-webkit-scrollbar-thumb:hover {
     background: var(--terminal-red);
     box-shadow: 
         0 0 10px var(--terminal-red),
-        inset 0 0 10px rgba(255, 0, 0, 0.7);
+        inset 0 0 10px rgba(169, 232, 255, 0.7);
 }
 
 /* Firefox scrollbar */
@@ -274,17 +280,17 @@ body {
 .side-panel {
     width: 280px;
     background-color: var(--terminal-bg);
-    border-left: 2px solid var(--terminal-red);
+    border-left: 2px solid var(--terminal-white);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
     position: relative;
     z-index: 50;
-    /* Add red phosphor glow to border */
+    /* Subtle light blue glow */
     box-shadow: 
-        -2px 0 10px rgba(255, 0, 0, 0.4),
-        inset 0 0 20px rgba(255, 0, 0, 0.05);
+        -2px 0 8px rgba(142, 207, 255, 0.3),
+        inset 0 0 15px rgba(142, 207, 255, 0.05);
 }
 
 /* Collapsed state */
@@ -299,45 +305,42 @@ body {
 /* Panel header with title and toggle */
 .panel-header {
     padding: 15px;
-    border-bottom: 2px solid var(--terminal-red);
+    border-bottom: 2px solid var(--terminal-white);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: rgba(17, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.8);
     box-shadow: 
-        0 2px 10px rgba(255, 0, 0, 0.3),
-        inset 0 0 15px rgba(255, 0, 0, 0.05);
+        0 2px 8px rgba(142, 207, 255, 0.2),
+        inset 0 0 12px rgba(142, 207, 255, 0.03);
 }
 
 .panel-title {
-    color: var(--terminal-red);
+    color: var(--terminal-white);
     font-weight: bold;
     font-size: 21px;
-    text-shadow: 
-        0 0 5px var(--terminal-red),
-        0 0 10px var(--terminal-red);
+    text-shadow: none;
     letter-spacing: 3px;
 }
 
 /* Toggle button */
 .panel-toggle {
     background: transparent;
-    border: 1px solid var(--terminal-red);
-    color: var(--terminal-red);
+    border: 1px solid var(--terminal-white);
+    color: var(--terminal-white);
     padding: 5px 10px;
     cursor: pointer;
     font-family: 'VT323', 'Courier New', monospace;
     font-size: 17px;
     transition: all 0.2s ease;
-    text-shadow: 0 0 3px var(--terminal-red);
+    text-shadow: none;
 }
 
 .panel-toggle:hover {
-    background-color: var(--terminal-red);
+    background-color: var(--terminal-light-blue);
     color: var(--terminal-bg);
     box-shadow: 
-        0 0 10px var(--terminal-red),
-        0 0 20px rgba(255, 0, 0, 0.5);
+        0 0 8px rgba(142, 207, 255, 0.4);
     transform: scale(1.05);
 }
 
@@ -361,24 +364,22 @@ body {
 }
 
 .section-header {
-    color: var(--terminal-orange);
+    color: var(--terminal-white);
     font-weight: bold;
     margin-bottom: 12px;
     text-align: center;
-    text-shadow: 
-        0 0 5px var(--terminal-orange),
-        0 0 10px var(--terminal-orange);
+    text-shadow: none;
     font-size: 19px;
     letter-spacing: 2px;
 }
 
 .panel-separator {
-    color: var(--terminal-red);
+    color: var(--terminal-white);
     text-align: center;
     padding: 10px 0;
     opacity: 0.4;
     font-size: 17px;
-    text-shadow: 0 0 3px var(--terminal-red);
+    text-shadow: none;
 }
 
 /* Rooms list */
@@ -390,44 +391,44 @@ body {
 
 .room-item {
     padding: 10px 12px;
-    border: 1px solid var(--terminal-red);
+    border: 1px solid var(--terminal-white);
     cursor: pointer;
     transition: all 0.2s ease;
-    color: var(--terminal-red);
+    color: var(--terminal-white);
     font-size: 19px;
     background-color: rgba(0, 0, 0, 0.5);
-    text-shadow: 0 0 3px var(--terminal-red);
+    text-shadow: none;
 }
 
 /* Hover effect for rooms */
 .room-item:hover {
-    background-color: rgba(26, 0, 0, 0.8);
+    background-color: rgba(20, 20, 20, 0.8);
     box-shadow: 
-        0 0 10px rgba(255, 0, 0, 0.4),
-        inset 0 0 10px rgba(255, 0, 0, 0.1);
-    border-color: var(--terminal-orange);
+        0 0 8px rgba(142, 207, 255, 0.3),
+        inset 0 0 8px rgba(142, 207, 255, 0.08);
+    border-color: var(--terminal-light-blue);
     transform: translateX(-2px);
 }
 
-/* Active/current room highlight */
+/* Active/current room highlight with light blue glow */
 .room-item.active {
-    background-color: var(--terminal-red);
-    color: var(--terminal-bg);
+    background-color: rgba(142, 207, 255, 0.15);
+    color: var(--terminal-white);
     font-weight: bold;
     box-shadow: 
-        0 0 15px var(--terminal-red),
-        0 0 25px rgba(255, 0, 0, 0.5),
-        inset 0 0 10px rgba(0, 0, 0, 0.3);
-    border-color: var(--terminal-red);
+        0 0 12px rgba(142, 207, 255, 0.5),
+        0 0 20px rgba(142, 207, 255, 0.3),
+        inset 0 0 10px rgba(142, 207, 255, 0.1);
+    border-color: var(--terminal-light-blue);
     text-shadow: none;
 }
 
 .room-item.active:hover {
     transform: translateX(-2px);
     box-shadow: 
-        0 0 20px var(--terminal-red),
-        0 0 30px rgba(255, 0, 0, 0.6),
-        inset 0 0 10px rgba(0, 0, 0, 0.3);
+        0 0 15px rgba(142, 207, 255, 0.6),
+        0 0 25px rgba(142, 207, 255, 0.4),
+        inset 0 0 12px rgba(142, 207, 255, 0.12);
 }
 
 .room-item.loading {
@@ -469,17 +470,17 @@ body {
 
 .user-item {
     padding: 8px 12px;
-    color: var(--terminal-red);
+    color: var(--terminal-white);
     font-size: 19px;
     border-left: 3px solid transparent;
     transition: all 0.2s ease;
     background-color: rgba(0, 0, 0, 0.3);
-    text-shadow: 0 0 3px var(--terminal-red);
+    text-shadow: none;
 }
 
 .user-item:hover {
-    border-left-color: var(--terminal-orange);
-    background-color: rgba(26, 0, 0, 0.5);
+    border-left-color: var(--terminal-light-blue);
+    background-color: rgba(20, 20, 20, 0.5);
     padding-left: 15px;
 }
 
@@ -508,28 +509,22 @@ body {
 
 .side-panel::-webkit-scrollbar-track {
     background: var(--terminal-bg);
-    border-left: 1px solid rgba(255, 0, 0, 0.2);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .side-panel::-webkit-scrollbar-thumb {
-    background: var(--terminal-red);
+    background: var(--terminal-white);
     border-radius: 3px;
-    box-shadow: 
-        0 0 5px var(--terminal-red),
-        inset 0 0 3px rgba(255, 0, 0, 0.5);
 }
 
 .side-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--terminal-red);
-    box-shadow: 
-        0 0 10px var(--terminal-red),
-        inset 0 0 5px rgba(255, 0, 0, 0.7);
+    background: var(--terminal-light-blue);
 }
 
 /* Firefox scrollbar */
 .side-panel {
     scrollbar-width: thin;
-    scrollbar-color: var(--terminal-red) var(--terminal-bg);
+    scrollbar-color: var(--terminal-white) var(--terminal-bg);
 }
 
 .users-list::-webkit-scrollbar {
@@ -541,7 +536,7 @@ body {
 }
 
 .users-list::-webkit-scrollbar-thumb {
-    background: var(--terminal-dark-red);
+    background: var(--terminal-white);
     border-radius: 2px;
 }
 
@@ -773,6 +768,27 @@ body {
     }
 }
 
+/* User messages in support rooms - plain white styling */
+.message.support-user-message {
+    color: var(--terminal-white);
+    background-color: transparent;
+    border-left: none;
+    padding: 8px 0;
+    margin: 8px 0;
+    box-shadow: none;
+}
+
+.message.support-user-message .username {
+    color: var(--terminal-white);
+    font-weight: bold;
+    text-shadow: none;
+}
+
+.message.support-user-message .timestamp {
+    color: var(--terminal-gray);
+    text-shadow: none;
+}
+
 /* Responsive adjustments for mobile devices */
 @media (max-width: 768px) {
     .message.support-message,
@@ -791,195 +807,5 @@ body {
     .support-prefix,
     .crisis-prefix {
         font-size: 16px;
-    }
-}
-
-/* ============================================
-   VECNA EFFECTS STYLES
-   Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 9.3
-   ============================================ */
-
-/* Vecna corrupted text styling (Requirements 5.1, 9.3) */
-.vecna-corrupted {
-    color: #ff3333 !important;
-    text-shadow: 
-        0 0 10px #ff3333,
-        0 0 20px #ff0000,
-        0 0 30px #ff0000 !important;
-    animation: glitch 0.3s infinite;
-}
-
-/* Vecna message styling (Requirement 9.3) */
-.vecna-message {
-    color: #ff3333;
-    text-shadow: 
-        0 0 10px #ff3333,
-        0 0 20px #ff0000;
-    font-weight: bold;
-}
-
-.vecna-text {
-    font-weight: bold;
-    letter-spacing: 1px;
-}
-
-/* Glitch animation for corrupted text */
-@keyframes glitch {
-    0% { 
-        transform: translate(0);
-        text-shadow: 
-            0 0 10px #ff3333,
-            0 0 20px #ff0000,
-            0 0 30px #ff0000;
-    }
-    20% { 
-        transform: translate(-2px, 2px);
-        text-shadow: 
-            2px 0 10px #ff3333,
-            -2px 0 20px #ff0000,
-            0 0 30px #ff0000;
-    }
-    40% { 
-        transform: translate(-2px, -2px);
-        text-shadow: 
-            -2px 0 10px #ff3333,
-            2px 0 20px #ff0000,
-            0 0 30px #ff0000;
-    }
-    60% { 
-        transform: translate(2px, 2px);
-        text-shadow: 
-            0 2px 10px #ff3333,
-            0 -2px 20px #ff0000,
-            0 0 30px #ff0000;
-    }
-    80% { 
-        transform: translate(2px, -2px);
-        text-shadow: 
-            0 -2px 10px #ff3333,
-            0 2px 20px #ff0000,
-            0 0 30px #ff0000;
-    }
-    100% { 
-        transform: translate(0);
-        text-shadow: 
-            0 0 10px #ff3333,
-            0 0 20px #ff0000,
-            0 0 30px #ff0000;
-    }
-}
-
-/* Psychic Grip screen flicker effect (Requirement 5.2) */
-.vecna-psychic-grip {
-    animation: screen-flicker 0.1s infinite !important;
-}
-
-@keyframes screen-flicker {
-    0%, 100% { 
-        opacity: 1;
-        filter: brightness(1);
-    }
-    25% { 
-        opacity: 0.8;
-        filter: brightness(0.9);
-    }
-    50% { 
-        opacity: 0.9;
-        filter: brightness(1.1);
-    }
-    75% { 
-        opacity: 0.85;
-        filter: brightness(0.95);
-    }
-}
-
-/* Inverted colors effect (Requirement 5.3) */
-.vecna-inverted {
-    filter: invert(1) hue-rotate(180deg) !important;
-    transition: filter 0.3s ease;
-}
-
-/* Vecna effects container */
-.vecna-effects-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    z-index: 9999;
-}
-
-/* Scanline ripple effect (Requirement 5.4) */
-.vecna-scanlines {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-        0deg,
-        rgba(255, 0, 0, 0.1),
-        rgba(255, 0, 0, 0.1) 1px,
-        transparent 1px,
-        transparent 3px
-    );
-    animation: scanline-move 2s linear infinite;
-    opacity: 0.6;
-}
-
-@keyframes scanline-move {
-    0% { 
-        background-position: 0 0;
-        opacity: 0.6;
-    }
-    50% {
-        opacity: 0.8;
-    }
-    100% { 
-        background-position: 0 100px;
-        opacity: 0.6;
-    }
-}
-
-/* ASCII static storm overlay (Requirement 5.5) */
-.vecna-static {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    color: rgba(255, 51, 51, 0.3);
-    font-family: 'VT323', 'Courier New', monospace;
-    font-size: 12px;
-    line-height: 1.2;
-    white-space: pre;
-    overflow: hidden;
-    text-shadow: 
-        0 0 5px rgba(255, 51, 51, 0.5),
-        0 0 10px rgba(255, 0, 0, 0.3);
-    animation: static-flicker 0.05s infinite;
-}
-
-@keyframes static-flicker {
-    0%, 100% { 
-        opacity: 0.3;
-    }
-    50% { 
-        opacity: 0.5;
-    }
-}
-
-/* Reduced motion for Vecna effects */
-@media (prefers-reduced-motion: reduce) {
-    .vecna-corrupted,
-    .vecna-psychic-grip,
-    .vecna-scanlines,
-    .vecna-static {
-        animation: none !important;
-    }
-    
-    .vecna-inverted {
-        transition: none;
     }
 }

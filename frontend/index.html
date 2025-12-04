@@ -40,41 +40,33 @@
             position: relative;
         }
         
-        /* Fixed header at top - BBS style */
-        .terminal-header {
+        /* Iris title - retro ANSI/DOS hollow outline style like ERROR 200 */
+        .iris-title {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            background-color: #ff6600;
-            color: #000;
-            padding: 8px 20px;
+            background-color: #000000;
+            padding: 8px 0;
             z-index: 150;
+            text-align: center;
             font-family: 'Courier New', monospace;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .header-title {
-            font-size: 20px;
-            letter-spacing: 4px;
-            /* Pixelated effect */
+            font-weight: 900;
+            font-size: 64px;
+            color: transparent;
+            letter-spacing: 24px;
+            /* Pixelated rendering for retro effect */
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
             -webkit-font-smoothing: none;
             -moz-osx-font-smoothing: grayscale;
             font-smooth: never;
-        }
-        
-        .header-title::before {
-            content: '▓▓ ';
-        }
-        
-        .header-title::after {
-            content: ' ▓▓';
+            /* Thin ANSI-style outline - hollow letters */
+            -webkit-text-stroke: 2px #E0F0FF;
+            text-stroke: 2px #E0F0FF;
+            /* NO glow, NO shadow - clean retro block letters */
+            text-transform: uppercase;
         }
         
         /* Main content area (chat + command bar) */
@@ -84,8 +76,7 @@
             flex-direction: column;
             min-width: 0;
             position: relative;
-            margin-top: 45px;
-
+            margin-top: 110px;
         }
         
         /* Chat display area with BBS border */
@@ -97,18 +88,16 @@
             font-size: 15px;
             line-height: 1.5;
             scrollbar-width: thin;
-            scrollbar-color: #ff0000 #000;
+            scrollbar-color: #FFFFFF #000;
             margin: 10px;
-            border: 2px solid #ff0000;
-            box-shadow: 
-                inset 0 0 20px rgba(255, 0, 0, 0.1),
-                0 0 10px rgba(255, 0, 0, 0.3);
+            border: 2px solid #FFFFFF;
+            box-shadow: none;
         }
         
         .chat-display::before {
             content: '╔═══════════════════════════════════════════════════════════════════════════════╗';
             display: block;
-            color: #ff6600;
+            color: #FFFFFF;
             margin-bottom: 10px;
             font-size: 14px;
         }
@@ -116,7 +105,7 @@
         .chat-display::after {
             content: '╚═══════════════════════════════════════════════════════════════════════════════╝';
             display: block;
-            color: #ff6600;
+            color: #FFFFFF;
             margin-top: 10px;
             font-size: 14px;
         }
@@ -130,44 +119,43 @@
         }
         
         .chat-display::-webkit-scrollbar-thumb {
-            background: #ff0000;
+            background: #FFFFFF;
             border-radius: 4px;
-            box-shadow: 0 0 5px #ff0000;
         }
         
 
-        /* Command line bar at bottom - BBS style */
+        /* Command line bar at bottom - monochrome style */
         .command-line-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background-color: #1a0000;
-            border-top: 3px double #ff0000;
+            background-color: #000000;
+            border-top: 3px double #FFFFFF;
             padding: 12px 20px;
             display: flex;
             align-items: center;
             z-index: 100;
-            box-shadow: 0 -2px 10px rgba(255, 0, 0, 0.4);
+            box-shadow: none;
         }
         
         .command-prompt {
-            color: #ff0000;
+            color: #FFFFFF;
             margin-right: 10px;
             font-weight: bold;
-            text-shadow: 0 0 5px #ff0000;
+            text-shadow: none;
         }
         
         .command-input {
             flex: 1;
             background: transparent;
             border: none;
-            color: #ff0000;
+            color: #FFFFFF;
             font-family: 'Courier New', monospace;
             font-size: 15px;
             outline: none;
-            caret-color: #ff0000;
-            text-shadow: 0 0 5px #ff0000;
+            caret-color: #FFFFFF;
+            text-shadow: none;
         }
         
         /* Blinking cursor */
@@ -175,10 +163,10 @@
             display: inline-block;
             width: 8px;
             height: 16px;
-            background-color: #ff0000;
+            background-color: #FFFFFF;
             margin-left: 2px;
             animation: blink 1s step-end infinite;
-            box-shadow: 0 0 5px #ff0000;
+            box-shadow: none;
         }
         
         @keyframes blink {
@@ -194,47 +182,48 @@
         .message {
             margin-bottom: 8px;
             word-wrap: break-word;
+            color: #FFFFFF;
         }
         
         .message.system {
-            color: #ff6600;
-            text-shadow: 0 0 5px #ff6600;
+            color: #FFFFFF;
+            text-shadow: none;
         }
         
         .message.room_change {
-            color: #ff6600;
-            text-shadow: 0 0 5px #ff6600;
+            color: #FFFFFF;
+            text-shadow: none;
             font-weight: bold;
         }
         
         .message.error {
-            color: #ff3333;
-            text-shadow: 0 0 5px #ff3333;
+            color: #FFFFFF;
+            text-shadow: none;
         }
         
         .timestamp {
-            color: #666666;
+            color: #808080;
         }
         
         .username {
-            color: #ffaa00;
+            color: #FFFFFF;
             font-weight: bold;
-            text-shadow: 0 0 5px #ffaa00;
+            text-shadow: none;
         }
         
         /* Side panel styles */
         .side-panel {
             width: 280px;
             background-color: #000;
-            border-left: 3px double #ff0000;
+            border-left: 3px double #FFFFFF;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
             transition: transform 0.3s ease, width 0.3s ease;
             position: relative;
             z-index: 50;
-            box-shadow: -2px 0 10px rgba(255, 0, 0, 0.4);
-            margin-top: 45px;
+            box-shadow: -2px 0 10px rgba(142, 207, 255, 0.3);
+            margin-top: 120px;
             margin-bottom: 65px;
         }
         
@@ -248,11 +237,11 @@
         /* Floating expand button when panel is collapsed */
         .expand-button {
             position: fixed;
-            top: 20px;
+            top: 120px;
             right: 20px;
             background: #000;
-            border: 2px solid #ff0000;
-            color: #ff0000;
+            border: 2px solid #FFFFFF;
+            color: #FFFFFF;
             padding: 10px 15px;
             cursor: pointer;
             font-family: 'Courier New', monospace;
@@ -260,7 +249,7 @@
             z-index: 200;
             transition: all 0.2s;
             display: none;
-            text-shadow: 0 0 5px #ff0000;
+            text-shadow: none;
         }
         
         .expand-button.visible {
@@ -268,25 +257,25 @@
         }
         
         .expand-button:hover {
-            background-color: #ff0000;
-            color: #000;
-            box-shadow: 0 0 15px #ff0000;
-            text-shadow: none;
+            background-color: rgba(142, 207, 255, 0.2);
+            color: #FFFFFF;
+            box-shadow: 0 0 10px rgba(142, 207, 255, 0.4);
+            border-color: #8ECFFF;
         }
         
-        /* Panel header - BBS style */
+        /* Panel header - monochrome style */
         .panel-header {
             padding: 10px 15px;
-            border-bottom: 2px solid #ff6600;
+            border-bottom: 2px solid #FFFFFF;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #ff6600;
-            color: #000;
+            background-color: #000000;
+            color: #FFFFFF;
         }
         
         .panel-title {
-            color: #000;
+            color: #FFFFFF;
             font-weight: bold;
             font-size: 16px;
             letter-spacing: 2px;
@@ -302,8 +291,8 @@
         
         .panel-toggle {
             background: #000;
-            border: 2px solid #000;
-            color: #ff6600;
+            border: 2px solid #FFFFFF;
+            color: #FFFFFF;
             padding: 4px 8px;
             cursor: pointer;
             font-family: 'Courier New', monospace;
@@ -313,9 +302,9 @@
         }
         
         .panel-toggle:hover {
-            background-color: #ff0000;
-            color: #000;
-            border-color: #ff0000;
+            background-color: rgba(142, 207, 255, 0.2);
+            color: #FFFFFF;
+            border-color: #8ECFFF;
         }
         
         .toggle-icon {
@@ -333,14 +322,14 @@
         }
         
         .section-header {
-            color: #ff6600;
+            color: #FFFFFF;
             font-weight: bold;
             margin-bottom: 10px;
             text-align: center;
             font-size: 14px;
-            background-color: #1a0000;
+            background-color: #000000;
             padding: 5px;
-            border: 1px solid #ff6600;
+            border: 1px solid #FFFFFF;
         }
         
         .section-header::before {
@@ -352,7 +341,7 @@
         }
         
         .panel-separator {
-            color: #ff6600;
+            color: #FFFFFF;
             text-align: center;
             padding: 8px 0;
             font-size: 12px;
@@ -370,7 +359,7 @@
             border-left: 3px solid #000;
             cursor: pointer;
             transition: all 0.2s;
-            color: #ff0000;
+            color: #FFFFFF;
             font-size: 14px;
             background-color: #0a0a0a;
             margin-bottom: 2px;
@@ -378,24 +367,25 @@
         
         .room-item::before {
             content: '► ';
-            color: #ff6600;
+            color: #FFFFFF;
         }
         
         .room-item:hover {
-            background-color: #1a0000;
-            border-left-color: #ff6600;
+            background-color: #1a1a1a;
+            border-left-color: #8ECFFF;
         }
         
         .room-item.active {
-            background-color: #ff0000;
-            color: #000;
+            background-color: rgba(142, 207, 255, 0.15);
+            color: #FFFFFF;
             font-weight: bold;
-            border-left-color: #ff0000;
+            border-left-color: #8ECFFF;
+            box-shadow: 0 0 10px rgba(142, 207, 255, 0.3);
         }
         
         .room-item.active::before {
             content: '▶ ';
-            color: #000;
+            color: #FFFFFF;
         }
         
         .room-item.loading {
@@ -423,7 +413,7 @@
         
         .user-item {
             padding: 5px 12px;
-            color: #ff6600;
+            color: #FFFFFF;
             font-size: 13px;
             border-left: 2px solid transparent;
             background-color: #0a0a0a;
@@ -432,7 +422,7 @@
         
         .user-item::before {
             content: '• ';
-            color: #ff0000;
+            color: #FFFFFF;
         }
         
         .user-item.loading {
@@ -459,9 +449,8 @@
         }
         
         .side-panel::-webkit-scrollbar-thumb {
-            background: #ff0000;
+            background: #FFFFFF;
             border-radius: 3px;
-            box-shadow: 0 0 5px #ff0000;
         }
         
         /* Responsive adjustments */
@@ -484,10 +473,8 @@
 <body>
     <!-- Main terminal screen container -->
     <div class="terminal-screen">
-        <!-- Fixed header at top -->
-        <div class="terminal-header">
-            <div class="header-title">GATEKEEPER</div>
-        </div>
+        <!-- Iris title at top - retro ANSI/DOS style -->
+        <div class="iris-title">IRIS</div>
         
         <!-- Floating expand button (shown when panel is collapsed) -->
         <button class="expand-button" id="expandButton" title="Show panel (Alt+P)">

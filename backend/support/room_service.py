@@ -51,37 +51,28 @@ class SupportRoomService:
     
     def create_support_room(self, user: User, previous_room: Optional[str] = None) -> str:
         """
-        Create a dedicated support room for a user.
+        Create a support session for a user.
         
         This method:
-        1. Generates a unique room name
-        2. Creates the room in the room service
-        3. Tracks the support session
-        4. Stores the user's previous room for return
+        1. Uses the shared "Support" room
+        2. Tracks the support session internally
+        3. Stores the user's previous room for return
         
         Args:
-            user: User object for whom to create the support room
+            user: User object for whom to create the support session
             previous_room: Optional name of room user was in before support
             
         Returns:
-            Room name for the created support room
+            Room name (always "Support")
             
         Requirements:
         - 2.1: Create dedicated support room
-        - 2.2: Ensure unique room naming
         - 2.5: Mark room as private
         """
-        # Generate unique room name
-        room_name = self._generate_unique_room_name(user)
+        # Always use the shared "Support" room
+        room_name = "Support"
         
-        # Create the room with support-specific description
-        description = f"Private support room for {user.username}"
-        room = Room(name=room_name, description=description)
-        
-        # Add room to room service
-        self.room_service.rooms[room_name] = room
-        
-        # Track the support session
+        # Track the support session internally for logging
         self.active_support_rooms[user.id] = room_name
         
         # Store previous room for return functionality
@@ -112,7 +103,7 @@ class SupportRoomService:
         Returns:
             True if room is a support room, False otherwise
         """
-        return room_name.startswith("support-")
+        return room_name == "Support"
     
     def get_previous_room(self, user_id: int) -> Optional[str]:
         """
@@ -148,17 +139,14 @@ class SupportRoomService:
     
     def cleanup_support_room(self, user_id: int) -> None:
         """
-        Fully cleanup a support room and all associated data.
+        Fully cleanup a support session and all associated data.
         
-        This should be called when a support room is no longer needed
+        This should be called when a support session is no longer needed
         (e.g., user explicitly closes it or after extended inactivity).
         
         Args:
-            user_id: User ID whose support room to cleanup
+            user_id: User ID whose support session to cleanup
         """
-        # Get room name before removing from tracking
-        room_name = self.active_support_rooms.get(user_id)
-        
         # Remove from tracking
         if user_id in self.active_support_rooms:
             del self.active_support_rooms[user_id]
@@ -166,37 +154,6 @@ class SupportRoomService:
         if user_id in self.previous_rooms:
             del self.previous_rooms[user_id]
         
-        # Remove room from room service
-        if room_name and room_name in self.room_service.rooms:
-            del self.room_service.rooms[room_name]
+        # Note: We don't delete the "Support" room as it's a shared default room
     
-    def _generate_unique_room_name(self, user: User) -> str:
-        """
-        Generate a unique room name for a support room.
-        
-        Format: support-{username}-{timestamp}-{counter}
-        
-        Args:
-            user: User object for whom to generate room name
-            
-        Returns:
-            Unique room name string
-            
-        Requirements:
-        - 2.2: Ensure unique room naming
-        """
-        # Increment counter for uniqueness
-        self._room_counter += 1
-        
-        # Use timestamp and counter for uniqueness
-        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-        
-        # Generate room name
-        room_name = f"support-{user.username}-{timestamp}-{self._room_counter}"
-        
-        # Ensure uniqueness (should never happen with timestamp + counter, but be safe)
-        while room_name in self.room_service.rooms:
-            self._room_counter += 1
-            room_name = f"support-{user.username}-{timestamp}-{self._room_counter}"
-        
-        return room_name
+

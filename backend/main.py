@@ -724,9 +724,12 @@ async def websocket_endpoint(
                 # Get user profile for SysOp Brain
                 user_profile = user_profile_service.get_profile(user.id)
                 
-                # Use SysOp Brain for intelligent routing
+                # Use SysOp Brain for intelligent routing (but NOT in support rooms)
                 sysop_brain = getattr(app.state, 'sysop_brain', None)
-                if sysop_brain:
+                support_room_service = getattr(app.state, 'support_room_service', None)
+                is_in_support_room = support_room_service and support_room_service.is_support_room(current_room)
+                
+                if sysop_brain and not is_in_support_room:
                     try:
                         sysop_result = await sysop_brain.process_message(
                             user=user,
@@ -874,7 +877,7 @@ async def websocket_endpoint(
                             # Send crisis response to user
                             await app.state.websocket_manager.send_to_user(websocket, {
                                 "type": "support_response",
-                                "content": f"[SUPPORT] {crisis_response}",
+                                "content": f"{crisis_response}",
                                 "timestamp": datetime.utcnow().isoformat()
                             })
                             
@@ -891,7 +894,8 @@ async def websocket_endpoint(
                             logger.warning(f"Crisis detected for user {user.username}: {sentiment.crisis_type.value}")
                         
                         # Check if support should be triggered (non-crisis negative sentiment)
-                        elif sentiment.requires_support:
+                        # But don't trigger if user is already in Support room
+                        elif sentiment.requires_support and current_room != "Support":
                             # Check if user already has a support room
                             existing_support_room = support_room_service.get_support_room(user.id)
                             
@@ -902,7 +906,7 @@ async def websocket_endpoint(
                                 # Leave current room
                                 app.state.room_service.leave_room(user, current_room)
                                 
-                                # Notify old room
+                                # Notify old room that user left
                                 await app.state.websocket_manager.broadcast_to_room(
                                     current_room,
                                     {
@@ -911,16 +915,16 @@ async def websocket_endpoint(
                                     }
                                 )
                                 
-                                # Join support room
-                                app.state.room_service.join_room(user, support_room_name)
-                                app.state.websocket_manager.update_user_room(websocket, support_room_name)
-                                current_room = support_room_name
+                                # Join Support room (always "Support")
+                                app.state.room_service.join_room(user, "Support")
+                                app.state.websocket_manager.update_user_room(websocket, "Support")
+                                current_room = "Support"
                                 
                                 # Send room_change message to update side panel
                                 await app.state.websocket_manager.send_to_user(websocket, {
                                     "type": "room_change",
-                                    "room": support_room_name,
-                                    "content": f"You are now in: {support_room_name}"
+                                    "room": "Support",
+                                    "content": "You are now in: Support"
                                 })
                                 
                                 # Generate and send greeting
@@ -932,7 +936,7 @@ async def websocket_endpoint(
                                 
                                 await app.state.websocket_manager.send_to_user(websocket, {
                                     "type": "support_response",
-                                    "content": f"[SUPPORT] {greeting}",
+                                    "content": f"{greeting}",
                                     "timestamp": datetime.utcnow().isoformat()
                                 })
                                 
@@ -983,6 +987,23 @@ async def websocket_endpoint(
                                             'content': msg.get('content', '').replace('[SUPPORT] ', '')
                                         })
                             
+                            # Create user message to show in chat
+                            user_message_obj = {
+                                "type": "chat_message",
+                                "username": user.username,
+                                "content": content,
+                                "timestamp": datetime.utcnow().isoformat(),
+                                "room": current_room,
+                                "is_support_room": True  # Flag for frontend styling
+                            }
+                            
+                            # Store user message in room history
+                            if room:
+                                room.add_message(user_message_obj)
+                            
+                            # Send user's own message back to them so they can see it
+                            await app.state.websocket_manager.send_to_user(websocket, user_message_obj)
+                            
                             # Generate support response
                             bot_response = await support_bot.generate_response(
                                 user_message=content,
@@ -993,7 +1014,7 @@ async def websocket_endpoint(
                             # Send bot response
                             await app.state.websocket_manager.send_to_user(websocket, {
                                 "type": "support_response",
-                                "content": f"[SUPPORT] {bot_response}",
+                                "content": f"{bot_response}",
                                 "timestamp": datetime.utcnow().isoformat()
                             })
                             
@@ -1005,7 +1026,7 @@ async def websocket_endpoint(
                                 bot_response=bot_response
                             )
                             
-                            # Don't broadcast user message in support room - it's private
+                            # Don't broadcast to others - support room is private
                             continue
                     
                     except Exception as e:
@@ -1119,31 +1140,54 @@ async def websocket_endpoint(
                 app.state.room_service.join_room(user, new_room)
                 app.state.websocket_manager.update_user_room(websocket, new_room)
                 
+                # Send room_change message FIRST (before any other messages)
+                await app.state.websocket_manager.send_to_user(websocket, {
+                    "type": "room_change",
+                    "room": new_room,
+                    "content": f"You are now in: {new_room}"
+                })
+                
                 # Send room entry message to user
                 await app.state.websocket_manager.send_to_user(websocket, {
                     "type": "system",
                     "content": f"\n=== {room.name} ===\n{room.description}\n"
                 })
                 
-                # Send recent message history
-                recent_messages = room.get_recent_messages(limit=20)
-                if recent_messages:
-                    await app.state.websocket_manager.send_to_user(websocket, {
-                        "type": "system",
-                        "content": "--- Recent messages ---"
-                    })
-                    for msg in recent_messages:
-                        await app.state.websocket_manager.send_to_user(websocket, msg)
-                
-                # Notify new room
-                await app.state.websocket_manager.broadcast_to_room(
-                    new_room,
-                    {
-                        "type": "system",
-                        "content": f"* {user.username} has entered the room"
-                    },
-                    exclude_websocket=websocket
-                )
+                # Check if joining Support room - send empathetic greeting
+                if new_room == "Support":
+                    support_bot = getattr(app.state, 'support_bot', None)
+                    if support_bot:
+                        # Send generic empathetic greeting
+                        greeting = "I'm here to listen and support you. While I'm an AI and not a therapist, I genuinely care and want to understand what's on your mind. What's been happening?"
+                        
+                        await app.state.websocket_manager.send_to_user(websocket, {
+                            "type": "support_response",
+                            "content": f"{greeting}",
+                            "timestamp": datetime.utcnow().isoformat()
+                        })
+                    
+                    # Don't show recent message history in Support room - each session is private
+                    # Don't broadcast entry to Support room - it's private
+                else:
+                    # Send recent message history for non-support rooms
+                    recent_messages = room.get_recent_messages(limit=20)
+                    if recent_messages:
+                        await app.state.websocket_manager.send_to_user(websocket, {
+                            "type": "system",
+                            "content": "--- Recent messages ---"
+                        })
+                        for msg in recent_messages:
+                            await app.state.websocket_manager.send_to_user(websocket, msg)
+                    
+                    # Notify new room (not for Support room)
+                    await app.state.websocket_manager.broadcast_to_room(
+                        new_room,
+                        {
+                            "type": "system",
+                            "content": f"* {user.username} has entered the room"
+                        },
+                        exclude_websocket=websocket
+                    )
                 
                 # Broadcast updated active users list
                 active_users = app.state.websocket_manager.get_active_users()
@@ -1166,12 +1210,7 @@ async def websocket_endpoint(
                     ]
                 })
                 
-                # Send room_change message to user
-                await app.state.websocket_manager.send_to_user(websocket, {
-                    "type": "room_change",
-                    "room": new_room,
-                    "content": f"You are now in: {new_room}"
-                })
+                # Note: room_change message already sent at the beginning of join_room handler
             
             elif message_type == "leave_support_room":
                 # Handle leaving support room and returning to previous room
@@ -1217,14 +1256,7 @@ async def websocket_endpoint(
                 # Requirement 10.3: Preserve support room
                 support_room_service.close_support_session(user.id)
                 
-                # Notify support room (in case anyone else is there, though unlikely)
-                await app.state.websocket_manager.broadcast_to_room(
-                    current_room,
-                    {
-                        "type": "system",
-                        "content": f"* {user.username} has left the support room"
-                    }
-                )
+                # Don't broadcast leaving Support room - it's shared by all users
                 
                 # Join previous room
                 # Requirement 10.2: Return user to previous room
@@ -1248,7 +1280,7 @@ async def websocket_endpoint(
                     for msg in recent_messages:
                         await app.state.websocket_manager.send_to_user(websocket, msg)
                 
-                # Notify new room
+                # Notify new room that user entered
                 await app.state.websocket_manager.broadcast_to_room(
                     previous_room,
                     {
@@ -1283,13 +1315,13 @@ async def websocket_endpoint(
                 await app.state.websocket_manager.send_to_user(websocket, {
                     "type": "room_change",
                     "room": previous_room,
-                    "content": f"You have left the support room and returned to: {previous_room}"
+                    "content": f"You have left Support and returned to: {previous_room}"
                 })
                 
                 # Send confirmation message
                 await app.state.websocket_manager.send_to_user(websocket, {
                     "type": "system",
-                    "content": "You can return to your support room anytime by using /join to go back."
+                    "content": "You can return to Support anytime by clicking it in the rooms list or using /join Support."
                 })
     
     except WebSocketDisconnect:
