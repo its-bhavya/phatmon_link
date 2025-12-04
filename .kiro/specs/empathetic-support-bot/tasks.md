@@ -51,16 +51,22 @@
     - **Property 2: Negative emotion detection triggers support**
     - **Validates: Requirements 1.2, 1.3, 1.4, 1.5**
 
-- [-] 4. Implement crisis detection system
+- [x] 4. Implement crisis detection system
 
 
-  - [ ] 4.1 Create crisis detection service
+
+
+
+  - [x] 4.1 Create crisis detection service
+
     - Implement CrisisType enum (self-harm, suicide, abuse)
     - Add crisis keyword detection
     - Integrate crisis detection into sentiment analysis
     - _Requirements: 6.1, 6.2, 6.3_
   
-  - [ ] 4.2 Create crisis hotline service
+  - [x] 4.2 Create crisis hotline service
+
+
     - Implement HotlineInfo class
     - Add Indian hotline numbers for each crisis type
     - Create hotline message formatting

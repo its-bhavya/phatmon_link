@@ -125,6 +125,7 @@ class SentimentAnalyzer:
             CrisisType.SELF_HARM: [
                 "cut myself",
                 "hurt myself",
+                "hurting myself",
                 "self harm",
                 "self-harm",
                 "cutting",
