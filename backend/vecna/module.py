@@ -156,7 +156,8 @@ class VecnaResponse:
     
     Attributes:
         trigger_type: Type of trigger that caused this response
-        content: Main response content
+        content: Main response content (first message)
+        messages: List of all messages to display (for multi-message psychic grip)
         corrupted_text: Corrupted version of text (for emotional triggers)
         freeze_duration: Duration in seconds for Psychic Grip (for system triggers)
         visual_effects: List of visual effects to apply
@@ -164,6 +165,7 @@ class VecnaResponse:
     """
     trigger_type: TriggerType
     content: str
+    messages: Optional[list] = None
     corrupted_text: Optional[str] = None
     freeze_duration: Optional[int] = None
     visual_effects: list = None
@@ -174,6 +176,8 @@ class VecnaResponse:
             self.visual_effects = []
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
+        if self.messages is None:
+            self.messages = [self.content]
 
 
 class VecnaModule:
@@ -278,30 +282,27 @@ class VecnaModule:
         Execute emotional trigger: Psychic Grip (freeze + cryptic narrative generation).
         
         This method:
-        1. Determines a random freeze duration (5-8 seconds)
+        1. Determines freeze duration of 15 seconds
         2. Analyzes the user profile (interests, recent rooms, behavioral patterns)
-        3. Generates a cryptic narrative using Gemini AI that references emotional state
-        4. Returns a VecnaResponse with freeze duration and narrative content
+        3. Generates 3 cryptic narratives using Gemini AI
+        4. Returns a VecnaResponse with freeze duration and multiple narrative messages
         
         Args:
             user_id: User database ID
-            username: Username for logging
+            username: Username for logging and personalization
             message: User's original message (for emotional context)
             user_profile: UserProfile object for personalization
         
         Returns:
-            VecnaResponse with Psychic Grip freeze duration and cryptic narrative
+            VecnaResponse with Psychic Grip freeze duration and multiple cryptic narratives
         
         Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.3, 4.4
         """
         start_time = datetime.utcnow()
         
         try:
-            # Determine random freeze duration (5-8 seconds)
-            freeze_duration = random.randint(
-                self.psychic_grip_duration[0],
-                self.psychic_grip_duration[1]
-            )
+            # Fixed freeze duration of 15 seconds for multiple messages
+            freeze_duration = 15
             
             # Convert UserProfile to dict for Gemini service
             profile_dict = {
@@ -313,16 +314,21 @@ class VecnaModule:
                 'behavioral_patterns': user_profile.behavioral_patterns
             }
             
-            # Generate Psychic Grip narrative using Gemini
-            # This should reference the user's emotional state and profile data
-            # Note: The emotional context is implicit from the trigger
-            narrative = await self.gemini.generate_psychic_grip_narrative(
+            # Generate Psychic Grip narratives using Gemini (returns list of 3 messages)
+            narratives = await self.gemini.generate_psychic_grip_narrative(
                 user_profile=profile_dict,
-                user_id=user_id
+                user_id=user_id,
+                username=username
             )
             
-            # Prefix with [VECNA] tag
-            vecna_content = f"[VECNA] {narrative}"
+            # Prefix each message with [VECNA] tag (if not already present)
+            vecna_messages = [
+                narrative if narrative.startswith("[VECNA]") else f"[VECNA] {narrative}"
+                for narrative in narratives
+            ]
+            
+            # First message for content field
+            vecna_content = vecna_messages[0]
             
             # Define visual effects for Psychic Grip
             visual_effects = ['flicker', 'inverted', 'scanlines', 'static']
@@ -330,7 +336,7 @@ class VecnaModule:
             # Calculate duration
             duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
             
-            logger.info(f"Vecna emotional trigger (Psychic Grip) executed for user {user_id}, duration: {freeze_duration}s")
+            logger.info(f"Vecna emotional trigger (Psychic Grip) executed for user {user_id}, duration: {freeze_duration}s, messages: {len(vecna_messages)}")
             
             # Log activation to database (if rate limiter is configured)
             if self.rate_limiter:
@@ -357,6 +363,7 @@ class VecnaModule:
             return VecnaResponse(
                 trigger_type=TriggerType.EMOTIONAL,
                 content=vecna_content,
+                messages=vecna_messages,
                 freeze_duration=freeze_duration,
                 visual_effects=visual_effects,
                 timestamp=datetime.utcnow()
@@ -381,10 +388,16 @@ class VecnaModule:
                 )
             
             # Fallback response with Psychic Grip
-            freeze_duration = random.randint(5, 8)
+            freeze_duration = 15
+            fallback_messages = [
+                "[VECNA] ...c0nn3ct10n l0st...",
+                "[VECNA] ...syst3m 3rr0r...",
+                "[VECNA] ...r3l3as1ng gr1p..."
+            ]
             return VecnaResponse(
                 trigger_type=TriggerType.EMOTIONAL,
-                content="[VECNA] ...c0nn3ct10n l0st... r3l3as1ng gr1p...",
+                content=fallback_messages[0],
+                messages=fallback_messages,
                 freeze_duration=freeze_duration,
                 visual_effects=['flicker', 'inverted', 'scanlines', 'static'],
                 timestamp=datetime.utcnow()
@@ -400,28 +413,25 @@ class VecnaModule:
         Execute Psychic Grip: freeze thread and generate cryptic narrative.
         
         This method:
-        1. Determines a random freeze duration (5-8 seconds)
-        2. Generates a cryptic narrative using Gemini AI
-        3. Returns a VecnaResponse with freeze duration and effects
+        1. Determines freeze duration of 15 seconds
+        2. Generates 3 cryptic narratives using Gemini AI
+        3. Returns a VecnaResponse with freeze duration and multiple messages
         
         Args:
             user_id: User database ID
-            username: Username for logging
+            username: Username for logging and personalization
             user_profile: UserProfile object with behavioral history
         
         Returns:
-            VecnaResponse with freeze duration and narrative content
+            VecnaResponse with freeze duration and multiple narrative messages
         
         Requirements: 4.1, 4.3, 4.4
         """
         start_time = datetime.utcnow()
         
         try:
-            # Determine random freeze duration
-            freeze_duration = random.randint(
-                self.psychic_grip_duration[0],
-                self.psychic_grip_duration[1]
-            )
+            # Fixed freeze duration of 15 seconds for multiple messages
+            freeze_duration = 15
             
             # Convert UserProfile to dict for Gemini service
             profile_dict = {
@@ -433,14 +443,21 @@ class VecnaModule:
                 'behavioral_patterns': user_profile.behavioral_patterns
             }
             
-            # Generate Psychic Grip narrative using Gemini
-            narrative = await self.gemini.generate_psychic_grip_narrative(
+            # Generate Psychic Grip narratives using Gemini (returns list of 3 messages)
+            narratives = await self.gemini.generate_psychic_grip_narrative(
                 user_profile=profile_dict,
-                user_id=user_id
+                user_id=user_id,
+                username=username
             )
             
-            # Prefix with [VECNA] tag
-            vecna_content = f"[VECNA] {narrative}"
+            # Prefix each message with [VECNA] tag (if not already present)
+            vecna_messages = [
+                narrative if narrative.startswith("[VECNA]") else f"[VECNA] {narrative}"
+                for narrative in narratives
+            ]
+            
+            # First message for content field
+            vecna_content = vecna_messages[0]
             
             # Define visual effects for Psychic Grip
             visual_effects = ['flicker', 'inverted', 'scanlines', 'static']
@@ -448,7 +465,7 @@ class VecnaModule:
             # Calculate duration
             duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
             
-            logger.info(f"Vecna Psychic Grip executed for user {user_id}, duration: {freeze_duration}s")
+            logger.info(f"Vecna Psychic Grip executed for user {user_id}, duration: {freeze_duration}s, messages: {len(vecna_messages)}")
             
             # Log activation to database (if rate limiter is configured)
             if self.rate_limiter:
@@ -475,6 +492,7 @@ class VecnaModule:
             return VecnaResponse(
                 trigger_type=TriggerType.SYSTEM,
                 content=vecna_content,
+                messages=vecna_messages,
                 freeze_duration=freeze_duration,
                 visual_effects=visual_effects,
                 timestamp=datetime.utcnow()
@@ -499,10 +517,16 @@ class VecnaModule:
                 )
             
             # Fallback response
-            freeze_duration = random.randint(5, 8)
+            freeze_duration = 15
+            fallback_messages = [
+                "[VECNA] ...1 s33 y0u w@nd3r...",
+                "[VECNA] ...@1ml3ssly...",
+                "[VECNA] ...l0st 1n th3 v01d..."
+            ]
             return VecnaResponse(
                 trigger_type=TriggerType.SYSTEM,
-                content="[VECNA] ...1 s33 y0u w@nd3r... @1ml3ssly... l0st 1n th3 v01d...",
+                content=fallback_messages[0],
+                messages=fallback_messages,
                 freeze_duration=freeze_duration,
                 visual_effects=['flicker', 'inverted', 'scanlines', 'static'],
                 timestamp=datetime.utcnow()

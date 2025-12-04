@@ -548,6 +548,10 @@ function handleWebSocketMessage(message) {
             handleVecnaPsychicGrip(message);
             break;
             
+        case 'vecna_message':
+            handleVecnaMessage(message);
+            break;
+            
         case 'vecna_release':
             handleVecnaRelease(message);
             break;
@@ -697,6 +701,24 @@ function handleVecnaEmotional(message) {
 function handleVecnaPsychicGrip(message) {
     if (vecnaHandler) {
         vecnaHandler.handlePsychicGrip(message);
+    } else {
+        // Fallback if VecnaHandler not initialized
+        chatDisplay.addMessage({
+            type: 'system',
+            content: message.content,
+            timestamp: message.timestamp
+        });
+    }
+}
+
+/**
+ * Handle additional Vecna messages during Psychic Grip
+ * Displays subsequent messages with visual effects
+ * @param {Object} message - Vecna message object
+ */
+function handleVecnaMessage(message) {
+    if (vecnaHandler) {
+        vecnaHandler.displayVecnaMessage(message.content, false);
     } else {
         // Fallback if VecnaHandler not initialized
         chatDisplay.addMessage({

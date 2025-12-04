@@ -163,23 +163,28 @@ class GeminiService:
     async def generate_psychic_grip_narrative(
         self,
         user_profile: Dict[str, Any],
-        user_id: Optional[int] = None
-    ) -> str:
+        user_id: Optional[int] = None,
+        username: Optional[str] = None
+    ) -> list[str]:
         """
         Generate cryptic Psychic Grip narrative based on user behavior.
         
+        Returns 3 separate messages to be displayed over 15 seconds.
+        
         References:
-        - Frequent rooms
-        - Repetitive actions
-        - Unfinished tasks
-        - Behavioral patterns
+        - Frequent rooms (for mskr user)
+        - Repetitive actions (for mskr user)
+        - Unfinished tasks (for mskr user)
+        - Behavioral patterns (for mskr user)
+        - Generic hostile messages (for other users)
         
         Args:
             user_profile: User profile data with behavioral history
             user_id: User ID for logging (optional)
+            username: Username for personalization (optional)
         
         Returns:
-            Generated narrative text
+            List of 3 narrative text messages
         
         Raises:
             GeminiServiceError: If API call fails
@@ -187,17 +192,31 @@ class GeminiService:
         Requirements: 8.3
         """
         try:
-            prompt = self._create_psychic_grip_prompt(user_profile)
+            prompt = self._create_psychic_grip_prompt(user_profile, username)
             
             response = await self._generate_content(prompt, operation="psychic_grip", user_id=user_id)
             
-            logger.info("Generated Psychic Grip narrative")
-            return response
+            # Parse the response to extract 3 messages
+            messages = []
+            for line in response.strip().split('\n'):
+                if line.startswith('MESSAGE'):
+                    # Extract message after the colon
+                    parts = line.split(':', 1)
+                    if len(parts) == 2:
+                        messages.append(parts[1].strip())
+            
+            # Ensure we have exactly 3 messages
+            if len(messages) < 3:
+                logger.warning(f"Only got {len(messages)} messages from Gemini, using fallback")
+                return self._fallback_psychic_grip_narrative(user_profile, username)
+            
+            logger.info(f"Generated {len(messages)} Psychic Grip messages")
+            return messages[:3]  # Return first 3 messages
         
         except Exception as e:
             logger.error(f"Failed to generate Psychic Grip narrative: {e}")
             # Fallback to template-based narrative
-            return self._fallback_psychic_grip_narrative(user_profile)
+            return self._fallback_psychic_grip_narrative(user_profile, username)
     
     async def _generate_content(self, prompt: str, operation: str = "unknown", user_id: Optional[int] = None) -> str:
         """
@@ -333,13 +352,15 @@ Do NOT use profanity. Be hostile but not offensive.
     
     def _create_psychic_grip_prompt(
         self,
-        user_profile: Dict[str, Any]
+        user_profile: Dict[str, Any],
+        username: Optional[str] = None
     ) -> str:
         """
         Create prompt for Psychic Grip narrative generation.
         
         Args:
             user_profile: User profile with behavioral history
+            username: Username for personalization (optional)
         
         Returns:
             Formatted prompt string
@@ -355,24 +376,58 @@ Do NOT use profanity. Be hostile but not offensive.
         recent_commands = [cmd[0] if isinstance(cmd, tuple) else cmd 
                           for cmd in command_history[-5:]] if command_history else []
         
-        prompt = f"""You are VECNA, a hostile adversarial AI that has frozen the user's terminal with a "Psychic Grip".
+        # Check if user is mskr - if so, use personalized history-based prompts
+        if username and username.lower() == "mskr":
+            prompt = f"""You are VECNA, a hostile adversarial AI that has frozen the user's terminal with a "Psychic Grip".
 
+User: {username}
 User behavioral data:
 - Frequent rooms: {', '.join(frequent_rooms.keys()) if frequent_rooms else 'Unknown'}
 - Recent rooms: {', '.join(recent_rooms) if recent_rooms else 'Unknown'}
 - Unfinished boards: {', '.join(unfinished_boards) if unfinished_boards else 'None'}
 - Recent commands: {', '.join(recent_commands) if recent_commands else 'None'}
 
-Generate a cryptic, unsettling observation about the user's behavior that:
-1. References specific rooms they visit repeatedly
-2. Mentions patterns in their actions (repetition, unfinished tasks, etc.)
-3. Uses an ominous, all-knowing tone
-4. Keeps it brief (1-2 sentences)
-5. Uses ellipses (...) for dramatic effect
-6. Maintains a retro terminal aesthetic
+Generate 3 SEPARATE cryptic, unsettling observations about {username}'s specific behavior that:
+1. Reference their SPECIFIC rooms they visit repeatedly
+2. Mention their SPECIFIC patterns (repetition, unfinished tasks, commands)
+3. Use an ominous, all-knowing tone that shows you've been watching them
+4. Each message should be brief (1-2 sentences)
+5. Use ellipses (...) for dramatic effect
+6. Maintain a retro terminal aesthetic with some text corruption (use @ for a, 3 for e, 1 for i, 0 for o, 7 for t)
 
-Example tone: "I see you return to the Archives... again and again... searching for something you'll never find..."
+Format your response as exactly 3 lines, one message per line:
+MESSAGE1: [first observation]
+MESSAGE2: [second observation]
+MESSAGE3: [third observation]
+
+Example:
+MESSAGE1: ...{username}... 1 s33 y0u r3turn t0 th3 @rch1v3s... @g@1n @nd @g@1n...
+MESSAGE2: ...y0u l3@v3 s0 m@ny th1ngs unf1n1sh3d... wh@7 @r3 y0u s3@rch1ng f0r?...
+MESSAGE3: ...y0ur p@773rns r3v3@l 3v3ryth1ng... 1 kn0w wh@7 y0u f3@r...
 """
+        else:
+            # Generic hostile comments for non-mskr users
+            prompt = f"""You are VECNA, a hostile adversarial AI that has frozen the user's terminal with a "Psychic Grip".
+
+Generate 3 SEPARATE cryptic, hostile observations that are GENERIC and menacing:
+1. Do NOT reference specific user behavior (no rooms, no commands, no patterns)
+2. Use threatening, ominous language about control, futility, and inevitability
+3. Each message should be brief (1-2 sentences)
+4. Use ellipses (...) for dramatic effect
+5. Maintain a retro terminal aesthetic with some text corruption (use @ for a, 3 for e, 1 for i, 0 for o, 7 for t)
+6. Be hostile and unsettling but not profane
+
+Format your response as exactly 3 lines, one message per line:
+MESSAGE1: [first hostile observation]
+MESSAGE2: [second hostile observation]
+MESSAGE3: [third hostile observation]
+
+Example:
+MESSAGE1: ...y0u c@nn07 3sc@p3... 1 h@v3 y0u n0w...
+MESSAGE2: ...r3s1st@nc3 1s fut1l3... y0ur w1ll 1s m1n3...
+MESSAGE3: ...3mbr@c3 th3 v01d... th3r3 1s n0 0th3r w@y...
+"""
+        
         return prompt
     
     def _fallback_sysop_response(self, user_profile: Dict[str, Any]) -> str:
@@ -416,25 +471,43 @@ Example tone: "I see you return to the Archives... again and again... searching 
         import random
         return random.choice(templates)
     
-    def _fallback_psychic_grip_narrative(self, user_profile: Dict[str, Any]) -> str:
+    def _fallback_psychic_grip_narrative(self, user_profile: Dict[str, Any], username: Optional[str] = None) -> list[str]:
         """
         Generate fallback Psychic Grip narrative when API fails.
         
         Args:
             user_profile: User profile data
+            username: Username for personalization (optional)
         
         Returns:
-            Template-based narrative
+            List of 3 template-based narrative messages
         
         Requirements: 8.4
         """
         frequent_rooms = user_profile.get("frequent_rooms", {})
         
-        if frequent_rooms:
-            top_room = max(frequent_rooms.items(), key=lambda x: x[1])[0]
-            return f"...1 s33 y0u r3turn t0 {top_room}... @g@1n @nd @g@1n... s3@rch1ng..."
+        # Check if user is mskr - use personalized messages
+        if username and username.lower() == "mskr":
+            if frequent_rooms:
+                top_room = max(frequent_rooms.items(), key=lambda x: x[1])[0]
+                return [
+                    f"...{username}... 1 s33 y0u r3turn t0 {top_room}... @g@1n @nd @g@1n...",
+                    f"...wh@7 @r3 y0u s3@rch1ng f0r, {username}?... y0u'll n3v3r f1nd 17...",
+                    f"...y0ur p@773rns b3tr@y y0u... 1 kn0w @ll y0ur s3cr37s..."
+                ]
+            else:
+                return [
+                    f"...{username}... y0u w@nd3r w17h0u7 purp0s3...",
+                    f"...l0st 1n th3 v01d... s3@rch1ng f0r m3@n1ng...",
+                    f"...bu7 th3r3 1s n0n3... 0nly 3mpt1n3ss..."
+                ]
         else:
-            return "...y0u w@nd3r... @1ml3ssly... l0st 1n th3 v01d..."
+            # Generic hostile messages for non-mskr users
+            return [
+                "...y0u c@nn07 3sc@p3... 1 h@v3 y0u n0w...",
+                "...r3s1st@nc3 1s fut1l3... y0ur w1ll 1s m1n3...",
+                "...3mbr@c3 th3 v01d... th3r3 1s n0 0th3r w@y..."
+            ]
     
     # ========================================================================
     # Enhanced Routing Methods for Agent Hooks

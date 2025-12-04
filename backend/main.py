@@ -819,7 +819,7 @@ async def websocket_endpoint(
                                     user_profile=user_profile
                                 )
                                 
-                                # Send Vecna Psychic Grip message (emotional trigger)
+                                # Send initial Vecna Psychic Grip message (emotional trigger)
                                 await app.state.websocket_manager.send_to_user(websocket, {
                                     "type": "vecna_psychic_grip",
                                     "content": vecna_response.content,
@@ -827,6 +827,30 @@ async def websocket_endpoint(
                                     "visual_effects": vecna_response.visual_effects,
                                     "timestamp": vecna_response.timestamp.isoformat()
                                 })
+                                
+                                # Schedule multiple messages over 15 seconds
+                                async def send_psychic_grip_messages():
+                                    messages = vecna_response.messages if vecna_response.messages else [vecna_response.content]
+                                    
+                                    # Send remaining messages at 5-second intervals
+                                    for i, message in enumerate(messages[1:], start=1):
+                                        await asyncio.sleep(5)
+                                        await app.state.websocket_manager.send_to_user(websocket, {
+                                            "type": "vecna_message",
+                                            "content": message,
+                                            "visual_effects": vecna_response.visual_effects,
+                                            "timestamp": datetime.utcnow().isoformat()
+                                        })
+                                    
+                                    # Send release message after all messages
+                                    await asyncio.sleep(5)
+                                    await app.state.websocket_manager.send_to_user(websocket, {
+                                        "type": "vecna_release",
+                                        "content": "[SYSTEM] Control returned to SysOp. Continue your session."
+                                    })
+                                
+                                # Start message sequence task
+                                asyncio.create_task(send_psychic_grip_messages())
                                 
                             elif vecna_trigger.trigger_type == TriggerType.SYSTEM:
                                 # Execute Psychic Grip (thread freeze + narrative)
@@ -836,7 +860,7 @@ async def websocket_endpoint(
                                     user_profile=user_profile
                                 )
                                 
-                                # Send Vecna Psychic Grip message
+                                # Send initial Vecna Psychic Grip message
                                 await app.state.websocket_manager.send_to_user(websocket, {
                                     "type": "vecna_psychic_grip",
                                     "content": vecna_response.content,
@@ -845,16 +869,29 @@ async def websocket_endpoint(
                                     "timestamp": vecna_response.timestamp.isoformat()
                                 })
                                 
-                                # Schedule grip release message
-                                async def send_grip_release():
-                                    await asyncio.sleep(vecna_response.freeze_duration)
+                                # Schedule multiple messages over 15 seconds
+                                async def send_psychic_grip_messages():
+                                    messages = vecna_response.messages if vecna_response.messages else [vecna_response.content]
+                                    
+                                    # Send remaining messages at 5-second intervals
+                                    for i, message in enumerate(messages[1:], start=1):
+                                        await asyncio.sleep(5)
+                                        await app.state.websocket_manager.send_to_user(websocket, {
+                                            "type": "vecna_message",
+                                            "content": message,
+                                            "visual_effects": vecna_response.visual_effects,
+                                            "timestamp": datetime.utcnow().isoformat()
+                                        })
+                                    
+                                    # Send release message after all messages
+                                    await asyncio.sleep(5)
                                     await app.state.websocket_manager.send_to_user(websocket, {
                                         "type": "vecna_release",
                                         "content": "[SYSTEM] Control returned to SysOp. Continue your session."
                                     })
                                 
-                                # Start grip release task
-                                asyncio.create_task(send_grip_release())
+                                # Start message sequence task
+                                asyncio.create_task(send_psychic_grip_messages())
                             
                             # Log Vecna activation
                             print(f"Vecna activated for user {user.username}: {vecna_trigger.trigger_type.value} - {vecna_trigger.reason}")
