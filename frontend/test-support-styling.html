@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Bot CSS Styling Test</title>
+    <link rel="stylesheet" href="css/terminal.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #0a0a0a;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: rgba(10, 10, 10, 0.8);
+        }
+        h1, h2 {
+            color: var(--terminal-red);
+            font-family: 'VT323', 'Courier New', monospace;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Support Bot CSS Styling Test</h1>
+        
+        <div class="test-section">
+            <h2>Support Messages</h2>
+            
+            <!-- Regular support message -->
+            <div class="message support-message">
+                <span class="timestamp">[14:23:45]</span>
+                <span class="support-prefix">[SUPPORT]</span>
+                <span class="support-content">I'm here to listen and support you. I notice you're feeling down. Can you tell me more about what's on your mind?</span>
+            </div>
+            
+            <!-- Another support message -->
+            <div class="message support-message">
+                <span class="timestamp">[14:24:12]</span>
+                <span class="support-prefix">[SUPPORT]</span>
+                <span class="support-content">That sounds really difficult. It's completely understandable to feel overwhelmed in situations like this. What would help you feel more supported right now?</span>
+            </div>
+            
+            <!-- Long support message for readability test -->
+            <div class="message support-message">
+                <span class="timestamp">[14:25:03]</span>
+                <span class="support-prefix">[SUPPORT]</span>
+                <span class="support-content">Thank you for sharing that with me. I want you to know that your feelings are valid, and it takes courage to open up about what you're experiencing. Sometimes just talking about these things can help us process them better. Is there anything specific that triggered these feelings today?</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Crisis Messages</h2>
+            
+            <!-- Crisis hotline message -->
+            <div class="message crisis-message">
+                <span class="timestamp">[14:26:30]</span>
+                <span class="support-prefix crisis-prefix">[SUPPORT - CRISIS RESOURCES]</span>
+                <span class="crisis-content">I'm concerned about what you've shared. Please reach out to a professional who can provide immediate help:
+
+<strong>AASRA</strong> - 91-9820466726 (24/7 crisis helpline)
+<strong>Vandrevala Foundation</strong> - 1860-2662-345 (Mental health support)
+
+You don't have to face this alone. These professionals are trained to help.</span>
+            </div>
+            
+            <!-- Another crisis message -->
+            <div class="message crisis-message">
+                <span class="timestamp">[14:27:15]</span>
+                <span class="support-prefix crisis-prefix">[SUPPORT - CRISIS RESOURCES]</span>
+                <span class="crisis-content">If you're experiencing abuse, please contact:
+
+<strong>Women's Helpline</strong> - 1091 (For women in distress)
+<strong>Childline India</strong> - 1098 (For children in need)
+
+Your safety is important. These services are confidential and available to help you.</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Mixed Messages (for context)</h2>
+            
+            <!-- Regular message for comparison -->
+            <div class="message">
+                <span class="timestamp">[14:20:00]</span>
+                <span class="username">User123:</span>
+                <span>I'm feeling really down today...</span>
+            </div>
+            
+            <!-- Support message -->
+            <div class="message support-message">
+                <span class="timestamp">[14:20:15]</span>
+                <span class="support-prefix">[SUPPORT]</span>
+                <span class="support-content">I hear you, and I'm here to help. Would you like to talk about what's making you feel this way?</span>
+            </div>
+            
+            <!-- System message for comparison -->
+            <div class="message system">
+                <span class="timestamp">[14:21:00]</span>
+                <span>You have been moved to support-room-user123</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Accessibility Tests</h2>
+            <p style="color: var(--terminal-white); font-family: 'VT323', monospace;">
+                Hover over messages to see interaction effects.<br>
+                Test with browser's high contrast mode and reduced motion settings.<br>
+                Verify readability on mobile devices by resizing the window.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

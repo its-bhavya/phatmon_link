@@ -611,60 +611,149 @@ body {
 /* ============================================
    SUPPORT BOT STYLES
    Requirements: 12.1, 12.2, 12.4
+   Warm, empathetic color scheme with accessibility
    ============================================ */
 
-/* Support message styling - warm, empathetic colors */
+/* Support color variables for consistency */
+:root {
+    --support-primary: #87ceeb;      /* Soft sky blue - warm and calming */
+    --support-secondary: #b0e0e6;    /* Powder blue - gentle and readable */
+    --support-accent: #add8e6;       /* Light blue - soothing accent */
+    --support-bg: rgba(135, 206, 235, 0.08);  /* Subtle background tint */
+    --crisis-urgent: #ffa500;        /* Orange - urgent but not alarming */
+    --crisis-highlight: #ffd700;     /* Gold - high visibility */
+    --crisis-bg: rgba(255, 165, 0, 0.12);  /* Warm crisis background */
+}
+
+/* Support message styling - warm, empathetic appearance */
 .message.support-message {
-    color: #87ceeb; /* Soft sky blue for warmth */
-    border-left: 3px solid #87ceeb;
-    padding-left: 10px;
-    margin-left: 5px;
-    background-color: rgba(135, 206, 235, 0.05);
-}
-
-/* Support prefix styling */
-.support-prefix {
-    color: #87ceeb;
-    font-weight: bold;
-    text-shadow: 0 0 5px rgba(135, 206, 235, 0.5);
-}
-
-/* Support content styling */
-.support-content {
-    color: #b0e0e6; /* Powder blue for readability */
-}
-
-/* Crisis message styling - prominent and urgent */
-.message.crisis-message {
-    color: #ffa500; /* Orange for urgency without alarm */
-    border-left: 4px solid #ffa500;
-    padding-left: 10px;
-    margin-left: 5px;
-    background-color: rgba(255, 165, 0, 0.1);
-    font-weight: bold;
-}
-
-/* Crisis prefix styling */
-.crisis-prefix {
-    color: #ffa500 !important;
-    font-weight: bold;
-    text-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
-    animation: crisis-pulse 2s ease-in-out infinite;
-}
-
-/* Crisis content styling */
-.crisis-content {
-    color: #ffd700; /* Gold for visibility */
+    color: var(--support-secondary);
+    border-left: 3px solid var(--support-primary);
+    padding: 8px 12px 8px 12px;
+    margin: 10px 5px 10px 8px;
+    background-color: var(--support-bg);
+    border-radius: 2px;
     line-height: 1.6;
+    /* Subtle glow for warmth */
+    box-shadow: 
+        -2px 0 8px rgba(135, 206, 235, 0.15),
+        inset 0 0 20px rgba(135, 206, 235, 0.03);
 }
 
-/* Pulse animation for crisis messages */
+/* Support prefix styling - distinct and welcoming */
+.support-prefix {
+    color: var(--support-primary);
+    font-weight: bold;
+    text-shadow: 
+        0 0 5px rgba(135, 206, 235, 0.6),
+        0 0 10px rgba(135, 206, 235, 0.3);
+    letter-spacing: 1px;
+    margin-right: 4px;
+}
+
+/* Support content styling - readable and gentle */
+.support-content {
+    color: var(--support-secondary);
+    font-size: 18px;
+    line-height: 1.7;
+    /* Ensure good contrast for readability */
+    text-shadow: 0 0 1px rgba(176, 224, 230, 0.2);
+}
+
+/* Crisis message styling - prominent and urgent without being alarming */
+.message.crisis-message {
+    color: var(--crisis-highlight);
+    border-left: 4px solid var(--crisis-urgent);
+    padding: 12px 15px 12px 15px;
+    margin: 12px 5px 12px 8px;
+    background-color: var(--crisis-bg);
+    border-radius: 2px;
+    line-height: 1.7;
+    font-weight: bold;
+    /* Prominent glow for urgency */
+    box-shadow: 
+        -3px 0 12px rgba(255, 165, 0, 0.25),
+        inset 0 0 25px rgba(255, 165, 0, 0.05);
+}
+
+/* Crisis prefix styling - attention-grabbing but not panic-inducing */
+.crisis-prefix {
+    color: var(--crisis-urgent) !important;
+    font-weight: bold;
+    text-shadow: 
+        0 0 8px rgba(255, 165, 0, 0.7),
+        0 0 15px rgba(255, 165, 0, 0.4);
+    letter-spacing: 1px;
+    animation: crisis-pulse 2s ease-in-out infinite;
+    margin-right: 4px;
+}
+
+/* Crisis content styling - high visibility and readability */
+.crisis-content {
+    color: var(--crisis-highlight);
+    font-size: 18px;
+    line-height: 1.8;
+    /* Enhanced readability for critical information */
+    text-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
+}
+
+/* Hotline information formatting - clear and accessible */
+.crisis-content strong {
+    color: #ffec8b; /* Light goldenrod for emphasis */
+    font-weight: bold;
+    text-shadow: 0 0 3px rgba(255, 236, 139, 0.4);
+}
+
+/* Pulse animation for crisis messages - gentle attention draw */
 @keyframes crisis-pulse {
     0%, 100% {
-        text-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
+        text-shadow: 
+            0 0 8px rgba(255, 165, 0, 0.7),
+            0 0 15px rgba(255, 165, 0, 0.4);
     }
     50% {
-        text-shadow: 0 0 12px rgba(255, 165, 0, 0.9);
+        text-shadow: 
+            0 0 12px rgba(255, 165, 0, 0.9),
+            0 0 20px rgba(255, 165, 0, 0.5);
+    }
+}
+
+/* Hover effects for support messages - subtle interaction feedback */
+.message.support-message:hover {
+    background-color: rgba(135, 206, 235, 0.12);
+    box-shadow: 
+        -2px 0 10px rgba(135, 206, 235, 0.2),
+        inset 0 0 25px rgba(135, 206, 235, 0.05);
+}
+
+.message.crisis-message:hover {
+    background-color: rgba(255, 165, 0, 0.15);
+    box-shadow: 
+        -3px 0 15px rgba(255, 165, 0, 0.3),
+        inset 0 0 30px rgba(255, 165, 0, 0.07);
+}
+
+/* Accessibility - high contrast mode support */
+@media (prefers-contrast: high) {
+    .message.support-message {
+        border-left-width: 4px;
+        background-color: rgba(135, 206, 235, 0.15);
+    }
+    
+    .support-prefix,
+    .support-content {
+        text-shadow: none;
+        font-weight: bold;
+    }
+    
+    .message.crisis-message {
+        border-left-width: 5px;
+        background-color: rgba(255, 165, 0, 0.2);
+    }
+    
+    .crisis-prefix,
+    .crisis-content {
+        text-shadow: none;
     }
 }
 
@@ -672,6 +761,36 @@ body {
 @media (prefers-reduced-motion: reduce) {
     .crisis-prefix {
         animation: none;
+        /* Maintain visibility without animation */
+        text-shadow: 
+            0 0 10px rgba(255, 165, 0, 0.8),
+            0 0 18px rgba(255, 165, 0, 0.5);
+    }
+    
+    .message.support-message:hover,
+    .message.crisis-message:hover {
+        transition: none;
+    }
+}
+
+/* Responsive adjustments for mobile devices */
+@media (max-width: 768px) {
+    .message.support-message,
+    .message.crisis-message {
+        padding: 6px 10px 6px 10px;
+        margin: 8px 3px 8px 5px;
+        font-size: 16px;
+    }
+    
+    .support-content,
+    .crisis-content {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    
+    .support-prefix,
+    .crisis-prefix {
+        font-size: 16px;
     }
 }
 
