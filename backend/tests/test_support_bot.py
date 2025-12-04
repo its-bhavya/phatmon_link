@@ -284,15 +284,19 @@ class TestSupportBotPromptGeneration:
         sample_user_profile,
         sample_sentiment
     ):
-        """Test that greeting prompt includes user context."""
+        """Test that greeting prompt includes user context (Requirements 3.2, 3.3, 3.4)."""
         prompt = support_bot._create_greeting_prompt(
             sample_user_profile,
             "I'm feeling really down",
             sample_sentiment
         )
         
+        # Requirement 3.2: User interests
         assert "programming" in prompt or "music" in prompt
+        # Requirement 3.3: Room activity (frequent rooms and recent rooms)
         assert "Lobby" in prompt or "Techline" in prompt
+        assert "room activity" in prompt.lower() or "recent room" in prompt.lower()
+        # Requirement 3.4: Trigger message
         assert "feeling really down" in prompt
         assert "sadness" in prompt.lower() or "distress" in prompt.lower()
     
@@ -317,7 +321,7 @@ class TestSupportBotPromptGeneration:
         support_bot,
         sample_user_profile
     ):
-        """Test that empathetic prompt includes user context."""
+        """Test that empathetic prompt includes user context (Requirements 3.1, 3.2, 3.3)."""
         conversation_history = [
             {"role": "user", "content": "I'm struggling"}
         ]
@@ -328,8 +332,12 @@ class TestSupportBotPromptGeneration:
             conversation_history
         )
         
-        assert "programming" in prompt or "music" in prompt
+        # Requirement 3.1: Message history
         assert "struggling" in prompt
+        # Requirement 3.2: User interests
+        assert "programming" in prompt or "music" in prompt
+        # Requirement 3.3: Room activity
+        assert "room activity" in prompt.lower() or "recent room" in prompt.lower()
         assert "overwhelming" in prompt
     
     def test_empathetic_prompt_includes_boundaries(
@@ -398,3 +406,65 @@ class TestSupportBotFallbacks:
         # Should include empathetic language
         empathetic_words = ["hear", "understand", "listening", "help", "feel"]
         assert any(word in result.lower() for word in empathetic_words)
+
+
+
+class TestSupportBotReadOnlyAccess:
+    """Test suite for read-only access to user data (Requirement 3.5)."""
+    
+    @pytest.mark.asyncio
+    async def test_greeting_does_not_modify_user_profile(
+        self,
+        support_bot,
+        mock_gemini_service,
+        sample_user_profile,
+        sample_sentiment
+    ):
+        """Test that generate_greeting does not modify user profile."""
+        mock_gemini_service._generate_content.return_value = "I'm here to help."
+        
+        # Store original values
+        original_interests = sample_user_profile.interests.copy()
+        original_frequent_rooms = sample_user_profile.frequent_rooms.copy()
+        original_recent_rooms = sample_user_profile.recent_rooms.copy()
+        
+        await support_bot.generate_greeting(
+            sample_user_profile,
+            "I'm feeling down",
+            sample_sentiment
+        )
+        
+        # Verify user profile was not modified (Requirement 3.5)
+        assert sample_user_profile.interests == original_interests
+        assert sample_user_profile.frequent_rooms == original_frequent_rooms
+        assert sample_user_profile.recent_rooms == original_recent_rooms
+    
+    @pytest.mark.asyncio
+    async def test_response_does_not_modify_user_profile(
+        self,
+        support_bot,
+        mock_gemini_service,
+        sample_user_profile
+    ):
+        """Test that generate_response does not modify user profile."""
+        mock_gemini_service._generate_content.return_value = "Tell me more."
+        
+        # Store original values
+        original_interests = sample_user_profile.interests.copy()
+        original_frequent_rooms = sample_user_profile.frequent_rooms.copy()
+        original_recent_rooms = sample_user_profile.recent_rooms.copy()
+        
+        conversation_history = [
+            {"role": "user", "content": "I'm struggling"}
+        ]
+        
+        await support_bot.generate_response(
+            "Everything is overwhelming",
+            sample_user_profile,
+            conversation_history
+        )
+        
+        # Verify user profile was not modified (Requirement 3.5)
+        assert sample_user_profile.interests == original_interests
+        assert sample_user_profile.frequent_rooms == original_frequent_rooms
+        assert sample_user_profile.recent_rooms == original_recent_rooms

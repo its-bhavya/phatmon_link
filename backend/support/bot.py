@@ -29,13 +29,21 @@ class SupportBot:
     For crisis situations, it provides hotline information instead of
     conversational support.
     
+    User Context Provision (Requirements 3.1-3.5):
+    - Message history: Provided via conversation_history parameter
+    - User interests: Extracted from user_profile.interests
+    - Room activity: Extracted from user_profile.frequent_rooms and recent_rooms
+    - Trigger message: Provided via trigger_message parameter (for greeting)
+    - Read-only access: UserProfile objects are passed by reference but not modified
+    
     Responsibilities:
-    - Generate empathetic greeting messages
-    - Generate supportive responses with user context
+    - Generate empathetic greeting messages with full user context
+    - Generate supportive responses with user context (history, interests, activity)
     - Handle crisis situations with hotline information
     - Maintain appropriate boundaries (no therapy/diagnoses)
+    - Ensure read-only access to user data
     
-    Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 9.1, 9.2, 9.3
+    Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 9.1, 9.2, 9.3
     """
     
     def __init__(self, gemini_service: GeminiService):
@@ -60,16 +68,18 @@ class SupportBot:
         
         Creates a warm, empathetic greeting that acknowledges the user's
         emotional state and sets appropriate expectations for the conversation.
+        Provides user context including interests, room activity, and trigger message.
         
         Args:
-            user_profile: User's behavioral profile for personalization
+            user_profile: User's behavioral profile for personalization (includes
+                         interests, frequent rooms, and recent room activity)
             trigger_message: The message that triggered support
             sentiment: Sentiment analysis result
             
         Returns:
             Greeting message acknowledging user's emotional state
             
-        Requirements: 4.1, 4.2, 4.3, 9.1, 9.2, 9.3
+        Requirements: 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 9.1, 9.2, 9.3
         """
         try:
             prompt = self._create_greeting_prompt(user_profile, trigger_message, sentiment)
@@ -98,17 +108,19 @@ class SupportBot:
         
         Creates a supportive response that demonstrates curiosity and empathy,
         includes open-ended questions, and provides practical advice within
-        appropriate boundaries.
+        appropriate boundaries. Provides comprehensive user context including
+        message history, interests, and room activity.
         
         Args:
             user_message: The user's message to respond to
-            user_profile: User's behavioral profile for context
-            conversation_history: Recent conversation messages
+            user_profile: User's behavioral profile for context (includes
+                         interests, frequent rooms, and recent room activity)
+            conversation_history: Recent conversation messages (message history)
             
         Returns:
             Supportive response with curiosity and empathy
             
-        Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.5, 9.1, 9.2, 9.3
+        Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.5, 9.1, 9.2, 9.3
         """
         try:
             prompt = self._create_empathetic_prompt(
@@ -164,11 +176,12 @@ class SupportBot:
         Returns:
             Formatted prompt for Gemini API
             
-        Requirements: 9.2, 9.3
+        Requirements: 3.1, 3.2, 3.3, 3.4, 9.2, 9.3
         """
-        # Extract user context
+        # Extract user context - Requirements 3.2, 3.3, 3.4
         interests = user_profile.interests[:5] if user_profile.interests else []
         frequent_rooms = list(user_profile.frequent_rooms.keys())[:3] if user_profile.frequent_rooms else []
+        recent_rooms = user_profile.recent_rooms[:5] if user_profile.recent_rooms else []
         
         emotion_descriptions = {
             "sadness": "sadness or distress",
@@ -187,6 +200,7 @@ class SupportBot:
 User Context:
 - Interests: {', '.join(interests) if interests else 'Unknown'}
 - Frequent rooms: {', '.join(frequent_rooms) if frequent_rooms else 'Unknown'}
+- Recent room activity: {', '.join(recent_rooms) if recent_rooms else 'Unknown'}
 - Trigger message: "{trigger_message}"
 
 Generate a warm, empathetic greeting that:
@@ -227,13 +241,14 @@ Example tone: "I noticed you might be going through something difficult right no
         Returns:
             Formatted prompt with empathetic guidelines
             
-        Requirements: 9.2, 9.3
+        Requirements: 3.1, 3.2, 3.3, 9.2, 9.3
         """
-        # Extract user context
+        # Extract user context - Requirements 3.2, 3.3
         interests = user_profile.interests[:5] if user_profile.interests else []
         frequent_rooms = list(user_profile.frequent_rooms.keys())[:3] if user_profile.frequent_rooms else []
+        recent_rooms = user_profile.recent_rooms[:5] if user_profile.recent_rooms else []
         
-        # Format conversation history (last 5 messages)
+        # Format conversation history (last 5 messages) - Requirement 3.1
         history_text = ""
         if conversation_history:
             recent_history = conversation_history[-5:]
@@ -249,6 +264,7 @@ Example tone: "I noticed you might be going through something difficult right no
 User Context:
 - Interests: {', '.join(interests) if interests else 'Unknown'}
 - Frequent rooms: {', '.join(frequent_rooms) if frequent_rooms else 'Unknown'}
+- Recent room activity: {', '.join(recent_rooms) if recent_rooms else 'Unknown'}
 
 Conversation History:
 {history_text if history_text else 'No previous conversation'}
