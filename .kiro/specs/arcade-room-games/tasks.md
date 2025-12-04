@@ -129,7 +129,12 @@
   - **Property 17: Snake self-collision ends game**
   - **Validates: Requirements 6.5**
 
-- [ ] 6. Implement Tetris game
+- [x] 6. Implement Tetris game
+
+
+
+
+
   - Create tetris.js module implementing Game interface
   - Define seven tetromino shapes (I, O, T, S, Z, J, L)
   - Implement piece movement (left, right, down)

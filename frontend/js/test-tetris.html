@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Game Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #fff;
+            display: block;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        button {
+            background-color: #fff;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #ccc;
+        }
+        
+        .info {
+            margin-top: 20px;
+            text-align: center;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tetris Game Test</h1>
+    
+    <canvas id="gameCanvas" width="600" height="700"></canvas>
+    
+    <div class="controls">
+        <button id="startBtn">Start Game</button>
+        <button id="resetBtn">Reset</button>
+        <button id="exitBtn">Exit</button>
+    </div>
+    
+    <div class="info">
+        <p><strong>Controls:</strong></p>
+        <p>Arrow Left/Right: Move piece horizontally</p>
+        <p>Arrow Up: Rotate piece</p>
+        <p>Arrow Down: Soft drop (faster fall)</p>
+        <p><strong>Status:</strong> <span id="status">Ready</span></p>
+        <p><strong>Score:</strong> <span id="score">0</span></p>
+        <p><strong>Lines:</strong> <span id="lines">0</span></p>
+    </div>
+    
+    <script type="module">
+        import { TetrisGame } from './tetris.js';
+        
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const scoreEl = document.getElementById('score');
+        const linesEl = document.getElementById('lines');
+        
+        let game = null;
+        let animationFrameId = null;
+        let lastFrameTime = 0;
+        let isRunning = false;
+        
+        // Initialize game
+        function initGame() {
+            game = new TetrisGame(canvas, ctx);
+            game.init();
+            game.start();
+            statusEl.textContent = 'Ready - Press Start';
+            scoreEl.textContent = '0';
+            linesEl.textContent = '0';
+        }
+        
+        // Start game loop
+        function startGame() {
+            if (!game || isRunning) return;
+            
+            isRunning = true;
+            statusEl.textContent = 'Playing';
+            lastFrameTime = performance.now();
+            gameLoop();
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!isRunning || !game) return;
+            
+            const currentTime = performance.now();
+            const deltaTime = currentTime - lastFrameTime;
+            lastFrameTime = currentTime;
+            
+            // Update game
+            game.update(deltaTime);
+            
+            // Render game
+            game.render();
+            
+            // Update UI
+            scoreEl.textContent = game.getScore();
+            linesEl.textContent = game.linesCleared;
+            
+            // Check game over
+            if (game.isGameOver()) {
+                isRunning = false;
+                statusEl.textContent = 'Game Over!';
+                return;
+            }
+            
+            // Continue loop
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        
+        // Stop game
+        function stopGame() {
+            isRunning = false;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            if (game) {
+                game.stop();
+            }
+            statusEl.textContent = 'Stopped';
+        }
+        
+        // Reset game
+        function resetGame() {
+            stopGame();
+            initGame();
+        }
+        
+        // Keyboard handler
+        function handleKeyDown(event) {
+            if (!game || !isRunning) return;
+            
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                event.preventDefault();
+                game.handleKeyDown(event.key);
+            }
+        }
+        
+        function handleKeyUp(event) {
+            if (!game || !isRunning) return;
+            
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                game.handleKeyUp(event.key);
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+        document.getElementById('exitBtn').addEventListener('click', stopGame);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        
+        // Initialize on load
+        initGame();
+    </script>
+</body>
+</html>

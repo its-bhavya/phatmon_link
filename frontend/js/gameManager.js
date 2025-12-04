@@ -109,9 +109,10 @@ export class GameManager {
                 const { SnakeGame } = await import('./snake.js');
                 return new SnakeGame(this.canvas, ctx);
             }
-            case 'tetris':
-                console.warn('Tetris not yet implemented');
-                return null;
+            case 'tetris': {
+                const { TetrisGame } = await import('./tetris.js');
+                return new TetrisGame(this.canvas, ctx);
+            }
             case 'breakout':
                 console.warn('Breakout not yet implemented');
                 return null;
