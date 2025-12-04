@@ -11,11 +11,11 @@ Supported Message Types:
 - room_list: Room list updates
 - room_change: Room change notifications
 - help: Help command responses
-- vecna_emotional: Vecna emotional trigger (Requirements 3.3, 9.1)
-- vecna_psychic_grip: Vecna Psychic Grip with thread freeze (Requirements 4.1, 4.5, 9.1)
-- vecna_release: Vecna control release (Requirements 4.5, 9.2)
+- support_activation: Support bot activation and greeting (Requirements 2.1, 2.3, 2.4, 12.1, 12.3)
+- support_response: Support bot empathetic responses (Requirements 4.1, 4.2, 4.3, 4.4, 12.1, 12.2)
+- crisis_hotlines: Crisis hotline information (Requirements 6.4, 6.5, 7.1, 7.2, 7.3, 7.4, 12.1, 12.2, 12.4)
 
-For detailed Vecna message type specifications, see backend/websocket/VECNA_MESSAGE_TYPES.md
+For detailed Support Bot message type specifications, see backend/websocket/SUPPORT_MESSAGE_TYPES.md
 """
 
 from datetime import datetime

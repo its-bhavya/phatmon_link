@@ -277,6 +277,7 @@
 
 
 
+
   - [x] 13.1 Add Gemini API error handling
 
 
@@ -304,7 +305,11 @@
     - Continue normal processing
     - _Requirements: 1.1_
 
-- [ ] 14. Update WebSocket message types
+- [x] 14. Update WebSocket message types
+
+
+
+
   - Add support_activation message type
   - Add support_response message type
   - Add crisis_hotlines message type
@@ -312,6 +317,7 @@
   - _Requirements: 11.5_
 
 - [ ] 15. Create support bot documentation
+
   - Document Support Bot purpose and boundaries
   - Document crisis detection and hotlines
   - Document privacy protections
