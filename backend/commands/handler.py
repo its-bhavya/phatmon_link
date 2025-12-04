@@ -47,6 +47,7 @@ class CommandHandler:
             "users": self.users_command,
             "clear": self.clear_command,
             "join": self.join_command,
+            "leave": self.leave_command,
         }
     
     def handle_command(self, command: str, user: User, args: Optional[str] = None) -> dict:
@@ -98,6 +99,7 @@ class CommandHandler:
   /rooms         - List all available rooms with user counts
   /users         - Show all active users and their current rooms
   /join <room>   - Join a different room (e.g., /join Techline)
+  /leave         - Leave current support room and return to previous room
   /clear         - Clear the terminal display
   /logout        - Disconnect and return to login screen
 """
@@ -228,6 +230,37 @@ class CommandHandler:
             "room": room_name,
             "from_room": current_room,
             "room_description": room.description
+        }
+    
+    def leave_command(self, user: User) -> dict:
+        """
+        Handle leaving a support room and returning to previous room.
+        
+        This command is specifically for leaving support rooms. Users can
+        return to their previous room before entering support.
+        
+        Args:
+            user: User object requesting to leave
+            
+        Returns:
+            Response dictionary with leave_support_room signal
+            
+        Requirements: 10.1, 10.2, 10.3, 10.4
+        """
+        # Get user's current room
+        current_room = self.websocket_manager.get_user_room(user.username)
+        
+        # Check if user is in a room
+        if not current_room:
+            return self._error_response("You are not currently in any room.")
+        
+        # The actual support room check and previous room retrieval
+        # will be handled by the WebSocket endpoint which has access
+        # to the support_room_service
+        return {
+            "type": "leave_support_room",
+            "content": "Leaving support room...",
+            "current_room": current_room
         }
     
     def _error_response(self, message: str) -> dict:

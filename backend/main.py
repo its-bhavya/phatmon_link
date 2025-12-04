@@ -1169,6 +1169,125 @@ async def websocket_endpoint(
                     "room": new_room,
                     "content": f"You are now in: {new_room}"
                 })
+            
+            elif message_type == "leave_support_room":
+                # Handle leaving support room and returning to previous room
+                # Requirements: 10.1, 10.2, 10.3, 10.4
+                
+                # Get current room
+                current_room = app.state.websocket_manager.get_user_room(user.username)
+                
+                if not current_room:
+                    await app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "error",
+                        "content": "You are not currently in any room."
+                    })
+                    continue
+                
+                # Check if current room is a support room
+                support_room_service = app.state.support_room_service
+                if not support_room_service.is_support_room(current_room):
+                    await app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "error",
+                        "content": "You are not in a support room. Use /join <room> to switch rooms."
+                    })
+                    continue
+                
+                # Get previous room
+                previous_room = support_room_service.get_previous_room(user.id)
+                
+                # If no previous room stored, default to Lobby
+                if not previous_room:
+                    previous_room = "Lobby"
+                
+                # Verify previous room still exists
+                room = app.state.room_service.get_room(previous_room)
+                if not room:
+                    # Fallback to Lobby if previous room no longer exists
+                    previous_room = "Lobby"
+                    room = app.state.room_service.get_room(previous_room)
+                
+                # Leave current support room
+                app.state.room_service.leave_room(user, current_room)
+                
+                # Close support session (but preserve the room)
+                # Requirement 10.3: Preserve support room
+                support_room_service.close_support_session(user.id)
+                
+                # Notify support room (in case anyone else is there, though unlikely)
+                await app.state.websocket_manager.broadcast_to_room(
+                    current_room,
+                    {
+                        "type": "system",
+                        "content": f"* {user.username} has left the support room"
+                    }
+                )
+                
+                # Join previous room
+                # Requirement 10.2: Return user to previous room
+                app.state.room_service.join_room(user, previous_room)
+                app.state.websocket_manager.update_user_room(websocket, previous_room)
+                
+                # Send room entry message to user
+                await app.state.websocket_manager.send_to_user(websocket, {
+                    "type": "system",
+                    "content": f"\n=== {room.name} ===\n{room.description}\n"
+                })
+                
+                # Send recent message history
+                # Requirement 10.4: Maintain conversation history (for when they return)
+                recent_messages = room.get_recent_messages(limit=20)
+                if recent_messages:
+                    await app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "system",
+                        "content": "--- Recent messages ---"
+                    })
+                    for msg in recent_messages:
+                        await app.state.websocket_manager.send_to_user(websocket, msg)
+                
+                # Notify new room
+                await app.state.websocket_manager.broadcast_to_room(
+                    previous_room,
+                    {
+                        "type": "system",
+                        "content": f"* {user.username} has entered the room"
+                    },
+                    exclude_websocket=websocket
+                )
+                
+                # Broadcast updated active users list
+                active_users = app.state.websocket_manager.get_active_users()
+                await app.state.websocket_manager.broadcast_to_all({
+                    "type": "user_list",
+                    "users": active_users
+                })
+                
+                # Broadcast updated room list
+                rooms = app.state.room_service.get_rooms()
+                await app.state.websocket_manager.broadcast_to_all({
+                    "type": "room_list",
+                    "rooms": [
+                        {
+                            "name": room.name,
+                            "count": app.state.room_service.get_room_count(room.name),
+                            "description": room.description
+                        }
+                        for room in rooms
+                    ]
+                })
+                
+                # Send room_change message to user
+                await app.state.websocket_manager.send_to_user(websocket, {
+                    "type": "room_change",
+                    "room": previous_room,
+                    "content": f"You have left the support room and returned to: {previous_room}"
+                })
+                
+                # Send confirmation message
+                await app.state.websocket_manager.send_to_user(websocket, {
+                    "type": "system",
+                    "content": "You can return to your support room anytime by using /join to go back."
+                })
     
     except WebSocketDisconnect:
         print(f"WebSocket disconnected for user: {user.username if user else 'unknown'}")

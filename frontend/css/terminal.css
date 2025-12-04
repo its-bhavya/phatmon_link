@@ -609,6 +609,73 @@ body {
 }
 
 /* ============================================
+   SUPPORT BOT STYLES
+   Requirements: 12.1, 12.2, 12.4
+   ============================================ */
+
+/* Support message styling - warm, empathetic colors */
+.message.support-message {
+    color: #87ceeb; /* Soft sky blue for warmth */
+    border-left: 3px solid #87ceeb;
+    padding-left: 10px;
+    margin-left: 5px;
+    background-color: rgba(135, 206, 235, 0.05);
+}
+
+/* Support prefix styling */
+.support-prefix {
+    color: #87ceeb;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(135, 206, 235, 0.5);
+}
+
+/* Support content styling */
+.support-content {
+    color: #b0e0e6; /* Powder blue for readability */
+}
+
+/* Crisis message styling - prominent and urgent */
+.message.crisis-message {
+    color: #ffa500; /* Orange for urgency without alarm */
+    border-left: 4px solid #ffa500;
+    padding-left: 10px;
+    margin-left: 5px;
+    background-color: rgba(255, 165, 0, 0.1);
+    font-weight: bold;
+}
+
+/* Crisis prefix styling */
+.crisis-prefix {
+    color: #ffa500 !important;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
+    animation: crisis-pulse 2s ease-in-out infinite;
+}
+
+/* Crisis content styling */
+.crisis-content {
+    color: #ffd700; /* Gold for visibility */
+    line-height: 1.6;
+}
+
+/* Pulse animation for crisis messages */
+@keyframes crisis-pulse {
+    0%, 100% {
+        text-shadow: 0 0 8px rgba(255, 165, 0, 0.6);
+    }
+    50% {
+        text-shadow: 0 0 12px rgba(255, 165, 0, 0.9);
+    }
+}
+
+/* Accessibility - reduced motion for support effects */
+@media (prefers-reduced-motion: reduce) {
+    .crisis-prefix {
+        animation: none;
+    }
+}
+
+/* ============================================
    VECNA EFFECTS STYLES
    Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 9.3
    ============================================ */

@@ -7,12 +7,14 @@
 import { CommandLineBar } from './commandBar.js';
 import { ChatDisplay } from './chatDisplay.js';
 import { SidePanel } from './sidePanel.js';
+import { SupportHandler } from './supportHandler.js';
 
 // Application state
 let wsClient = null;
 let commandBar = null;
 let chatDisplay = null;
 let sidePanel = null;
+let supportHandler = null;
 let currentRoom = 'Lobby';
 let activeUsers = [];
 
@@ -41,6 +43,9 @@ function init() {
     
     // Initialize SidePanel with room click handler (Requirement 4.3, 6.3, 6.4)
     sidePanel = new SidePanel('sidePanel', handleSidePanelRoomClick);
+    
+    // Initialize SupportHandler for support bot messages (Requirement 12.1, 12.2, 12.3, 12.4)
+    supportHandler = new SupportHandler(chatDisplay, commandBar);
     
     // Check if user is authenticated
     const token = localStorage.getItem('jwt_token');
@@ -495,6 +500,9 @@ function handleCommandSubmit(command, args, fullInput) {
  * - room_list: Room list updates
  * - room_change: Room change notifications
  * - help: Help command responses
+ * - support_activation: Support bot activation and greeting
+ * - support_response: Support bot responses
+ * - crisis_hotlines: Crisis hotline information
  * 
  * @param {Object} message - The message object from server
  */
@@ -526,6 +534,18 @@ function handleWebSocketMessage(message) {
             
         case 'help':
             handleHelpMessage(message);
+            break;
+            
+        case 'support_activation':
+            handleSupportActivation(message);
+            break;
+            
+        case 'support_response':
+            handleSupportResponse(message);
+            break;
+            
+        case 'crisis_hotlines':
+            handleCrisisHotlines(message);
             break;
             
         default:
@@ -645,6 +665,36 @@ function handleHelpMessage(message) {
         content: message.content,
         timestamp: message.timestamp
     });
+}
+
+/**
+ * Handle support bot activation (Requirement 12.1, 12.3)
+ * @param {Object} message - Support activation message
+ */
+function handleSupportActivation(message) {
+    if (supportHandler) {
+        supportHandler.handleSupportActivation(message);
+    }
+}
+
+/**
+ * Handle support bot response (Requirement 12.1, 12.2)
+ * @param {Object} message - Support response message
+ */
+function handleSupportResponse(message) {
+    if (supportHandler) {
+        supportHandler.handleSupportResponse(message);
+    }
+}
+
+/**
+ * Handle crisis hotlines information (Requirement 12.1, 12.2, 12.4)
+ * @param {Object} message - Crisis hotlines message
+ */
+function handleCrisisHotlines(message) {
+    if (supportHandler) {
+        supportHandler.handleCrisisHotlines(message);
+    }
 }
 
 /**
@@ -786,5 +836,8 @@ export {
     handleCommandSubmit,
     handleWebSocketMessage,
     handleSidePanelRoomClick,
+    handleSupportActivation,
+    handleSupportResponse,
+    handleCrisisHotlines,
     logout
 };
