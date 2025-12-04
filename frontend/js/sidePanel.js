@@ -9,19 +9,22 @@ export class SidePanel {
      * Initialize the side panel
      * @param {string} panelId - ID of the side panel container
      * @param {Function} onRoomClick - Callback when a room is clicked
+     * @param {Function} onGameLaunch - Callback when a game is launched
      */
-    constructor(panelId, onRoomClick) {
+    constructor(panelId, onRoomClick, onGameLaunch = null) {
         this.panel = document.getElementById(panelId);
         this.roomsList = document.getElementById('roomsList');
         this.usersList = document.getElementById('usersList');
         this.toggleButton = document.getElementById('panelToggle');
         this.expandButton = document.getElementById('expandButton');
         this.onRoomClick = onRoomClick;
+        this.onGameLaunch = onGameLaunch;
         
         this.currentRoom = 'Lobby';
         this.rooms = [];
         this.users = [];
         this.isCollapsed = false;
+        this.arcadeRoomExpanded = true; // Track if Arcade Room sub-items are expanded
         
         this.init();
     }
@@ -97,7 +100,7 @@ export class SidePanel {
     /**
      * Update rooms list with counts
      * @param {Array} rooms - Array of room objects with name and count
-     * Requirements: 7.2
+     * Requirements: 7.2, 2.1
      */
     updateRooms(rooms) {
         this.rooms = rooms;
@@ -114,6 +117,12 @@ export class SidePanel {
         
         // Create room items
         rooms.forEach(room => {
+            const isArcadeRoom = room.name === 'Arcade Hall';
+            
+            // Create room item container
+            const roomContainer = document.createElement('div');
+            roomContainer.className = 'room-container';
+            
             const roomItem = document.createElement('div');
             roomItem.className = 'room-item';
             roomItem.dataset.roomName = room.name;
@@ -140,10 +149,84 @@ export class SidePanel {
                 if (room.name !== this.currentRoom) {
                     this.handleRoomClick(room.name);
                 }
+                
+                // Toggle arcade room expansion if clicking on Arcade Hall
+                if (isArcadeRoom) {
+                    this.toggleArcadeRoomExpansion();
+                }
             });
             
-            this.roomsList.appendChild(roomItem);
+            roomContainer.appendChild(roomItem);
+            
+            // Add game launcher sub-items for Arcade Room (Requirements: 2.1, 2.2, 2.3, 2.4)
+            if (isArcadeRoom) {
+                const gamesContainer = document.createElement('div');
+                gamesContainer.className = 'arcade-games-container';
+                gamesContainer.style.display = this.arcadeRoomExpanded ? 'block' : 'none';
+                
+                const games = [
+                    { name: 'Snake', id: 'snake' },
+                    { name: 'Tetris', id: 'tetris' },
+                    { name: 'Breakout', id: 'breakout' }
+                ];
+                
+                games.forEach(game => {
+                    const gameItem = document.createElement('div');
+                    gameItem.className = 'game-launcher-item';
+                    gameItem.dataset.gameName = game.id;
+                    gameItem.textContent = game.name;
+                    
+                    // Click handler for game launch (Requirements: 2.2, 2.3, 2.4, 2.5)
+                    gameItem.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent room click
+                        this.handleGameLaunch(game.id);
+                    });
+                    
+                    gamesContainer.appendChild(gameItem);
+                });
+                
+                roomContainer.appendChild(gamesContainer);
+            }
+            
+            this.roomsList.appendChild(roomContainer);
         });
+    }
+    
+    /**
+     * Toggle Arcade Room game launcher expansion
+     */
+    toggleArcadeRoomExpansion() {
+        this.arcadeRoomExpanded = !this.arcadeRoomExpanded;
+        
+        const gamesContainer = this.roomsList.querySelector('.arcade-games-container');
+        if (gamesContainer) {
+            gamesContainer.style.display = this.arcadeRoomExpanded ? 'block' : 'none';
+        }
+    }
+    
+    /**
+     * Handle game launch from sidebar
+     * @param {string} gameName - Name of the game to launch (snake, tetris, breakout)
+     * Requirements: 2.2, 2.3, 2.4, 2.5
+     */
+    handleGameLaunch(gameName) {
+        // Auto-switch to Arcade Room if not already there (Requirement 2.5)
+        if (this.currentRoom !== 'Arcade Hall') {
+            // First switch to Arcade Room
+            this.handleRoomClick('Arcade Hall');
+            
+            // Then launch game after a brief delay to allow room switch
+            setTimeout(() => {
+                if (this.onGameLaunch) {
+                    this.onGameLaunch(gameName);
+                }
+            }, 300);
+        } else {
+            // Already in Arcade Room, launch immediately
+            if (this.onGameLaunch) {
+                this.onGameLaunch(gameName);
+            }
+        }
     }
     
     /**

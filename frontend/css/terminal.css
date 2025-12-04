@@ -809,3 +809,96 @@ body {
         font-size: 16px;
     }
 }
+/* =
+===========================================
+   ARCADE ROOM GAME LAUNCHER STYLES
+   Requirements: 2.1, 2.2, 2.3, 2.4
+   Retro BBS aesthetic for game sub-items
+   ============================================ */
+
+/* Room container for Arcade Room with sub-items */
+.room-container {
+    margin-bottom: 4px;
+}
+
+/* Arcade games container - collapsible sub-items */
+.arcade-games-container {
+    margin-left: 15px;
+    margin-top: 4px;
+    border-left: 2px solid var(--terminal-gray);
+    padding-left: 8px;
+}
+
+/* Individual game launcher item */
+.game-launcher-item {
+    padding: 6px 10px;
+    margin: 2px 0;
+    border: 1px solid var(--terminal-gray);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--terminal-white);
+    font-size: 17px;
+    background-color: rgba(0, 0, 0, 0.4);
+    text-shadow: none;
+    position: relative;
+}
+
+/* Arrow indicator for game items */
+.game-launcher-item::before {
+    content: '▸ ';
+    color: var(--terminal-gray);
+    margin-right: 4px;
+}
+
+/* Hover effect for game launchers */
+.game-launcher-item:hover {
+    background-color: rgba(30, 30, 30, 0.8);
+    border-color: var(--terminal-light-blue);
+    box-shadow: 
+        0 0 6px rgba(142, 207, 255, 0.3),
+        inset 0 0 6px rgba(142, 207, 255, 0.08);
+    transform: translateX(2px);
+    color: var(--terminal-light-blue);
+}
+
+.game-launcher-item:hover::before {
+    color: var(--terminal-light-blue);
+    content: '▶ ';
+}
+
+/* Active/pressed state for game launchers */
+.game-launcher-item:active {
+    transform: translateX(4px);
+    background-color: rgba(142, 207, 255, 0.2);
+    box-shadow: 
+        0 0 10px rgba(142, 207, 255, 0.5),
+        inset 0 0 10px rgba(142, 207, 255, 0.15);
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+    .game-launcher-item {
+        font-size: 15px;
+        padding: 5px 8px;
+    }
+    
+    .arcade-games-container {
+        margin-left: 10px;
+        padding-left: 6px;
+    }
+}
+
+/* Accessibility - reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .game-launcher-item {
+        transition: none;
+    }
+    
+    .game-launcher-item:hover {
+        transform: none;
+    }
+    
+    .game-launcher-item:active {
+        transform: none;
+    }
+}

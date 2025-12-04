@@ -43,8 +43,8 @@ function init() {
         handleCommandSubmit
     );
     
-    // Initialize SidePanel with room click handler (Requirement 4.3, 6.3, 6.4)
-    sidePanel = new SidePanel('sidePanel', handleSidePanelRoomClick);
+    // Initialize SidePanel with room click handler and game launch handler (Requirement 4.3, 6.3, 6.4, 2.2, 2.3, 2.4)
+    sidePanel = new SidePanel('sidePanel', handleSidePanelRoomClick, handleSidePanelGameLaunch);
     
     // Initialize SupportHandler for support bot messages (Requirement 12.1, 12.2, 12.3, 12.4)
     supportHandler = new SupportHandler(chatDisplay, commandBar);
@@ -777,6 +777,38 @@ function handleSidePanelRoomClick(roomName) {
 }
 
 /**
+ * Handle game launch from sidebar (Requirements 2.2, 2.3, 2.4, 2.5)
+ * @param {string} gameName - Name of the game to launch (snake, tetris, breakout)
+ */
+async function handleSidePanelGameLaunch(gameName) {
+    if (!wsClient || !wsClient.isConnected()) {
+        chatDisplay.addMessage({
+            type: 'error',
+            content: 'Not connected to server. Please wait...'
+        });
+        return;
+    }
+    
+    if (!gameManager) {
+        chatDisplay.addMessage({
+            type: 'error',
+            content: 'Game manager not initialized'
+        });
+        return;
+    }
+    
+    // Launch the game directly (room switching is handled by sidePanel)
+    const success = await gameManager.launchGame(gameName);
+    
+    if (!success) {
+        chatDisplay.addMessage({
+            type: 'error',
+            content: `Failed to launch ${gameName}`
+        });
+    }
+}
+
+/**
  * Handle WebSocket connection established
  * @param {Event} event - Connection event
  */
@@ -895,6 +927,7 @@ export {
     handleCommandSubmit,
     handleWebSocketMessage,
     handleSidePanelRoomClick,
+    handleSidePanelGameLaunch,
     handleSupportActivation,
     handleSupportResponse,
     handleCrisisHotlines,

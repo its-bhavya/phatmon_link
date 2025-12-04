@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Side Panel Game Launchers Test</title>
+    <link rel="stylesheet" href="/static/css/terminal.css">
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'VT323', 'Courier New', monospace;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #fff;
+        }
+        
+        .test-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #8ECFFF;
+        }
+        
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #1a1a1a;
+        }
+        
+        .pass {
+            color: #00ff00;
+        }
+        
+        .fail {
+            color: #ff0000;
+        }
+        
+        .info {
+            color: #ffd700;
+        }
+        
+        #testSidePanel {
+            width: 300px;
+            height: 500px;
+            border: 2px solid #fff;
+            background-color: #000;
+            overflow-y: auto;
+        }
+        
+        .rooms-list {
+            padding: 10px;
+        }
+        
+        button {
+            background: #000;
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'VT323', 'Courier New', monospace;
+            font-size: 18px;
+        }
+        
+        button:hover {
+            background-color: #1a1a1a;
+            border-color: #8ECFFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">Side Panel Game Launchers Test</h1>
+        
+        <div class="test-section">
+            <h2 class="test-title">Test Panel</h2>
+            <div id="testSidePanel">
+                <div class="rooms-list" id="roomsList"></div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="test-title">Test Controls</h2>
+            <button onclick="testArcadeRoomWithGames()">Load Arcade Room with Games</button>
+            <button onclick="testMultipleRooms()">Load Multiple Rooms</button>
+            <button onclick="testRoomSwitch()">Simulate Room Switch</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div class="test-section">
+            <h2 class="test-title">Test Results</h2>
+            <div id="testResults"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { SidePanel } from './sidePanel.js';
+        
+        let sidePanel;
+        let currentRoom = 'Lobby';
+        let roomClickCount = 0;
+        let gameClickCount = 0;
+        let lastRoomClicked = null;
+        let lastGameClicked = null;
+        
+        // Initialize side panel
+        function initSidePanel() {
+            sidePanel = new SidePanel(
+                'testSidePanel',
+                handleRoomClick,
+                handleGameLaunch
+            );
+            addResult('✓ Side panel initialized', 'pass');
+        }
+        
+        function handleRoomClick(roomName) {
+            roomClickCount++;
+            lastRoomClicked = roomName;
+            currentRoom = roomName;
+            addResult(`Room clicked: ${roomName} (count: ${roomClickCount})`, 'info');
+            
+            // Update current room highlight
+            if (sidePanel) {
+                sidePanel.highlightCurrentRoom(roomName);
+            }
+        }
+        
+        function handleGameLaunch(gameName) {
+            gameClickCount++;
+            lastGameClicked = gameName;
+            addResult(`Game launched: ${gameName} (count: ${gameClickCount})`, 'info');
+        }
+        
+        window.testArcadeRoomWithGames = function() {
+            addResult('Testing Arcade Room with game launchers...', 'info');
+            
+            const rooms = [
+                { name: 'Lobby', count: 5 },
+                { name: 'Arcade Hall', count: 3 },
+                { name: 'Support Room', count: 2 }
+            ];
+            
+            sidePanel.updateRooms(rooms);
+            
+            // Check if game launchers are rendered
+            setTimeout(() => {
+                const gamesContainer = document.querySelector('.arcade-games-container');
+                if (gamesContainer) {
+                    addResult('✓ Arcade games container found', 'pass');
+                    
+                    const gameItems = gamesContainer.querySelectorAll('.game-launcher-item');
+                    if (gameItems.length === 3) {
+                        addResult(`✓ Found ${gameItems.length} game launcher items`, 'pass');
+                        
+                        const gameNames = Array.from(gameItems).map(item => item.textContent);
+                        addResult(`Games: ${gameNames.join(', ')}`, 'info');
+                        
+                        if (gameNames.includes('Snake') && gameNames.includes('Tetris') && gameNames.includes('Breakout')) {
+                            addResult('✓ All three games present (Snake, Tetris, Breakout)', 'pass');
+                        } else {
+                            addResult('✗ Missing expected games', 'fail');
+                        }
+                    } else {
+                        addResult(`✗ Expected 3 game items, found ${gameItems.length}`, 'fail');
+                    }
+                } else {
+                    addResult('✗ Arcade games container not found', 'fail');
+                }
+            }, 100);
+        };
+        
+        window.testMultipleRooms = function() {
+            addResult('Testing multiple rooms...', 'info');
+            
+            const rooms = [
+                { name: 'Lobby', count: 10 },
+                { name: 'Arcade Hall', count: 5 },
+                { name: 'Support Room', count: 3 },
+                { name: 'General Chat', count: 8 }
+            ];
+            
+            sidePanel.updateRooms(rooms);
+            
+            setTimeout(() => {
+                const roomItems = document.querySelectorAll('.room-item');
+                addResult(`✓ Rendered ${roomItems.length} room items`, 'pass');
+                
+                // Check that only Arcade Hall has game launchers
+                const allGamesContainers = document.querySelectorAll('.arcade-games-container');
+                if (allGamesContainers.length === 1) {
+                    addResult('✓ Only one arcade games container (under Arcade Hall)', 'pass');
+                } else {
+                    addResult(`✗ Expected 1 games container, found ${allGamesContainers.length}`, 'fail');
+                }
+            }, 100);
+        };
+        
+        window.testRoomSwitch = function() {
+            addResult('Testing room switch and game launch...', 'info');
+            
+            // Set current room to Lobby
+            currentRoom = 'Lobby';
+            sidePanel.highlightCurrentRoom('Lobby');
+            addResult('Current room: Lobby', 'info');
+            
+            // Try to click a game launcher (should auto-switch to Arcade Hall)
+            setTimeout(() => {
+                const snakeGame = document.querySelector('[data-game-name="snake"]');
+                if (snakeGame) {
+                    addResult('Clicking Snake game from Lobby...', 'info');
+                    snakeGame.click();
+                    
+                    // Check if room switch was triggered
+                    setTimeout(() => {
+                        if (lastRoomClicked === 'Arcade Hall') {
+                            addResult('✓ Auto-switched to Arcade Hall', 'pass');
+                        } else {
+                            addResult('✗ Did not auto-switch to Arcade Hall', 'fail');
+                        }
+                        
+                        if (lastGameClicked === 'snake') {
+                            addResult('✓ Snake game launch triggered', 'pass');
+                        } else {
+                            addResult('✗ Snake game launch not triggered', 'fail');
+                        }
+                    }, 400);
+                } else {
+                    addResult('✗ Snake game launcher not found', 'fail');
+                }
+            }, 100);
+        };
+        
+        window.clearResults = function() {
+            document.getElementById('testResults').innerHTML = '';
+            roomClickCount = 0;
+            gameClickCount = 0;
+            lastRoomClicked = null;
+            lastGameClicked = null;
+        };
+        
+        function addResult(message, type) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+            
+            // Auto-scroll to bottom
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        // Initialize on load
+        initSidePanel();
+        
+        // Auto-run first test
+        setTimeout(() => {
+            testArcadeRoomWithGames();
+        }, 500);
+    </script>
+</body>
+</html>
