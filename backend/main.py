@@ -570,6 +570,9 @@ async def websocket_endpoint(
     
     Requirements: 4.2, 5.1, 5.2, 6.1, 6.2, 8.1, 8.3, 8.4, 8.5, 1.3, 6.1, 6.2, 6.3, 6.4, 6.5
     """
+    # Get app instance (use websocket.app for testing compatibility, fallback to global app)
+    current_app = websocket.app if hasattr(websocket, 'app') else app
+    
     auth_service = AuthService(db)
     user_profile_service = UserProfileService(db)
     user = None
@@ -605,10 +608,10 @@ async def websocket_endpoint(
                     print(f"User {user.username} reconnecting to {initial_room}")
         
         # Connect user via WebSocket manager
-        await app.state.websocket_manager.connect(websocket, user, initial_room)
+        await current_app.state.websocket_manager.connect(websocket, user, initial_room)
         
         # Add user to room service
-        app.state.room_service.join_room(user, initial_room)
+        current_app.state.room_service.join_room(user, initial_room)
         
         # Send welcome message
         if is_reconnecting:

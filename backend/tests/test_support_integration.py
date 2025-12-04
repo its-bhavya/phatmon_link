@@ -66,6 +66,7 @@ def mock_user_profile():
     profile.user_id = 1
     profile.interests = ["coding", "gaming"]
     profile.frequent_rooms = {"Lobby": 10, "Tech": 5}
+    profile.recent_rooms = ["Lobby", "Tech"]
     return profile
 
 

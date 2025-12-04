@@ -136,9 +136,11 @@ def test_websocket_connection_with_valid_token(client):
 
 def test_websocket_connection_with_invalid_token(client):
     """Test WebSocket connection with invalid token is rejected."""
-    with pytest.raises(Exception):
-        with client.websocket_connect("/ws?token=invalid_token"):
-            pass
+    from starlette.websockets import WebSocketDisconnect
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect("/ws?token=invalid_token") as websocket:
+            # Try to receive a message to trigger the disconnect
+            websocket.receive_json()
 
 
 def test_websocket_chat_message(client):

@@ -322,16 +322,22 @@
 
 
 
+
   - Document Support Bot purpose and boundaries
   - Document crisis detection and hotlines
   - Document privacy protections
   - Create user guide for support feature
   - _Requirements: All (documentation)_
 
-- [ ] 16. Checkpoint - Ensure all tests pass
+- [x] 16. Checkpoint - Ensure all tests pass
+
+
+
+
+
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 17. Final integration testing
++- [ ] 17. Final integration testing
   - [ ]* 17.1 Test complete support activation flow
     - User sends negative message
     - Support room created

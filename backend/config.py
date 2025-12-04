@@ -235,18 +235,17 @@ class Config:
             errors.append("DATABASE_URL cannot be empty.")
         
         # Validate Gemini configuration
-        if self.GEMINI_API_KEY:
-            # Validate Gemini temperature range
-            if not (0.0 <= self.GEMINI_TEMPERATURE <= 2.0):
-                errors.append(
-                    f"GEMINI_TEMPERATURE must be between 0.0 and 2.0, got: {self.GEMINI_TEMPERATURE}"
-                )
-            
-            # Validate Gemini max tokens
-            if self.GEMINI_MAX_TOKENS <= 0:
-                errors.append(
-                    f"GEMINI_MAX_TOKENS must be positive, got: {self.GEMINI_MAX_TOKENS}"
-                )
+        # Validate Gemini temperature range
+        if not (0.0 <= self.GEMINI_TEMPERATURE <= 2.0):
+            errors.append(
+                f"GEMINI_TEMPERATURE must be between 0.0 and 2.0, got: {self.GEMINI_TEMPERATURE}"
+            )
+        
+        # Validate Gemini max tokens
+        if self.GEMINI_MAX_TOKENS <= 0:
+            errors.append(
+                f"GEMINI_MAX_TOKENS must be positive, got: {self.GEMINI_MAX_TOKENS}"
+            )
         
         # Validate profile tracking configuration
         if self.PROFILE_RETENTION_DAYS <= 0:

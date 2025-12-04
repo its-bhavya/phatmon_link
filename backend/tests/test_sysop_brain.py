@@ -89,12 +89,14 @@ async def test_process_message_relevant_to_current_room(
     mock_gemini_service
 ):
     """Test message processing when message is relevant to current room."""
-    # Setup: message is relevant to current room
-    mock_gemini_service.analyze_message_relevance.return_value = {
-        "is_relevant": True,
+    # Setup: message is relevant to current room (suggested room is same as current)
+    mock_gemini_service.suggest_best_room = AsyncMock(return_value={
+        "suggested_room": "Techline",
+        "reason": "Technical discussion fits Techline",
         "confidence": 0.9,
-        "reason": "Technical discussion fits Techline"
-    }
+        "should_create_new": False,
+        "new_room_topic": None
+    })
     
     result = await sysop_brain.process_message(
         user=mock_user,
@@ -333,7 +335,7 @@ async def test_process_message_error_handling(
 ):
     """Test error handling in message processing."""
     # Setup: Gemini service raises exception
-    mock_gemini_service.analyze_message_relevance.side_effect = Exception("API Error")
+    mock_gemini_service.suggest_best_room = AsyncMock(side_effect=Exception("API Error"))
     
     result = await sysop_brain.process_message(
         user=mock_user,
