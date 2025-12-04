@@ -4,7 +4,7 @@ Auto-Tagging Service for Instant Answer Recall System.
 This module provides AI-powered automatic tagging using Gemini API to
 extract topic tags, tech keywords, and code language from messages.
 
-Requirements: 5.1, 5.2, 5.4
+Requirements: 5.1, 5.2, 5.4, 8.1, 8.4
 """
 
 import logging
@@ -83,10 +83,12 @@ class AutoTagger:
             # Create tagging prompt
             prompt = self._create_tagging_prompt(message)
             
-            # Call Gemini API
+            # Call Gemini API with timeout (3 seconds) and retry (2 retries)
             response = await self.gemini_service._generate_content(
                 prompt,
-                operation="message_tagging"
+                operation="message_tagging",
+                timeout=3.0,
+                max_retries=2
             )
             
             # Parse the response

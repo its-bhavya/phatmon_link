@@ -11,6 +11,7 @@ Requirements: 8.1, 8.2, 8.3, 8.4, 8.5
 
 import logging
 import time
+import asyncio
 from typing import Optional, Dict, Any
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
@@ -218,67 +219,119 @@ class GeminiService:
             # Fallback to template-based narrative
             return self._fallback_psychic_grip_narrative(user_profile, username)
     
-    async def _generate_content(self, prompt: str, operation: str = "unknown", user_id: Optional[int] = None) -> str:
+    async def _generate_content(
+        self, 
+        prompt: str, 
+        operation: str = "unknown", 
+        user_id: Optional[int] = None,
+        timeout: float = 10.0,
+        max_retries: int = 2
+    ) -> str:
         """
-        Generate content from Gemini API with monitoring.
+        Generate content from Gemini API with monitoring, retry logic, and timeout handling.
+        
+        Implements:
+        - Exponential backoff retry (2 retries with 1s, 2s delays)
+        - Timeout handling (default 10 seconds)
+        - Error logging and monitoring
         
         Args:
             prompt: The prompt to send to the API
             operation: Type of operation for logging
             user_id: User ID for logging (if applicable)
+            timeout: Timeout in seconds for API call (default: 10.0)
+            max_retries: Maximum number of retries (default: 2)
         
         Returns:
             Generated text content
         
         Raises:
-            GeminiServiceError: If API call fails
+            GeminiServiceError: If API call fails after all retries
         
-        Requirements: 8.4
+        Requirements: 8.1, 8.4
         """
         start_time = time.time()
-        success = False
-        error_message = None
+        last_error = None
         
-        try:
-            # Generate content
-            response = self.model.generate_content(prompt)
-            
-            # Extract text from response
-            if response and response.text:
-                success = True
-                duration_ms = (time.time() - start_time) * 1000
+        for attempt in range(max_retries + 1):
+            try:
+                # Apply timeout to the API call
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(self.model.generate_content, prompt),
+                    timeout=timeout
+                )
                 
-                # Log successful API call
+                # Extract text from response
+                if response and response.text:
+                    duration_ms = (time.time() - start_time) * 1000
+                    
+                    # Log successful API call
+                    if self.monitor:
+                        self.monitor.log_gemini_api_call(
+                            operation=operation,
+                            user_id=user_id,
+                            success=True,
+                            duration_ms=duration_ms,
+                            token_count=len(response.text.split())  # Rough estimate
+                        )
+                    
+                    if attempt > 0:
+                        logger.info(
+                            f"Gemini API call succeeded on attempt {attempt + 1}/{max_retries + 1}"
+                        )
+                    
+                    return response.text.strip()
+                else:
+                    last_error = "Empty response from Gemini API"
+                    raise GeminiServiceError(last_error)
+            
+            except asyncio.TimeoutError as e:
+                last_error = f"Timeout after {timeout}s"
+                logger.warning(
+                    f"Gemini API timeout on attempt {attempt + 1}/{max_retries + 1}: {last_error}"
+                )
+                
+                # Don't retry on timeout - fail fast
                 if self.monitor:
+                    duration_ms = (time.time() - start_time) * 1000
                     self.monitor.log_gemini_api_call(
                         operation=operation,
                         user_id=user_id,
-                        success=True,
+                        success=False,
                         duration_ms=duration_ms,
-                        token_count=len(response.text.split())  # Rough estimate
+                        error_message=last_error
                     )
-                
-                return response.text.strip()
-            else:
-                error_message = "Empty response from Gemini API"
-                raise GeminiServiceError(error_message)
-        
-        except Exception as e:
-            error_message = str(e)
-            duration_ms = (time.time() - start_time) * 1000
+                raise GeminiServiceError(f"API call timed out: {last_error}")
             
-            # Log failed API call
-            if self.monitor:
-                self.monitor.log_gemini_api_call(
-                    operation=operation,
-                    user_id=user_id,
-                    success=False,
-                    duration_ms=duration_ms,
-                    error_message=error_message
+            except Exception as e:
+                last_error = str(e)
+                logger.warning(
+                    f"Gemini API error on attempt {attempt + 1}/{max_retries + 1}: {last_error}"
                 )
-            
-            logger.error(f"Gemini API error: {e}")
-            raise GeminiServiceError(f"API call failed: {e}")
+                
+                # Check if we should retry
+                if attempt < max_retries:
+                    # Exponential backoff: 1s, 2s
+                    delay = 2 ** attempt
+                    logger.info(f"Retrying in {delay}s...")
+                    await asyncio.sleep(delay)
+                else:
+                    # Final attempt failed, log and raise
+                    duration_ms = (time.time() - start_time) * 1000
+                    
+                    if self.monitor:
+                        self.monitor.log_gemini_api_call(
+                            operation=operation,
+                            user_id=user_id,
+                            success=False,
+                            duration_ms=duration_ms,
+                            error_message=last_error
+                        )
+                    
+                    logger.error(
+                        f"Gemini API failed after {max_retries + 1} attempts: {last_error}"
+                    )
+                    raise GeminiServiceError(f"API call failed after {max_retries + 1} attempts: {last_error}")
     
     def _create_sysop_prompt(
         self,

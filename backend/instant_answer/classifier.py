@@ -4,7 +4,7 @@ Message Classification Service for Instant Answer Recall System.
 This module provides AI-powered message classification using Gemini API to
 categorize messages as questions, answers, or discussion, and detect code blocks.
 
-Requirements: 2.1, 2.2, 2.3, 2.5
+Requirements: 2.1, 2.2, 2.3, 2.5, 8.1, 8.4
 """
 
 import logging
@@ -66,7 +66,7 @@ class MessageClassifier:
     
     async def classify(self, message: str) -> MessageClassification:
         """
-        Classify a message using Gemini API.
+        Classify a message using Gemini API with timeout and retry.
         
         Analyzes the message to determine its type (question/answer/discussion),
         confidence level, and whether it contains code.
@@ -80,7 +80,7 @@ class MessageClassifier:
         Raises:
             Exception: If classification fails (caller should handle gracefully)
         
-        Requirements: 2.1, 2.2, 2.3, 2.5
+        Requirements: 2.1, 2.2, 2.3, 2.5, 8.1, 8.4
         """
         try:
             # Detect code blocks first (independent of AI classification)
@@ -89,10 +89,12 @@ class MessageClassifier:
             # Create classification prompt
             prompt = self._create_classification_prompt(message)
             
-            # Call Gemini API
+            # Call Gemini API with timeout (3 seconds) and retry (2 retries)
             response = await self.gemini_service._generate_content(
                 prompt,
-                operation="message_classification"
+                operation="message_classification",
+                timeout=3.0,
+                max_retries=2
             )
             
             # Parse the response

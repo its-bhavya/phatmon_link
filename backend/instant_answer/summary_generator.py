@@ -5,7 +5,7 @@ This module provides AI-powered summary generation using Gemini API to
 create coherent summaries from multiple search results, preserving code
 snippets and including source attribution.
 
-Requirements: 4.2, 4.4, 4.5
+Requirements: 4.2, 4.4, 4.5, 8.1, 8.4
 """
 
 import logging
@@ -106,11 +106,13 @@ class SummaryGenerator:
             # Create summary prompt
             prompt = self._create_summary_prompt(question, search_results, code_snippets)
             
-            # Call Gemini API
+            # Call Gemini API with timeout (5 seconds) and retry (2 retries)
             logger.info(f"Generating summary from {len(search_results)} search results")
             response = await self.gemini_service._generate_content(
                 prompt,
-                operation="summary_generation"
+                operation="summary_generation",
+                timeout=5.0,
+                max_retries=2
             )
             
             # Add source attribution

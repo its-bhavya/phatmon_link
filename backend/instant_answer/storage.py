@@ -4,11 +4,12 @@ Message Storage Service for Instant Answer Recall System.
 This module provides message storage functionality using ChromaDB to store
 messages with embeddings and metadata for semantic search and retrieval.
 
-Requirements: 6.1, 6.2, 6.3, 10.5
+Requirements: 6.1, 6.2, 6.3, 10.5, 8.2
 """
 
 import logging
 import uuid
+import asyncio
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import List, Optional
@@ -16,6 +17,7 @@ import chromadb
 
 from backend.instant_answer.classifier import MessageType, MessageClassification
 from backend.instant_answer.tagger import MessageTags
+from backend.instant_answer.retry_utils import retry_with_backoff
 
 logger = logging.getLogger(__name__)
 
@@ -152,8 +154,8 @@ class MessageStorageService:
                 embedding=embedding
             )
             
-            # Store in ChromaDB
-            self._store_in_chromadb(stored_message)
+            # Store in ChromaDB with retry logic
+            await self._store_in_chromadb(stored_message)
             
             logger.info(
                 f"Stored message {message_id} in ChromaDB "
@@ -380,17 +382,17 @@ class MessageStorageService:
             logger.error(f"Embedding generation failed: {e}")
             raise
     
-    def _store_in_chromadb(self, stored_message: StoredMessage) -> None:
+    async def _store_in_chromadb(self, stored_message: StoredMessage) -> None:
         """
-        Store a message in ChromaDB.
+        Store a message in ChromaDB with retry logic.
         
         Args:
             stored_message: The message to store
         
         Raises:
-            Exception: If storage fails
+            Exception: If storage fails after retries
         
-        Requirements: 6.2, 6.3, 10.5
+        Requirements: 6.2, 6.3, 10.5, 8.2
         """
         try:
             # Prepare metadata (ChromaDB only supports str, int, float, bool)
@@ -407,12 +409,16 @@ class MessageStorageService:
                 "code_language": stored_message.code_language if stored_message.code_language else ""
             }
             
-            # Add to ChromaDB collection
-            self.chroma_collection.add(
-                ids=[stored_message.id],
-                documents=[stored_message.message_text],
-                embeddings=[stored_message.embedding],
-                metadatas=[metadata]
+            # Add to ChromaDB collection with retry (1 retry, 0.5s delay)
+            await retry_with_backoff(
+                self._chromadb_add,
+                stored_message.id,
+                stored_message.message_text,
+                stored_message.embedding,
+                metadata,
+                max_retries=1,
+                initial_delay=0.5,
+                operation_name="chromadb_add"
             )
             
             logger.debug(f"Stored message {stored_message.id} in ChromaDB collection")
@@ -420,6 +426,35 @@ class MessageStorageService:
         except Exception as e:
             logger.error(f"Failed to store in ChromaDB: {e}")
             raise
+    
+    async def _chromadb_add(
+        self,
+        message_id: str,
+        message_text: str,
+        embedding: List[float],
+        metadata: dict
+    ) -> None:
+        """
+        Add a message to ChromaDB collection.
+        
+        This is a separate method to allow retry logic to be applied.
+        
+        Args:
+            message_id: Message ID
+            message_text: Message content
+            embedding: Embedding vector
+            metadata: Metadata dict
+        
+        Requirements: 8.2
+        """
+        # ChromaDB add is synchronous, wrap in asyncio.to_thread
+        await asyncio.to_thread(
+            self.chroma_collection.add,
+            ids=[message_id],
+            documents=[message_text],
+            embeddings=[embedding],
+            metadatas=[metadata]
+        )
     
     def _parse_chromadb_result(
         self,

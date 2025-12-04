@@ -4,10 +4,11 @@ Semantic Search Engine for Instant Answer Recall System.
 This module provides semantic search functionality using ChromaDB vector search
 and Gemini embeddings to find similar messages based on content similarity.
 
-Requirements: 3.1, 3.2, 3.3, 3.4, 3.5
+Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 8.2, 8.4
 """
 
 import logging
+import asyncio
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
@@ -15,6 +16,7 @@ import chromadb
 
 from backend.instant_answer.classifier import MessageType
 from backend.instant_answer.tagger import MessageTags
+from backend.instant_answer.retry_utils import retry_with_backoff, with_timeout
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +92,8 @@ class SemanticSearchEngine:
         Search for similar messages using vector similarity.
         
         This method:
-        1. Generates an embedding for the query using Gemini API
-        2. Queries ChromaDB for similar message vectors
+        1. Generates an embedding for the query using Gemini API (with timeout)
+        2. Queries ChromaDB for similar message vectors (with retry)
         3. Applies metadata filters (room, message type)
         4. Ranks results by similarity score
         5. Filters out results below similarity threshold
@@ -109,12 +111,17 @@ class SemanticSearchEngine:
         Raises:
             Exception: If search fails (caller should handle gracefully)
         
-        Requirements: 3.1, 3.2, 3.3, 3.4, 3.5
+        Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 8.2, 8.4
         """
         try:
-            # Generate embedding for the query
+            # Generate embedding for the query with timeout (2 seconds)
             logger.info(f"Generating embedding for query: {query[:50]}...")
-            query_embedding = await self.generate_embedding(query)
+            query_embedding = await with_timeout(
+                self.generate_embedding,
+                query,
+                timeout=2.0,
+                operation_name="embedding_generation"
+            )
             
             # Build metadata filter
             where_filter = {"room": room_filter}
@@ -126,12 +133,15 @@ class SemanticSearchEngine:
                 f"message_type={message_type_filter.value if message_type_filter else 'any'}"
             )
             
-            # Query ChromaDB for similar vectors
-            results = self.chroma_collection.query(
-                query_embeddings=[query_embedding],
-                n_results=limit * 2,  # Get more results to filter by threshold
-                where=where_filter,
-                include=["documents", "metadatas", "distances"]
+            # Query ChromaDB for similar vectors with retry (1 retry, 0.5s delay)
+            results = await retry_with_backoff(
+                self._query_chromadb,
+                query_embedding,
+                limit,
+                where_filter,
+                max_retries=1,
+                initial_delay=0.5,
+                operation_name="chromadb_query"
             )
             
             # Parse and rank results
@@ -151,6 +161,36 @@ class SemanticSearchEngine:
         except Exception as e:
             logger.error(f"Search failed: {e}")
             raise
+    
+    async def _query_chromadb(
+        self,
+        query_embedding: List[float],
+        limit: int,
+        where_filter: dict
+    ) -> dict:
+        """
+        Query ChromaDB with the given parameters.
+        
+        This is a separate method to allow retry logic to be applied.
+        
+        Args:
+            query_embedding: The query embedding vector
+            limit: Number of results to return
+            where_filter: Metadata filters
+        
+        Returns:
+            ChromaDB query results
+        
+        Requirements: 8.2
+        """
+        # ChromaDB query is synchronous, wrap in asyncio.to_thread
+        return await asyncio.to_thread(
+            self.chroma_collection.query,
+            query_embeddings=[query_embedding],
+            n_results=limit * 2,  # Get more results to filter by threshold
+            where=where_filter,
+            include=["documents", "metadatas", "distances"]
+        )
     
     async def generate_embedding(self, text: str) -> List[float]:
         """
