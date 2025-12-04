@@ -23,6 +23,7 @@ from backend.support.sentiment import (
 )
 from backend.support.hotlines import CrisisHotlineService, HotlineInfo
 from backend.support.room_service import SupportRoomService
+from backend.support.logger import SupportInteractionLogger
 
 __all__ = [
     'SupportBot',
@@ -32,5 +33,6 @@ __all__ = [
     'CrisisType',
     'CrisisHotlineService',
     'HotlineInfo',
-    'SupportRoomService'
+    'SupportRoomService',
+    'SupportInteractionLogger'
 ]
