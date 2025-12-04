@@ -10,10 +10,16 @@ from backend.instant_answer.classifier import (
     MessageClassifier
 )
 from backend.instant_answer.config import InstantAnswerConfig
+from backend.instant_answer.tagger import (
+    MessageTags,
+    AutoTagger
+)
 
 __all__ = [
     "MessageType",
     "MessageClassification",
     "MessageClassifier",
     "InstantAnswerConfig",
+    "MessageTags",
+    "AutoTagger",
 ]
