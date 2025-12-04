@@ -196,21 +196,25 @@ export class GameManager {
             this.canvas.style.display = 'block';
             this.canvas.style.backgroundColor = this.canvasConfig.backgroundColor;
             this.canvas.style.cursor = 'default';
+            this.canvas.style.position = 'absolute';
+            this.canvas.style.top = '0';
+            this.canvas.style.left = '0';
+            this.canvas.style.zIndex = '10';
             
             // Set canvas dimensions to match chat area
-            const terminalContent = document.querySelector('.terminal-content');
-            if (terminalContent) {
-                this.canvas.width = terminalContent.clientWidth;
-                this.canvas.height = terminalContent.clientHeight;
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                this.canvas.width = mainContent.clientWidth;
+                this.canvas.height = mainContent.clientHeight - 65; // Subtract command bar height
             } else {
                 // Fallback dimensions
                 this.canvas.width = 800;
                 this.canvas.height = 600;
             }
             
-            // Add canvas to terminal content
-            if (terminalContent) {
-                terminalContent.appendChild(this.canvas);
+            // Add canvas to main content area
+            if (mainContent) {
+                mainContent.appendChild(this.canvas);
             } else {
                 document.body.appendChild(this.canvas);
             }

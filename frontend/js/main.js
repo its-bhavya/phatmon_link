@@ -8,6 +8,7 @@ import { CommandLineBar } from './commandBar.js';
 import { ChatDisplay } from './chatDisplay.js';
 import { SidePanel } from './sidePanel.js';
 import { SupportHandler } from './supportHandler.js';
+import { GameManager } from './gameManager.js';
 
 // Application state
 let wsClient = null;
@@ -15,6 +16,7 @@ let commandBar = null;
 let chatDisplay = null;
 let sidePanel = null;
 let supportHandler = null;
+let gameManager = null;
 let currentRoom = 'Lobby';
 let activeUsers = [];
 
@@ -46,6 +48,9 @@ function init() {
     
     // Initialize SupportHandler for support bot messages (Requirement 12.1, 12.2, 12.3, 12.4)
     supportHandler = new SupportHandler(chatDisplay, commandBar);
+    
+    // Initialize GameManager for arcade games (Requirement 3.1, 4.1, 4.2, 5.1, 5.2, 5.5)
+    gameManager = new GameManager(chatDisplay, commandBar, sidePanel);
     
     // Check if user is authenticated
     const token = localStorage.getItem('jwt_token');
@@ -477,6 +482,22 @@ function handleCommandSubmit(command, args, fullInput) {
             logout();
             break;
             
+        case 'exit_game':
+            // Exit current game (Requirement 4.2)
+            if (gameManager && gameManager.isGameActive()) {
+                gameManager.exitGame();
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: 'Game exited'
+                });
+            } else {
+                chatDisplay.addMessage({
+                    type: 'error',
+                    content: 'No active game to exit'
+                });
+            }
+            break;
+            
         default:
             // Unknown command - send to server for handling (Requirement 7.5)
             wsClient.send({
@@ -546,6 +567,10 @@ function handleWebSocketMessage(message) {
             
         case 'crisis_hotlines':
             handleCrisisHotlines(message);
+            break;
+            
+        case 'launch_game':
+            handleLaunchGame(message);
             break;
             
         default:
@@ -645,6 +670,11 @@ function handleRoomChange(message) {
         if (sidePanel) {
             sidePanel.highlightCurrentRoom(currentRoom);
         }
+        
+        // Terminate active game if user leaves Arcade Room (Requirement 5.1, 5.5)
+        if (gameManager && gameManager.isGameActive()) {
+            gameManager.handleRoomChange(currentRoom);
+        }
     }
     
     // Display room change in yellow
@@ -694,6 +724,35 @@ function handleSupportResponse(message) {
 function handleCrisisHotlines(message) {
     if (supportHandler) {
         supportHandler.handleCrisisHotlines(message);
+    }
+}
+
+/**
+ * Handle game launch message from server (Requirement 3.1, 4.1)
+ * @param {Object} message - Launch game message
+ */
+function handleLaunchGame(message) {
+    if (!message.game) {
+        console.error('Launch game message missing game name');
+        return;
+    }
+    
+    if (!gameManager) {
+        chatDisplay.addMessage({
+            type: 'error',
+            content: 'Game manager not initialized'
+        });
+        return;
+    }
+    
+    // Launch the game
+    const success = gameManager.launchGame(message.game);
+    
+    if (!success) {
+        chatDisplay.addMessage({
+            type: 'error',
+            content: `Failed to launch ${message.game}`
+        });
     }
 }
 
@@ -839,5 +898,6 @@ export {
     handleSupportActivation,
     handleSupportResponse,
     handleCrisisHotlines,
+    handleLaunchGame,
     logout
 };

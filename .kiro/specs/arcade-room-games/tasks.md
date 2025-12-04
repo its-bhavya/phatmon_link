@@ -36,7 +36,12 @@
   - **Property 2: Invalid game names produce error**
   - **Validates: Requirements 1.5**
 
-- [ ] 3. Integrate game manager with main application
+- [x] 3. Integrate game manager with main application
+
+
+
+
+
   - Import gameManager into main.js
   - Add message handler for "launch_game" WebSocket messages
   - Add message handler for "exit_game" commands
@@ -56,7 +61,12 @@
   - **Property 12: No game auto-resume**
   - **Validates: Requirements 5.2**
 
-- [ ] 4. Implement canvas display and UI management
+- [x] 4. Implement canvas display and UI management
+
+
+
+
+
   - Create canvas element with proper dimensions matching chat area
   - Implement chat area hiding/showing logic
   - Add exit icon rendering in top-right corner of canvas

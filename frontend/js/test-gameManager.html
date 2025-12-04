@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameManager Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .test-container {
+            border: 2px solid #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .main-content {
+            width: 800px;
+            height: 600px;
+            border: 2px solid #0f0;
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        #chatDisplay {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            padding: 10px;
+        }
+        
+        .command-bar {
+            width: 800px;
+            height: 50px;
+            border: 2px solid #00f;
+            background: #111;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+        }
+        
+        button {
+            background: #333;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button:hover {
+            background: #555;
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #fff;
+        }
+        
+        .pass {
+            color: #0f0;
+        }
+        
+        .fail {
+            color: #f00;
+        }
+    </style>
+</head>
+<body>
+    <h1>GameManager Canvas Display & UI Management Test</h1>
+    
+    <div class="test-container">
+        <h2>Test Controls</h2>
+        <button onclick="testCreateCanvas()">Test: Create Canvas</button>
+        <button onclick="testRemoveCanvas()">Test: Remove Canvas</button>
+        <button onclick="testExitIconClick()">Test: Exit Icon Click</button>
+        <button onclick="testMonochromeStyle()">Test: Monochrome Style</button>
+        <button onclick="testChatHiding()">Test: Chat Hiding/Showing</button>
+        <button onclick="runAllTests()">Run All Tests</button>
+    </div>
+    
+    <div class="status" id="testStatus">
+        Ready to run tests...
+    </div>
+    
+    <div class="main-content">
+        <div id="chatDisplay">
+            <div>Chat Display Area</div>
+            <div>This should be hidden when game is active</div>
+        </div>
+    </div>
+    
+    <div class="command-bar">
+        Command Bar (should be hidden during game)
+    </div>
+    
+    <script type="module">
+        import { GameManager } from './gameManager.js';
+        
+        // Mock objects
+        const mockChatDisplay = {
+            addMessage: (msg) => console.log('Chat message:', msg)
+        };
+        
+        const mockCommandBar = {
+            disable: () => console.log('Command bar disabled'),
+            enable: () => console.log('Command bar enabled')
+        };
+        
+        const mockSidePanel = {
+            updateRooms: (rooms) => console.log('Rooms updated:', rooms)
+        };
+        
+        // Create GameManager instance
+        window.gameManager = new GameManager(mockChatDisplay, mockCommandBar, mockSidePanel);
+        
+        // Test functions
+        window.testCreateCanvas = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Test: Create Canvas</h3>';
+            
+            const success = window.gameManager.createCanvas();
+            
+            if (success) {
+                const canvas = document.getElementById('gameCanvas');
+                const tests = [
+                    { name: 'Canvas created', pass: canvas !== null },
+                    { name: 'Canvas has correct ID', pass: canvas && canvas.id === 'gameCanvas' },
+                    { name: 'Canvas has black background', pass: canvas && canvas.style.backgroundColor === 'rgb(0, 0, 0)' },
+                    { name: 'Chat display hidden', pass: document.getElementById('chatDisplay').style.display === 'none' },
+                    { name: 'Command bar hidden', pass: document.querySelector('.command-bar').style.display === 'none' },
+                    { name: 'Canvas dimensions set', pass: canvas && canvas.width > 0 && canvas.height > 0 }
+                ];
+                
+                let html = '<h3>Test: Create Canvas</h3>';
+                tests.forEach(test => {
+                    const className = test.pass ? 'pass' : 'fail';
+                    const symbol = test.pass ? '✓' : '✗';
+                    html += `<div class="${className}">${symbol} ${test.name}</div>`;
+                });
+                
+                status.innerHTML = html;
+            } else {
+                status.innerHTML = '<h3 class="fail">✗ Failed to create canvas</h3>';
+            }
+        };
+        
+        window.testRemoveCanvas = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Test: Remove Canvas</h3>';
+            
+            // First create canvas
+            window.gameManager.createCanvas();
+            
+            // Then remove it
+            window.gameManager.removeCanvas();
+            
+            const canvas = document.getElementById('gameCanvas');
+            const tests = [
+                { name: 'Canvas removed from DOM', pass: canvas === null },
+                { name: 'Chat display restored', pass: document.getElementById('chatDisplay').style.display === 'block' },
+                { name: 'Command bar restored', pass: document.querySelector('.command-bar').style.display === 'flex' }
+            ];
+            
+            let html = '<h3>Test: Remove Canvas</h3>';
+            tests.forEach(test => {
+                const className = test.pass ? 'pass' : 'fail';
+                const symbol = test.pass ? '✓' : '✗';
+                html += `<div class="${className}">${symbol} ${test.name}</div>`;
+            });
+            
+            status.innerHTML = html;
+        };
+        
+        window.testExitIconClick = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Test: Exit Icon Click Detection</h3>';
+            
+            // Create canvas
+            window.gameManager.createCanvas();
+            
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                status.innerHTML = '<h3 class="fail">✗ Canvas not created</h3>';
+                return;
+            }
+            
+            // Calculate exit icon position (top-right corner)
+            const iconX = canvas.width - window.gameManager.exitIconSize - window.gameManager.exitIconPadding;
+            const iconY = window.gameManager.exitIconPadding;
+            
+            // Test if click detection area is correct
+            const tests = [
+                { name: 'Exit icon size defined', pass: window.gameManager.exitIconSize === 30 },
+                { name: 'Exit icon padding defined', pass: window.gameManager.exitIconPadding === 10 },
+                { name: 'Exit icon position calculated', pass: iconX > 0 && iconY >= 0 }
+            ];
+            
+            let html = '<h3>Test: Exit Icon Click Detection</h3>';
+            tests.forEach(test => {
+                const className = test.pass ? 'pass' : 'fail';
+                const symbol = test.pass ? '✓' : '✗';
+                html += `<div class="${className}">${symbol} ${test.name}</div>`;
+            });
+            
+            html += `<div>Exit icon position: (${iconX}, ${iconY})</div>`;
+            html += `<div>Exit icon size: ${window.gameManager.exitIconSize}x${window.gameManager.exitIconSize}</div>`;
+            
+            status.innerHTML = html;
+            
+            // Clean up
+            window.gameManager.removeCanvas();
+        };
+        
+        window.testMonochromeStyle = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Test: Monochrome Style</h3>';
+            
+            const config = window.gameManager.canvasConfig;
+            
+            const tests = [
+                { name: 'Background is pure black', pass: config.backgroundColor === '#000000' },
+                { name: 'Foreground is pure white', pass: config.foregroundColor === '#FFFFFF' },
+                { name: 'Font is monospace', pass: config.font.includes('Courier') || config.font.includes('VT323') },
+                { name: 'Font size defined', pass: config.fontSize === 19 }
+            ];
+            
+            let html = '<h3>Test: Monochrome Style</h3>';
+            tests.forEach(test => {
+                const className = test.pass ? 'pass' : 'fail';
+                const symbol = test.pass ? '✓' : '✗';
+                html += `<div class="${className}">${symbol} ${test.name}</div>`;
+            });
+            
+            html += `<div>Config: ${JSON.stringify(config, null, 2)}</div>`;
+            
+            status.innerHTML = html;
+        };
+        
+        window.testChatHiding = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Test: Chat Hiding/Showing</h3>';
+            
+            const chatDisplay = document.getElementById('chatDisplay');
+            const commandBar = document.querySelector('.command-bar');
+            
+            // Initial state
+            const initialChatDisplay = chatDisplay.style.display || 'block';
+            const initialCommandBar = commandBar.style.display || 'flex';
+            
+            // Create canvas (should hide chat)
+            window.gameManager.createCanvas();
+            const hiddenChatDisplay = chatDisplay.style.display;
+            const hiddenCommandBar = commandBar.style.display;
+            
+            // Remove canvas (should show chat)
+            window.gameManager.removeCanvas();
+            const restoredChatDisplay = chatDisplay.style.display;
+            const restoredCommandBar = commandBar.style.display;
+            
+            const tests = [
+                { name: 'Chat initially visible', pass: initialChatDisplay !== 'none' },
+                { name: 'Command bar initially visible', pass: initialCommandBar !== 'none' },
+                { name: 'Chat hidden when canvas created', pass: hiddenChatDisplay === 'none' },
+                { name: 'Command bar hidden when canvas created', pass: hiddenCommandBar === 'none' },
+                { name: 'Chat restored when canvas removed', pass: restoredChatDisplay === 'block' },
+                { name: 'Command bar restored when canvas removed', pass: restoredCommandBar === 'flex' }
+            ];
+            
+            let html = '<h3>Test: Chat Hiding/Showing</h3>';
+            tests.forEach(test => {
+                const className = test.pass ? 'pass' : 'fail';
+                const symbol = test.pass ? '✓' : '✗';
+                html += `<div class="${className}">${symbol} ${test.name}</div>`;
+            });
+            
+            status.innerHTML = html;
+        };
+        
+        window.runAllTests = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Running All Tests...</h3>';
+            
+            setTimeout(() => {
+                testMonochromeStyle();
+                setTimeout(() => {
+                    testCreateCanvas();
+                    setTimeout(() => {
+                        testRemoveCanvas();
+                        setTimeout(() => {
+                            testExitIconClick();
+                            setTimeout(() => {
+                                testChatHiding();
+                                setTimeout(() => {
+                                    status.innerHTML += '<h3 class="pass">✓ All tests completed!</h3>';
+                                }, 500);
+                            }, 500);
+                        }, 500);
+                    }, 500);
+                }, 500);
+            }, 100);
+        };
+        
+        console.log('GameManager test page loaded');
+        console.log('GameManager instance:', window.gameManager);
+    </script>
+</body>
+</html>

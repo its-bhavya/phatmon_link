@@ -1,5 +1,333 @@
 # Documentation Update Summary
 
+## Latest Update
+
+**Commit:** `84da28818d4b78f52caafc3ed4a551d2b236e9b6`  
+**Message:** extended command handler for game commands  
+**Date:** December 4, 2025
+
+### Overview
+
+This commit extends the backend command handler to support game launch and exit commands for the Arcade Room Games feature. Two new commands (`/play` and `/exit_game`) are added with full validation, room restriction enforcement, and comprehensive test coverage.
+
+### Changes Summary
+
+- Added `/play <game>` command to launch games (snake, tetris, breakout)
+- Added `/exit_game` command to exit active games
+- Implemented room restriction (games only available in Arcade Hall)
+- Added game name validation with helpful error messages
+- Updated help command to include game commands
+- Added 10 comprehensive test cases for game commands
+
+### Files Modified
+
+1. **`backend/commands/handler.py`** - Added two new command methods and updated command routing logic
+2. **`backend/tests/test_command_handler.py`** - Added comprehensive test suite for game commands (10 new test methods)
+
+---
+
+## New API Documentation
+
+### `backend/commands/handler.py`
+
+#### New Method: `play_command(user, game_name)`
+
+Handle game launch command for Arcade Room.
+
+**Signature:**
+```python
+def play_command(self, user: User, game_name: Optional[str] = None) -> dict
+```
+
+**Parameters:**
+- `user` (User) - User object requesting to play a game
+- `game_name` (Optional[str]) - Name of the game to launch. Valid values: 'snake', 'tetris', 'breakout'. Case-insensitive.
+
+**Returns:**
+- `dict` - Response dictionary with one of the following structures:
+
+**Success Response:**
+```python
+{
+    "type": "launch_game",
+    "content": "Launching {GameName}...",
+    "game": "snake" | "tetris" | "breakout"
+}
+```
+
+**Error Responses:**
+
+*No game name provided:*
+```python
+{
+    "type": "error",
+    "content": "Please specify a game name. Usage: /play <game>\nAvailable games: snake, tetris, breakout"
+}
+```
+
+*Wrong room:*
+```python
+{
+    "type": "error",
+    "content": "Games are only available in the Arcade Room. Use /join Arcade Hall to access games."
+}
+```
+
+*Invalid game name:*
+```python
+{
+    "type": "error",
+    "content": "Unknown game: {game_name}. Available games: snake, tetris, breakout"
+}
+```
+
+**Behavior:**
+1. Validates that game name is provided and not empty
+2. Normalizes game name to lowercase
+3. Checks user's current room via WebSocketManager
+4. Enforces room restriction (must be in "Arcade Hall")
+5. Validates game name against allowed games list
+6. Returns success response with game launch signal
+
+**Requirements:** Implements requirements 1.1, 1.2, 1.3, 1.4, 1.5 from arcade-room-games spec.
+
+**Usage Example:**
+```python
+# User in Arcade Hall
+response = command_handler.play_command(user, "snake")
+# Returns: {"type": "launch_game", "content": "Launching Snake...", "game": "snake"}
+
+# User in Lobby
+response = command_handler.play_command(user, "snake")
+# Returns: {"type": "error", "content": "Games are only available in the Arcade Room..."}
+
+# Invalid game
+response = command_handler.play_command(user, "pong")
+# Returns: {"type": "error", "content": "Unknown game: pong. Available games: snake, tetris, breakout"}
+```
+
+---
+
+#### New Method: `exit_game_command(user)`
+
+Handle game exit command.
+
+**Signature:**
+```python
+def exit_game_command(self, user: User) -> dict
+```
+
+**Parameters:**
+- `user` (User) - User object requesting to exit game
+
+**Returns:**
+- `dict` - Response dictionary with exit signal:
+```python
+{
+    "type": "exit_game",
+    "content": "Exiting game..."
+}
+```
+
+**Behavior:**
+- Returns exit game signal to frontend
+- Frontend handles actual game termination and cleanup
+- Always succeeds (no validation required)
+
+**Requirements:** Implements requirement 4.2 from arcade-room-games spec.
+
+**Usage Example:**
+```python
+response = command_handler.exit_game_command(user)
+# Returns: {"type": "exit_game", "content": "Exiting game..."}
+```
+
+---
+
+#### Modified Method: `handle_command(command, user, args)`
+
+Updated to route game commands with arguments.
+
+**Changes:**
+- Added "play" and "exit_game" to command routing table
+- Updated argument routing logic to include "play" command
+- Now routes both "join" and "play" commands with arguments
+
+**Modified Logic:**
+```python
+# Before:
+if command == "join":
+    return self.commands[command](user, args)
+
+# After:
+if command in ["join", "play"]:
+    return self.commands[command](user, args)
+```
+
+---
+
+#### Modified Method: `help_command(user)`
+
+Updated to include game commands in help text.
+
+**Changes:**
+- Added `/play <game>` command description
+- Added `/exit_game` command description
+
+**New Help Text Lines:**
+```
+/play <game>   - Launch a game in Arcade Room (snake, tetris, breakout)
+/exit_game     - Exit the current game and return to chat
+```
+
+---
+
+#### Modified: `__init__(room_service, websocket_manager)`
+
+Updated command routing table.
+
+**Changes:**
+- Added `"play": self.play_command` to commands dict
+- Added `"exit_game": self.exit_game_command` to commands dict
+
+**Updated Commands Dict:**
+```python
+self.commands = {
+    "help": self.help_command,
+    "rooms": self.rooms_command,
+    "users": self.users_command,
+    "clear": self.clear_command,
+    "join": self.join_command,
+    "leave": self.leave_command,
+    "play": self.play_command,        # NEW
+    "exit_game": self.exit_game_command,  # NEW
+}
+```
+
+---
+
+### Integration Guide
+
+#### WebSocket Message Handling
+
+The frontend should handle the new message types:
+
+**Launch Game Message:**
+```javascript
+// Received from backend
+{
+    type: 'launch_game',
+    game: 'snake' | 'tetris' | 'breakout',
+    content: 'Launching {GameName}...'
+}
+
+// Frontend action
+gameManager.launchGame(data.game);
+```
+
+**Exit Game Message:**
+```javascript
+// Received from backend
+{
+    type: 'exit_game',
+    content: 'Exiting game...'
+}
+
+// Frontend action
+gameManager.exitGame();
+```
+
+#### Command Flow
+
+**Complete /play Command Flow:**
+
+1. User types: `/play snake` in Arcade Hall
+2. Frontend sends command to backend via WebSocket
+3. Backend `CommandHandler.handle_command()` routes to `play_command()`
+4. `play_command()` validates:
+   - Game name provided
+   - User in Arcade Hall
+   - Game name is valid
+5. Backend sends `launch_game` message to frontend
+6. Frontend `GameManager.launchGame()` creates canvas and starts game
+
+**Complete /exit_game Command Flow:**
+
+1. User types: `/exit_game` or clicks exit icon
+2. Frontend sends command to backend via WebSocket (if typed)
+3. Backend `CommandHandler.handle_command()` routes to `exit_game_command()`
+4. Backend sends `exit_game` message to frontend
+5. Frontend `GameManager.exitGame()` terminates game and restores chat
+
+---
+
+### Testing Coverage
+
+**Total new tests:** 12 (10 new methods + 2 modified)
+
+**Test categories:**
+- Success cases: 4 tests (3 games + exit)
+- Error cases: 4 tests (wrong room, invalid game, no name, empty name)
+- Edge cases: 2 tests (case insensitivity, command routing)
+- Integration: 2 tests (help text, command routing)
+
+**New Test Methods:**
+1. `test_play_command_success_snake` - Tests successful Snake launch
+2. `test_play_command_success_tetris` - Tests successful Tetris launch
+3. `test_play_command_success_breakout` - Tests successful Breakout launch
+4. `test_play_command_wrong_room` - Tests room restriction enforcement
+5. `test_play_command_invalid_game` - Tests invalid game name handling
+6. `test_play_command_no_game_name` - Tests missing game name error
+7. `test_play_command_empty_game_name` - Tests empty game name error
+8. `test_play_command_case_insensitive` - Tests case-insensitive game names
+9. `test_exit_game_command` - Tests exit game signal
+10. `test_handle_command_play` - Tests command routing for /play
+11. `test_handle_command_exit_game` - Tests command routing for /exit_game
+12. `test_help_command_includes_game_commands` - Tests help text includes game commands
+
+---
+
+### Design Decisions
+
+**Room Name Consistency:** The backend uses "Arcade Hall" (the actual room name in the database) while the spec refers to "Arcade Room". The implementation correctly uses "Arcade Hall" for validation but displays "Arcade Room" in user-facing messages for consistency with the spec.
+
+**Case Insensitivity:** Game names are normalized to lowercase to provide a better user experience. Users can type `/play SNAKE`, `/play Snake`, or `/play snake` and all will work correctly.
+
+**Validation Order:** The `play_command` validates in this order:
+1. Game name provided (fail fast)
+2. User in correct room (prevents unnecessary processing)
+3. Game name valid (final validation)
+
+**Frontend Responsibility:** The backend only validates and signals game launch/exit. The frontend (GameManager) is responsible for canvas creation, game instance management, input handling, game loop execution, and high score management.
+
+---
+
+### Related Requirements
+
+This implementation satisfies the following requirements from the arcade-room-games spec:
+
+- **Requirement 1.1**: `/play snake` command launches Snake game
+- **Requirement 1.2**: `/play tetris` command launches Tetris game
+- **Requirement 1.3**: `/play breakout` command launches Breakout game
+- **Requirement 1.4**: Error when game command used outside Arcade Room
+- **Requirement 1.5**: Error for invalid game names with helpful message
+- **Requirement 4.2**: `/exit_game` command terminates game
+
+---
+
+### Next Steps
+
+**Required Frontend Integration:**
+
+1. **WebSocket Message Handlers** (in `main.js`) - Add handlers for `launch_game` and `exit_game` message types
+2. **Command Bar Integration** (in `commandBar.js`) - Ensure `/play` and `/exit_game` commands are sent to backend
+3. **Game Manager Integration** (in `gameManager.js`) - Implement `createGameInstance()` method and add game classes
+4. **Sidebar Integration** (in `sidePanel.js`) - Add collapsible game menu under Arcade Hall with click handlers
+
+---
+
+## Previous Update
+
 **Commit:** `9f2dd69cbd168aadb93e7b0b86eaa914edaaad86`  
 **Message:** setup game infrastructure and core components  
 **Date:** December 4, 2025
