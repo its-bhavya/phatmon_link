@@ -12,6 +12,9 @@ from dataclasses import dataclass
 from typing import List
 from enum import Enum
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class EmotionType(Enum):
@@ -194,7 +197,84 @@ class SentimentAnalyzer:
             
         Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
         """
-        if not text or not text.strip():
+        try:
+            if not text or not text.strip():
+                return SentimentResult(
+                    emotion=EmotionType.NEUTRAL,
+                    intensity=0.0,
+                    requires_support=False,
+                    crisis_type=CrisisType.NONE,
+                    keywords=[]
+                )
+            
+            # First check for crisis situations
+            crisis_type = self.detect_crisis(text)
+            
+            # Normalize text for analysis
+            normalized_text = text.lower()
+            words = re.findall(r'\b\w+\b', normalized_text)
+            
+            # Detect emotion keywords and calculate scores
+            emotion_scores = {emotion: 0.0 for emotion in EmotionType}
+            detected_keywords = []
+            
+            for i, word in enumerate(words):
+                # Check for intensifiers before the word
+                intensifier_multiplier = 1.0
+                if i > 0 and words[i-1] in self.intensifiers:
+                    intensifier_multiplier = self.intensifiers[words[i-1]]
+                
+                # Check negative emotion keywords
+                for emotion_type, keywords in self.negative_keywords.items():
+                    if word in keywords:
+                        weight = keywords[word] * intensifier_multiplier
+                        emotion_scores[emotion_type] += weight
+                        detected_keywords.append(word)
+                
+                # Check positive keywords
+                if word in self.positive_keywords:
+                    weight = self.positive_keywords[word] * intensifier_multiplier
+                    emotion_scores[EmotionType.POSITIVE] += weight
+            
+            # Determine primary emotion
+            max_emotion = max(emotion_scores.items(), key=lambda x: x[1])
+            primary_emotion = max_emotion[0]
+            raw_intensity = max_emotion[1]
+            
+            # If no strong emotion detected, mark as neutral
+            if raw_intensity < 0.3:
+                primary_emotion = EmotionType.NEUTRAL
+            
+            # Calculate intensity (0.0 to 1.0)
+            # Use a scaling factor that considers message length
+            word_count = max(len(words), 1)
+            
+            if word_count <= 5:
+                intensity = min(raw_intensity, 1.0)
+            else:
+                # Use square root to dampen the effect of message length
+                length_factor = (5 / word_count) ** 0.5
+                intensity = min(raw_intensity * length_factor, 1.0)
+            
+            # Determine if this should trigger support
+            # Only negative emotions can trigger support
+            requires_support = (
+                primary_emotion in [EmotionType.SADNESS, EmotionType.ANGER, 
+                                   EmotionType.FRUSTRATION, EmotionType.ANXIETY] and
+                intensity >= self.intensity_threshold
+            )
+            
+            return SentimentResult(
+                emotion=primary_emotion,
+                intensity=intensity,
+                requires_support=requires_support,
+                crisis_type=crisis_type,
+                keywords=detected_keywords
+            )
+        
+        except Exception as e:
+            # Log error and return neutral sentiment to allow normal processing
+            logger.error(f"Sentiment analysis error: {e}")
             return SentimentResult(
                 emotion=EmotionType.NEUTRAL,
                 intensity=0.0,
@@ -202,71 +282,6 @@ class SentimentAnalyzer:
                 crisis_type=CrisisType.NONE,
                 keywords=[]
             )
-        
-        # First check for crisis situations
-        crisis_type = self.detect_crisis(text)
-        
-        # Normalize text for analysis
-        normalized_text = text.lower()
-        words = re.findall(r'\b\w+\b', normalized_text)
-        
-        # Detect emotion keywords and calculate scores
-        emotion_scores = {emotion: 0.0 for emotion in EmotionType}
-        detected_keywords = []
-        
-        for i, word in enumerate(words):
-            # Check for intensifiers before the word
-            intensifier_multiplier = 1.0
-            if i > 0 and words[i-1] in self.intensifiers:
-                intensifier_multiplier = self.intensifiers[words[i-1]]
-            
-            # Check negative emotion keywords
-            for emotion_type, keywords in self.negative_keywords.items():
-                if word in keywords:
-                    weight = keywords[word] * intensifier_multiplier
-                    emotion_scores[emotion_type] += weight
-                    detected_keywords.append(word)
-            
-            # Check positive keywords
-            if word in self.positive_keywords:
-                weight = self.positive_keywords[word] * intensifier_multiplier
-                emotion_scores[EmotionType.POSITIVE] += weight
-        
-        # Determine primary emotion
-        max_emotion = max(emotion_scores.items(), key=lambda x: x[1])
-        primary_emotion = max_emotion[0]
-        raw_intensity = max_emotion[1]
-        
-        # If no strong emotion detected, mark as neutral
-        if raw_intensity < 0.3:
-            primary_emotion = EmotionType.NEUTRAL
-        
-        # Calculate intensity (0.0 to 1.0)
-        # Use a scaling factor that considers message length
-        word_count = max(len(words), 1)
-        
-        if word_count <= 5:
-            intensity = min(raw_intensity, 1.0)
-        else:
-            # Use square root to dampen the effect of message length
-            length_factor = (5 / word_count) ** 0.5
-            intensity = min(raw_intensity * length_factor, 1.0)
-        
-        # Determine if this should trigger support
-        # Only negative emotions can trigger support
-        requires_support = (
-            primary_emotion in [EmotionType.SADNESS, EmotionType.ANGER, 
-                               EmotionType.FRUSTRATION, EmotionType.ANXIETY] and
-            intensity >= self.intensity_threshold
-        )
-        
-        return SentimentResult(
-            emotion=primary_emotion,
-            intensity=intensity,
-            requires_support=requires_support,
-            crisis_type=crisis_type,
-            keywords=detected_keywords
-        )
     
     def detect_crisis(self, text: str) -> CrisisType:
         """
@@ -280,15 +295,24 @@ class SentimentAnalyzer:
             
         Requirements: 6.1, 6.2, 6.3
         """
-        normalized_text = text.lower()
+        try:
+            if not text:
+                return CrisisType.NONE
+            
+            normalized_text = text.lower()
+            
+            # Check each crisis type
+            for crisis_type, keywords in self.crisis_keywords.items():
+                for keyword in keywords:
+                    if keyword in normalized_text:
+                        return crisis_type
+            
+            return CrisisType.NONE
         
-        # Check each crisis type
-        for crisis_type, keywords in self.crisis_keywords.items():
-            for keyword in keywords:
-                if keyword in normalized_text:
-                    return crisis_type
-        
-        return CrisisType.NONE
+        except Exception as e:
+            # Log error and return no crisis to allow normal processing
+            logger.error(f"Crisis detection error: {e}")
+            return CrisisType.NONE
     
     def calculate_intensity(self, text: str, keywords: List[str]) -> float:
         """
