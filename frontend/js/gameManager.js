@@ -239,66 +239,165 @@ export class GameManager {
             const chatContainer = document.getElementById('chatDisplay');
             if (!chatContainer) {
                 console.error('Chat display container not found');
+                this.showErrorMessage('Failed to initialize game: chat container not found');
                 return false;
             }
             
             // Hide chat display
-            chatContainer.style.display = 'none';
+            try {
+                chatContainer.style.display = 'none';
+            } catch (error) {
+                console.error('Error hiding chat display:', error);
+                // Continue anyway
+            }
             
             // Hide command bar (we'll still listen for /exit_game)
             const commandBarElement = document.querySelector('.command-bar');
             if (commandBarElement) {
-                commandBarElement.style.display = 'none';
+                try {
+                    commandBarElement.style.display = 'none';
+                } catch (error) {
+                    console.error('Error hiding command bar:', error);
+                    // Continue anyway
+                }
             }
             
             // Create canvas element
-            this.canvas = document.createElement('canvas');
-            this.canvas.id = 'gameCanvas';
-            this.canvas.style.display = 'block';
-            this.canvas.style.backgroundColor = this.canvasConfig.backgroundColor;
-            this.canvas.style.cursor = 'default';
-            this.canvas.style.position = 'absolute';
-            this.canvas.style.top = '0';
-            this.canvas.style.left = '0';
-            this.canvas.style.zIndex = '10';
+            try {
+                this.canvas = document.createElement('canvas');
+                if (!this.canvas) {
+                    throw new Error('Failed to create canvas element');
+                }
+                
+                this.canvas.id = 'gameCanvas';
+                this.canvas.style.display = 'block';
+                this.canvas.style.backgroundColor = this.canvasConfig.backgroundColor;
+                this.canvas.style.cursor = 'default';
+                this.canvas.style.position = 'absolute';
+                this.canvas.style.top = '0';
+                this.canvas.style.left = '0';
+                this.canvas.style.zIndex = '10';
+            } catch (error) {
+                console.error('Error creating canvas element:', error);
+                this.showErrorMessage('Failed to create game canvas');
+                this.restoreChatDisplay();
+                return false;
+            }
             
             // Set canvas dimensions to match chat area
-            const mainContent = document.querySelector('.main-content');
-            if (mainContent) {
-                this.canvas.width = mainContent.clientWidth;
-                this.canvas.height = mainContent.clientHeight - 65; // Subtract command bar height
-            } else {
-                // Fallback dimensions
+            try {
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    this.canvas.width = mainContent.clientWidth || 800;
+                    this.canvas.height = (mainContent.clientHeight || 600) - 65; // Subtract command bar height
+                } else {
+                    // Fallback dimensions
+                    this.canvas.width = 800;
+                    this.canvas.height = 600;
+                }
+                
+                // Validate dimensions
+                if (this.canvas.width <= 0 || this.canvas.height <= 0) {
+                    throw new Error('Invalid canvas dimensions');
+                }
+            } catch (error) {
+                console.error('Error setting canvas dimensions:', error);
                 this.canvas.width = 800;
                 this.canvas.height = 600;
             }
             
             // Add canvas to main content area
-            if (mainContent) {
-                mainContent.appendChild(this.canvas);
-            } else {
-                document.body.appendChild(this.canvas);
+            try {
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.appendChild(this.canvas);
+                } else {
+                    document.body.appendChild(this.canvas);
+                }
+            } catch (error) {
+                console.error('Error appending canvas to DOM:', error);
+                this.showErrorMessage('Failed to display game canvas');
+                this.canvas = null;
+                this.restoreChatDisplay();
+                return false;
+            }
+            
+            // Verify canvas context is available
+            try {
+                const ctx = this.canvas.getContext('2d');
+                if (!ctx) {
+                    throw new Error('Failed to get 2D context from canvas');
+                }
+            } catch (error) {
+                console.error('Error getting canvas context:', error);
+                this.showErrorMessage('Failed to initialize game graphics');
+                this.removeCanvas();
+                return false;
             }
             
             // Set up canvas click handler for exit icon ONLY (Requirement 10.1)
             // Mouse/touch input is disabled for game controls
-            this.canvas.addEventListener('click', this.handleCanvasClick.bind(this));
-            
-            // Disable mouse/touch input for game controls (Requirement 10.1)
-            if (this.mouseInputDisabled) {
-                this.canvas.addEventListener('mousedown', this.preventMouseInput.bind(this));
-                this.canvas.addEventListener('mousemove', this.preventMouseInput.bind(this));
-            }
-            
-            if (this.touchInputDisabled) {
-                this.canvas.addEventListener('touchstart', this.preventTouchInput.bind(this), { passive: false });
-                this.canvas.addEventListener('touchmove', this.preventTouchInput.bind(this), { passive: false });
+            try {
+                this.canvas.addEventListener('click', this.handleCanvasClick.bind(this));
+                
+                // Disable mouse/touch input for game controls (Requirement 10.1)
+                if (this.mouseInputDisabled) {
+                    this.canvas.addEventListener('mousedown', this.preventMouseInput.bind(this));
+                    this.canvas.addEventListener('mousemove', this.preventMouseInput.bind(this));
+                }
+                
+                if (this.touchInputDisabled) {
+                    this.canvas.addEventListener('touchstart', this.preventTouchInput.bind(this), { passive: false });
+                    this.canvas.addEventListener('touchmove', this.preventTouchInput.bind(this), { passive: false });
+                }
+            } catch (error) {
+                console.error('Error setting up canvas event listeners:', error);
+                // Continue anyway - game will still work without these
             }
             
             return true;
         } catch (error) {
-            console.error('Error creating canvas:', error);
+            console.error('Unexpected error creating canvas:', error);
+            this.showErrorMessage('An unexpected error occurred while initializing the game');
+            this.restoreChatDisplay();
             return false;
+        }
+    }
+    
+    /**
+     * Restore chat display (helper for error recovery)
+     */
+    restoreChatDisplay() {
+        try {
+            const chatContainer = document.getElementById('chatDisplay');
+            if (chatContainer) {
+                chatContainer.style.display = 'block';
+            }
+            
+            const commandBarElement = document.querySelector('.command-bar');
+            if (commandBarElement) {
+                commandBarElement.style.display = 'flex';
+            }
+        } catch (error) {
+            console.error('Error restoring chat display:', error);
+        }
+    }
+    
+    /**
+     * Show error message to user
+     * @param {string} message - Error message to display
+     */
+    showErrorMessage(message) {
+        try {
+            // Try to display error in chat if possible
+            if (this.chatDisplay && typeof this.chatDisplay.addSystemMessage === 'function') {
+                this.chatDisplay.addSystemMessage(message);
+            } else {
+                // Fallback to console
+                console.error(message);
+            }
+        } catch (error) {
+            console.error('Error showing error message:', error);
         }
     }
     
@@ -308,24 +407,48 @@ export class GameManager {
     removeCanvas() {
         try {
             // Remove canvas from DOM
-            if (this.canvas && this.canvas.parentNode) {
-                this.canvas.parentNode.removeChild(this.canvas);
+            if (this.canvas) {
+                try {
+                    // Remove event listeners to prevent memory leaks
+                    if (this.canvas.parentNode) {
+                        this.canvas.removeEventListener('click', this.handleCanvasClick);
+                        this.canvas.removeEventListener('mousedown', this.preventMouseInput);
+                        this.canvas.removeEventListener('mousemove', this.preventMouseInput);
+                        this.canvas.removeEventListener('touchstart', this.preventTouchInput);
+                        this.canvas.removeEventListener('touchmove', this.preventTouchInput);
+                        
+                        this.canvas.parentNode.removeChild(this.canvas);
+                    }
+                } catch (error) {
+                    console.error('Error removing canvas from DOM:', error);
+                }
+                this.canvas = null;
             }
-            this.canvas = null;
             
             // Restore chat display
-            const chatContainer = document.getElementById('chatDisplay');
-            if (chatContainer) {
-                chatContainer.style.display = 'block';
+            try {
+                const chatContainer = document.getElementById('chatDisplay');
+                if (chatContainer) {
+                    chatContainer.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error restoring chat display:', error);
             }
             
             // Restore command bar
-            const commandBarElement = document.querySelector('.command-bar');
-            if (commandBarElement) {
-                commandBarElement.style.display = 'flex';
+            try {
+                const commandBarElement = document.querySelector('.command-bar');
+                if (commandBarElement) {
+                    commandBarElement.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error restoring command bar:', error);
             }
         } catch (error) {
-            console.error('Error removing canvas:', error);
+            console.error('Unexpected error removing canvas:', error);
+            // Force cleanup
+            this.canvas = null;
+            this.restoreChatDisplay();
         }
     }
     
@@ -334,9 +457,21 @@ export class GameManager {
      * @param {string} newRoom - Name of the new room
      */
     handleRoomChange(newRoom) {
-        // Terminate game if user leaves Arcade Room (or Arcade Hall)
-        if (this.isActive && newRoom !== 'Arcade Hall' && newRoom !== 'Arcade Room') {
-            this.exitGame();
+        try {
+            // Terminate game if user leaves Arcade Room (or Arcade Hall)
+            if (this.isActive && newRoom !== 'Arcade Hall' && newRoom !== 'Arcade Room') {
+                this.exitGame();
+            }
+        } catch (error) {
+            console.error('Error handling room change:', error);
+            // Force cleanup to prevent game from running in background
+            try {
+                this.stopGameLoop();
+                this.removeCanvas();
+                this.isActive = false;
+            } catch (cleanupError) {
+                console.error('Error during forced cleanup:', cleanupError);
+            }
         }
     }
     
@@ -500,41 +635,63 @@ export class GameManager {
             return;
         }
         
-        // Calculate delta time
-        const currentTime = performance.now();
-        const deltaTime = currentTime - this.lastFrameTime;
-        this.lastFrameTime = currentTime;
-        
-        // FPS tracking (Requirement 10.2)
-        this.performanceMetrics.frameCount++;
-        if (currentTime - this.performanceMetrics.lastFpsUpdate >= 1000) {
-            this.performanceMetrics.fps = this.performanceMetrics.frameCount;
-            this.performanceMetrics.frameCount = 0;
-            this.performanceMetrics.lastFpsUpdate = currentTime;
-            
-            // Warn if FPS drops below 30
-            if (this.performanceMetrics.fps < 30) {
-                console.warn(`Low FPS detected: ${this.performanceMetrics.fps} FPS`);
-            }
-        }
-        
         try {
-            // Update game state
-            this.gameInstance.update(deltaTime);
+            // Calculate delta time
+            const currentTime = performance.now();
+            const deltaTime = currentTime - this.lastFrameTime;
+            this.lastFrameTime = currentTime;
             
-            // Clear canvas
+            // FPS tracking (Requirement 10.2)
+            this.performanceMetrics.frameCount++;
+            if (currentTime - this.performanceMetrics.lastFpsUpdate >= 1000) {
+                this.performanceMetrics.fps = this.performanceMetrics.frameCount;
+                this.performanceMetrics.frameCount = 0;
+                this.performanceMetrics.lastFpsUpdate = currentTime;
+                
+                // Warn if FPS drops below 30
+                if (this.performanceMetrics.fps < 30) {
+                    console.warn(`Low FPS detected: ${this.performanceMetrics.fps} FPS`);
+                }
+            }
+            
+            // Verify canvas context is still available
             const ctx = this.canvas.getContext('2d');
-            ctx.fillStyle = this.canvasConfig.backgroundColor;
-            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            if (!ctx) {
+                throw new Error('Canvas context lost');
+            }
             
-            // Render game
-            this.gameInstance.render();
+            try {
+                // Update game state
+                this.gameInstance.update(deltaTime);
+            } catch (error) {
+                console.error('Error updating game state:', error);
+                throw error; // Re-throw to trigger game exit
+            }
             
-            // Render exit icon on top
-            this.renderExitIcon(ctx);
+            try {
+                // Clear canvas
+                ctx.fillStyle = this.canvasConfig.backgroundColor;
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Render game
+                this.gameInstance.render();
+                
+                // Render exit icon on top
+                this.renderExitIcon(ctx);
+            } catch (error) {
+                console.error('Error rendering game:', error);
+                throw error; // Re-throw to trigger game exit
+            }
             
             // Check if game is over
-            if (this.gameInstance.isGameOver()) {
+            try {
+                if (this.gameInstance.isGameOver()) {
+                    this.handleGameOver();
+                    return;
+                }
+            } catch (error) {
+                console.error('Error checking game over state:', error);
+                // Assume game is over to be safe
                 this.handleGameOver();
                 return;
             }
@@ -542,7 +699,8 @@ export class GameManager {
             // Continue loop
             this.animationFrameId = requestAnimationFrame(() => this.gameLoop());
         } catch (error) {
-            console.error('Error in game loop:', error);
+            console.error('Critical error in game loop:', error);
+            this.showErrorMessage('Game encountered an error and will exit');
             this.exitGame();
         }
     }
@@ -551,50 +709,67 @@ export class GameManager {
      * Handle game over state
      */
     handleGameOver() {
-        // Display game over message on canvas
-        if (this.canvas && this.gameInstance) {
-            const ctx = this.canvas.getContext('2d');
-            const finalScore = this.gameInstance.getScore();
-            const highScore = HighScoreManager.getHighScore(this.currentGame);
-            const isNewHigh = finalScore > highScore;
-            
-            // Clear canvas
-            ctx.fillStyle = this.canvasConfig.backgroundColor;
-            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
-            // Display game over text
-            ctx.fillStyle = this.canvasConfig.foregroundColor;
-            ctx.font = `48px ${this.canvasConfig.font}`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            const centerX = this.canvas.width / 2;
-            const centerY = this.canvas.height / 2;
-            
-            ctx.fillText('GAME OVER', centerX, centerY - 60);
-            
-            ctx.font = `24px ${this.canvasConfig.font}`;
-            ctx.fillText(`Score: ${finalScore}`, centerX, centerY);
-            
-            if (isNewHigh) {
-                ctx.fillText('NEW HIGH SCORE!', centerX, centerY + 40);
-            } else {
-                ctx.fillText(`High Score: ${highScore}`, centerX, centerY + 40);
+        try {
+            // Display game over message on canvas
+            if (this.canvas && this.gameInstance) {
+                try {
+                    const ctx = this.canvas.getContext('2d');
+                    if (!ctx) {
+                        throw new Error('Canvas context not available');
+                    }
+                    
+                    const finalScore = this.gameInstance.getScore();
+                    const highScore = HighScoreManager.getHighScore(this.currentGame);
+                    const isNewHigh = finalScore > highScore;
+                    
+                    // Clear canvas
+                    ctx.fillStyle = this.canvasConfig.backgroundColor;
+                    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    
+                    // Display game over text
+                    ctx.fillStyle = this.canvasConfig.foregroundColor;
+                    ctx.font = `48px ${this.canvasConfig.font}`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    const centerX = this.canvas.width / 2;
+                    const centerY = this.canvas.height / 2;
+                    
+                    ctx.fillText('GAME OVER', centerX, centerY - 60);
+                    
+                    ctx.font = `24px ${this.canvasConfig.font}`;
+                    ctx.fillText(`Score: ${finalScore}`, centerX, centerY);
+                    
+                    if (isNewHigh) {
+                        ctx.fillText('NEW HIGH SCORE!', centerX, centerY + 40);
+                    } else {
+                        ctx.fillText(`High Score: ${highScore}`, centerX, centerY + 40);
+                    }
+                    
+                    ctx.font = `18px ${this.canvasConfig.font}`;
+                    ctx.fillText('Click X to exit', centerX, centerY + 100);
+                    
+                    // Render exit icon
+                    this.renderExitIcon(ctx);
+                    
+                    // Update high score
+                    if (isNewHigh) {
+                        HighScoreManager.setHighScore(this.currentGame, finalScore);
+                    }
+                } catch (error) {
+                    console.error('Error rendering game over screen:', error);
+                    // Fall back to just exiting the game
+                    this.exitGame();
+                    return;
+                }
             }
             
-            ctx.font = `18px ${this.canvasConfig.font}`;
-            ctx.fillText('Click X to exit', centerX, centerY + 100);
-            
-            // Render exit icon
-            this.renderExitIcon(ctx);
-            
-            // Update high score
-            if (isNewHigh) {
-                HighScoreManager.setHighScore(this.currentGame, finalScore);
-            }
+            // Stop the game loop but keep canvas visible
+            this.stopGameLoop();
+        } catch (error) {
+            console.error('Error handling game over:', error);
+            // Force exit to ensure clean state
+            this.exitGame();
         }
-        
-        // Stop the game loop but keep canvas visible
-        this.stopGameLoop();
     }
 }

@@ -274,46 +274,54 @@ export class BreakoutGame extends Game {
      * Check collision between ball and bricks
      */
     checkBrickCollisions() {
-        for (let row = 0; row < this.brickRows; row++) {
-            for (let col = 0; col < this.brickCols; col++) {
-                const brick = this.bricks[row][col];
-                
-                if (!brick.alive) {
+        try {
+            for (let row = 0; row < this.brickRows; row++) {
+                if (!this.bricks[row]) {
                     continue;
                 }
                 
-                // Check if ball intersects brick
-                if (this.ball.x + this.ballRadius > brick.x &&
-                    this.ball.x - this.ballRadius < brick.x + brick.width &&
-                    this.ball.y + this.ballRadius > brick.y &&
-                    this.ball.y - this.ballRadius < brick.y + brick.height) {
+                for (let col = 0; col < this.brickCols; col++) {
+                    const brick = this.bricks[row][col];
                     
-                    // Destroy brick (Requirement 8.3)
-                    brick.alive = false;
-                    this.score += 10;
-                    
-                    // Determine bounce direction based on collision side
-                    const ballCenterX = this.ball.x;
-                    const ballCenterY = this.ball.y;
-                    const brickCenterX = brick.x + brick.width / 2;
-                    const brickCenterY = brick.y + brick.height / 2;
-                    
-                    const dx = ballCenterX - brickCenterX;
-                    const dy = ballCenterY - brickCenterY;
-                    
-                    // Determine which side was hit
-                    if (Math.abs(dx / brick.width) > Math.abs(dy / brick.height)) {
-                        // Hit left or right side
-                        this.ball.dx = -this.ball.dx;
-                    } else {
-                        // Hit top or bottom
-                        this.ball.dy = -this.ball.dy;
+                    if (!brick || !brick.alive) {
+                        continue;
                     }
                     
-                    // Only process one brick collision per frame
-                    return;
+                    // Check if ball intersects brick
+                    if (this.ball.x + this.ballRadius > brick.x &&
+                        this.ball.x - this.ballRadius < brick.x + brick.width &&
+                        this.ball.y + this.ballRadius > brick.y &&
+                        this.ball.y - this.ballRadius < brick.y + brick.height) {
+                        
+                        // Destroy brick (Requirement 8.3)
+                        brick.alive = false;
+                        this.score += 10;
+                        
+                        // Determine bounce direction based on collision side
+                        const ballCenterX = this.ball.x;
+                        const ballCenterY = this.ball.y;
+                        const brickCenterX = brick.x + brick.width / 2;
+                        const brickCenterY = brick.y + brick.height / 2;
+                        
+                        const dx = ballCenterX - brickCenterX;
+                        const dy = ballCenterY - brickCenterY;
+                        
+                        // Determine which side was hit
+                        if (Math.abs(dx / brick.width) > Math.abs(dy / brick.height)) {
+                            // Hit left or right side
+                            this.ball.dx = -this.ball.dx;
+                        } else {
+                            // Hit top or bottom
+                            this.ball.dy = -this.ball.dy;
+                        }
+                        
+                        // Only process one brick collision per frame
+                        return;
+                    }
                 }
             }
+        } catch (error) {
+            console.warn('Error checking brick collisions:', error);
         }
     }
     
@@ -336,61 +344,94 @@ export class BreakoutGame extends Game {
      * Render game graphics
      */
     render() {
-        const ctx = this.context;
-        
-        // Clear canvas with black background
-        ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw paddle (Requirement 8.7 - monochrome)
-        ctx.fillStyle = this.foregroundColor;
-        ctx.fillRect(this.paddle.x, this.paddle.y, this.paddle.width, this.paddle.height);
-        
-        // Draw ball (Requirement 8.7 - monochrome)
-        ctx.fillStyle = this.foregroundColor;
-        ctx.beginPath();
-        ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Draw bricks (Requirement 8.7 - monochrome)
-        ctx.fillStyle = this.foregroundColor;
-        for (let row = 0; row < this.brickRows; row++) {
-            for (let col = 0; col < this.brickCols; col++) {
-                const brick = this.bricks[row][col];
-                if (brick.alive) {
-                    ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
-                }
-            }
-        }
-        
-        // Draw score
-        ctx.fillStyle = this.foregroundColor;
-        ctx.font = '20px VT323, Courier New, monospace';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText(`Score: ${this.score}`, 10, 10);
-        
-        // Draw high score
-        const highScore = HighScoreManager.getHighScore('breakout');
-        ctx.fillText(`High: ${highScore}`, 10, 35);
-        
-        // Draw launch instruction if ball not launched
-        if (!this.ballLaunched) {
-            ctx.font = '18px VT323, Courier New, monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('Press SPACE to Launch', this.canvas.width / 2, this.canvas.height - 60);
-        }
-        
-        // Draw victory message if level complete
-        if (this.levelComplete) {
-            ctx.fillStyle = this.foregroundColor;
-            ctx.font = '48px VT323, Courier New, monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('VICTORY!', this.canvas.width / 2, this.canvas.height / 2);
+        try {
+            const ctx = this.context;
             
-            ctx.font = '24px VT323, Courier New, monospace';
-            ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 50);
+            if (!ctx) {
+                throw new Error('Canvas context not available');
+            }
+            
+            // Clear canvas with black background
+            ctx.fillStyle = this.backgroundColor;
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Draw paddle (Requirement 8.7 - monochrome)
+            try {
+                ctx.fillStyle = this.foregroundColor;
+                ctx.fillRect(this.paddle.x, this.paddle.y, this.paddle.width, this.paddle.height);
+            } catch (error) {
+                console.warn('Error drawing paddle:', error);
+            }
+            
+            // Draw ball (Requirement 8.7 - monochrome)
+            try {
+                ctx.fillStyle = this.foregroundColor;
+                ctx.beginPath();
+                ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+            } catch (error) {
+                console.warn('Error drawing ball:', error);
+            }
+            
+            // Draw bricks (Requirement 8.7 - monochrome)
+            try {
+                ctx.fillStyle = this.foregroundColor;
+                for (let row = 0; row < this.brickRows; row++) {
+                    for (let col = 0; col < this.brickCols; col++) {
+                        const brick = this.bricks[row] && this.bricks[row][col];
+                        if (brick && brick.alive) {
+                            ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Error drawing bricks:', error);
+            }
+            
+            // Draw score
+            try {
+                ctx.fillStyle = this.foregroundColor;
+                ctx.font = '20px VT323, Courier New, monospace';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`Score: ${this.score}`, 10, 10);
+                
+                // Draw high score
+                const highScore = HighScoreManager.getHighScore('breakout');
+                ctx.fillText(`High: ${highScore}`, 10, 35);
+            } catch (error) {
+                console.warn('Error drawing score:', error);
+            }
+            
+            // Draw launch instruction if ball not launched
+            try {
+                if (!this.ballLaunched) {
+                    ctx.font = '18px VT323, Courier New, monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Press SPACE to Launch', this.canvas.width / 2, this.canvas.height - 60);
+                }
+            } catch (error) {
+                console.warn('Error drawing launch instruction:', error);
+            }
+            
+            // Draw victory message if level complete
+            try {
+                if (this.levelComplete) {
+                    ctx.fillStyle = this.foregroundColor;
+                    ctx.font = '48px VT323, Courier New, monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('VICTORY!', this.canvas.width / 2, this.canvas.height / 2);
+                    
+                    ctx.font = '24px VT323, Courier New, monospace';
+                    ctx.fillText(`Final Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 50);
+                }
+            } catch (error) {
+                console.warn('Error drawing victory message:', error);
+            }
+        } catch (error) {
+            console.error('Critical error rendering breakout game:', error);
+            throw error; // Re-throw to trigger game exit
         }
     }
     

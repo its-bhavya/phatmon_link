@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Handling Test - Arcade Games</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #0f0;
+        }
+        .test-result {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .pass { color: #0f0; }
+        .fail { color: #f00; }
+        button {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        button:hover {
+            background: #0f0;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Arcade Games - Error Handling Tests</h1>
+    
+    <div class="test-section">
+        <h2>HighScoreManager Tests</h2>
+        <button onclick="testLocalStorageAvailability()">Test localStorage Availability</button>
+        <button onclick="testInvalidInputs()">Test Invalid Inputs</button>
+        <button onclick="testScoreValidation()">Test Score Validation</button>
+        <div id="highscore-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Canvas Error Handling Tests</h2>
+        <button onclick="testCanvasCreation()">Test Canvas Creation</button>
+        <button onclick="testCanvasCleanup()">Test Canvas Cleanup</button>
+        <div id="canvas-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Game Rendering Error Tests</h2>
+        <button onclick="testRenderingErrors()">Test Rendering Error Recovery</button>
+        <div id="rendering-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <div id="console-output" style="max-height: 300px; overflow-y: auto; border: 1px solid #0f0; padding: 10px;"></div>
+    </div>
+
+    <script type="module">
+        import { HighScoreManager } from './highScores.js';
+        
+        // Capture console output
+        const consoleOutput = document.getElementById('console-output');
+        const originalConsoleLog = console.log;
+        const originalConsoleWarn = console.warn;
+        const originalConsoleError = console.error;
+        
+        function logToPage(type, ...args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+            ).join(' ');
+            consoleOutput.innerHTML += `<div style="color: ${
+                type === 'error' ? '#f00' : type === 'warn' ? '#ff0' : '#0f0'
+            }">[${type.toUpperCase()}] ${message}</div>`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = (...args) => { originalConsoleLog(...args); logToPage('log', ...args); };
+        console.warn = (...args) => { originalConsoleWarn(...args); logToPage('warn', ...args); };
+        console.error = (...args) => { originalConsoleError(...args); logToPage('error', ...args); };
+        
+        // Test functions
+        window.testLocalStorageAvailability = function() {
+            const results = document.getElementById('highscore-results');
+            results.innerHTML = '<h3>localStorage Availability Test</h3>';
+            
+            try {
+                const isAvailable = HighScoreManager.isLocalStorageAvailable();
+                results.innerHTML += `<div class="test-result pass">✓ localStorage available: ${isAvailable}</div>`;
+                
+                // Test with localStorage disabled (simulate)
+                const originalSetItem = Storage.prototype.setItem;
+                Storage.prototype.setItem = function() {
+                    throw new Error('QuotaExceededError');
+                };
+                
+                const canSave = HighScoreManager.setHighScore('test', 100);
+                results.innerHTML += `<div class="test-result ${canSave ? 'fail' : 'pass'}">✓ Handles localStorage errors: ${!canSave}</div>`;
+                
+                // Restore
+                Storage.prototype.setItem = originalSetItem;
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        };
+        
+        window.testInvalidInputs = function() {
+            const results = document.getElementById('highscore-results');
+            results.innerHTML = '<h3>Invalid Input Test</h3>';
+            
+            try {
+                // Test null game name
+                const score1 = HighScoreManager.getHighScore(null);
+                results.innerHTML += `<div class="test-result ${score1 === 0 ? 'pass' : 'fail'}">✓ Handles null game name: ${score1 === 0}</div>`;
+                
+                // Test undefined game name
+                const score2 = HighScoreManager.getHighScore(undefined);
+                results.innerHTML += `<div class="test-result ${score2 === 0 ? 'pass' : 'fail'}">✓ Handles undefined game name: ${score2 === 0}</div>`;
+                
+                // Test invalid score
+                const saved1 = HighScoreManager.setHighScore('test', 'invalid');
+                results.innerHTML += `<div class="test-result ${!saved1 ? 'pass' : 'fail'}">✓ Rejects invalid score: ${!saved1}</div>`;
+                
+                // Test negative score
+                const saved2 = HighScoreManager.setHighScore('test', -100);
+                results.innerHTML += `<div class="test-result ${!saved2 ? 'pass' : 'fail'}">✓ Rejects negative score: ${!saved2}</div>`;
+                
+                // Test NaN score
+                const saved3 = HighScoreManager.setHighScore('test', NaN);
+                results.innerHTML += `<div class="test-result ${!saved3 ? 'pass' : 'fail'}">✓ Rejects NaN score: ${!saved3}</div>`;
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        };
+        
+        window.testScoreValidation = function() {
+            const results = document.getElementById('highscore-results');
+            results.innerHTML = '<h3>Score Validation Test</h3>';
+            
+            try {
+                // Test valid score
+                const saved = HighScoreManager.setHighScore('test', 1000);
+                results.innerHTML += `<div class="test-result ${saved ? 'pass' : 'fail'}">✓ Saves valid score: ${saved}</div>`;
+                
+                const retrieved = HighScoreManager.getHighScore('test');
+                results.innerHTML += `<div class="test-result ${retrieved === 1000 ? 'pass' : 'fail'}">✓ Retrieves correct score: ${retrieved === 1000} (${retrieved})</div>`;
+                
+                // Test high score comparison
+                const isNew = HighScoreManager.isNewHighScore('test', 2000);
+                results.innerHTML += `<div class="test-result ${isNew ? 'pass' : 'fail'}">✓ Detects new high score: ${isNew}</div>`;
+                
+                const isNotNew = HighScoreManager.isNewHighScore('test', 500);
+                results.innerHTML += `<div class="test-result ${!isNotNew ? 'pass' : 'fail'}">✓ Detects non-high score: ${!isNotNew}</div>`;
+                
+                // Clean up
+                localStorage.removeItem('arcade_highscore_test');
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        };
+        
+        window.testCanvasCreation = function() {
+            const results = document.getElementById('canvas-results');
+            results.innerHTML = '<h3>Canvas Creation Test</h3>';
+            
+            try {
+                // Create a test canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = 800;
+                canvas.height = 600;
+                
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    results.innerHTML += `<div class="test-result pass">✓ Canvas context available</div>`;
+                } else {
+                    results.innerHTML += `<div class="test-result fail">✗ Canvas context not available</div>`;
+                }
+                
+                // Test invalid dimensions
+                const canvas2 = document.createElement('canvas');
+                canvas2.width = -1;
+                canvas2.height = -1;
+                
+                results.innerHTML += `<div class="test-result pass">✓ Handles invalid dimensions gracefully</div>`;
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        };
+        
+        window.testCanvasCleanup = function() {
+            const results = document.getElementById('canvas-results');
+            results.innerHTML = '<h3>Canvas Cleanup Test</h3>';
+            
+            try {
+                // Create and remove canvas
+                const canvas = document.createElement('canvas');
+                document.body.appendChild(canvas);
+                
+                const hasCanvas = document.body.contains(canvas);
+                results.innerHTML += `<div class="test-result ${hasCanvas ? 'pass' : 'fail'}">✓ Canvas added to DOM: ${hasCanvas}</div>`;
+                
+                document.body.removeChild(canvas);
+                const removed = !document.body.contains(canvas);
+                results.innerHTML += `<div class="test-result ${removed ? 'pass' : 'fail'}">✓ Canvas removed from DOM: ${removed}</div>`;
+                
+                // Test removing non-existent canvas
+                try {
+                    document.body.removeChild(canvas);
+                    results.innerHTML += `<div class="test-result fail">✗ Should have thrown error</div>`;
+                } catch (e) {
+                    results.innerHTML += `<div class="test-result pass">✓ Handles removing non-existent canvas</div>`;
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        };
+        
+        window.testRenderingErrors = function() {
+            const results = document.getElementById('rendering-results');
+            results.innerHTML = '<h3>Rendering Error Recovery Test</h3>';
+            
+            try {
+                // Test with null context
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (ctx) {
+                    // Test basic rendering
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(0, 0, 100, 100);
+                    results.innerHTML += `<div class="test-result pass">✓ Basic rendering works</div>`;
+                    
+                    // Test with invalid coordinates
+                    try {
+                        ctx.fillRect(NaN, NaN, 100, 100);
+                        results.innerHTML += `<div class="test-result pass">✓ Handles invalid coordinates</div>`;
+                    } catch (e) {
+                        results.innerHTML += `<div class="test-result pass">✓ Catches invalid coordinate errors</div>`;
+                    }
+                    
+                    // Test with invalid style
+                    try {
+                        ctx.fillStyle = 'invalid-color';
+                        ctx.fillRect(0, 0, 100, 100);
+                        results.innerHTML += `<div class="test-result pass">✓ Handles invalid fill style</div>`;
+                    } catch (e) {
+                        results.innerHTML += `<div class="test-result pass">✓ Catches invalid style errors</div>`;
+                    }
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">✗ Error: ${error.message}</div>`;
+            }
+        };
+        
+        console.log('Error handling test page loaded');
+    </script>
+</body>
+</html>

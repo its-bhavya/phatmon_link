@@ -471,62 +471,103 @@ export class TetrisGame extends Game {
      * Render game graphics
      */
     render() {
-        const ctx = this.context;
-        
-        // Clear canvas with black background
-        ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw board border
-        ctx.strokeStyle = this.foregroundColor;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(
-            this.boardOffsetX - 2,
-            this.boardOffsetY - 2,
-            this.boardWidth * this.blockSize + 4,
-            this.boardHeight * this.blockSize + 4
-        );
-        
-        // Draw locked blocks on board
-        for (let y = 0; y < this.boardHeight; y++) {
-            for (let x = 0; x < this.boardWidth; x++) {
-                if (this.board[y][x]) {
-                    this.drawBlock(x, y);
-                }
+        try {
+            const ctx = this.context;
+            
+            if (!ctx) {
+                throw new Error('Canvas context not available');
             }
-        }
-        
-        // Draw current piece
-        if (this.currentPiece) {
-            const shape = this.tetrominoes[this.currentPiece].shape[this.currentRotation];
-            for (let row = 0; row < shape.length; row++) {
-                for (let col = 0; col < shape[row].length; col++) {
-                    if (shape[row][col]) {
-                        const x = this.currentPosition.x + col;
-                        const y = this.currentPosition.y + row;
-                        if (y >= 0) { // Only draw if visible
+            
+            // Clear canvas with black background
+            ctx.fillStyle = this.backgroundColor;
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Draw board border
+            try {
+                ctx.strokeStyle = this.foregroundColor;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(
+                    this.boardOffsetX - 2,
+                    this.boardOffsetY - 2,
+                    this.boardWidth * this.blockSize + 4,
+                    this.boardHeight * this.blockSize + 4
+                );
+            } catch (error) {
+                console.warn('Error drawing board border:', error);
+            }
+            
+            // Draw locked blocks on board
+            try {
+                for (let y = 0; y < this.boardHeight; y++) {
+                    for (let x = 0; x < this.boardWidth; x++) {
+                        if (this.board[y] && this.board[y][x]) {
                             this.drawBlock(x, y);
                         }
                     }
                 }
+            } catch (error) {
+                console.warn('Error drawing board blocks:', error);
             }
+            
+            // Draw current piece
+            try {
+                if (this.currentPiece && this.tetrominoes[this.currentPiece]) {
+                    const shape = this.tetrominoes[this.currentPiece].shape[this.currentRotation];
+                    if (shape) {
+                        for (let row = 0; row < shape.length; row++) {
+                            for (let col = 0; col < shape[row].length; col++) {
+                                if (shape[row][col]) {
+                                    const x = this.currentPosition.x + col;
+                                    const y = this.currentPosition.y + row;
+                                    if (y >= 0) { // Only draw if visible
+                                        this.drawBlock(x, y);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Error drawing current piece:', error);
+            }
+            
+            // Draw UI (score, level, lines, next piece)
+            try {
+                this.drawUI();
+            } catch (error) {
+                console.warn('Error drawing UI:', error);
+            }
+        } catch (error) {
+            console.error('Critical error rendering tetris game:', error);
+            throw error; // Re-throw to trigger game exit
         }
-        
-        // Draw UI (score, level, lines, next piece)
-        this.drawUI();
     }
     
     /**
      * Draw a single block
      */
     drawBlock(x, y) {
-        const ctx = this.context;
-        const pixelX = this.boardOffsetX + x * this.blockSize;
-        const pixelY = this.boardOffsetY + y * this.blockSize;
-        
-        // Draw filled block (solid monochrome - Requirement 7.7)
-        ctx.fillStyle = this.foregroundColor;
-        ctx.fillRect(pixelX + 1, pixelY + 1, this.blockSize - 2, this.blockSize - 2);
+        try {
+            const ctx = this.context;
+            
+            if (!ctx) {
+                return;
+            }
+            
+            const pixelX = this.boardOffsetX + x * this.blockSize;
+            const pixelY = this.boardOffsetY + y * this.blockSize;
+            
+            // Validate coordinates
+            if (isNaN(pixelX) || isNaN(pixelY) || pixelX < 0 || pixelY < 0) {
+                return;
+            }
+            
+            // Draw filled block (solid monochrome - Requirement 7.7)
+            ctx.fillStyle = this.foregroundColor;
+            ctx.fillRect(pixelX + 1, pixelY + 1, this.blockSize - 2, this.blockSize - 2);
+        } catch (error) {
+            console.warn('Error drawing block:', error);
+        }
     }
     
     /**

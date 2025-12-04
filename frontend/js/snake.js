@@ -154,58 +154,86 @@ export class SnakeGame extends Game {
      * Render game graphics
      */
     render() {
-        const ctx = this.context;
-        
-        // Clear canvas with black background
-        ctx.fillStyle = this.backgroundColor;
-        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Draw grid (subtle)
-        ctx.strokeStyle = '#222222';
-        ctx.lineWidth = 1;
-        for (let x = 0; x <= this.gridWidth; x++) {
-            ctx.beginPath();
-            ctx.moveTo(x * this.gridSize, 0);
-            ctx.lineTo(x * this.gridSize, this.canvas.height);
-            ctx.stroke();
+        try {
+            const ctx = this.context;
+            
+            if (!ctx) {
+                throw new Error('Canvas context not available');
+            }
+            
+            // Clear canvas with black background
+            ctx.fillStyle = this.backgroundColor;
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Draw grid (subtle)
+            try {
+                ctx.strokeStyle = '#222222';
+                ctx.lineWidth = 1;
+                for (let x = 0; x <= this.gridWidth; x++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x * this.gridSize, 0);
+                    ctx.lineTo(x * this.gridSize, this.canvas.height);
+                    ctx.stroke();
+                }
+                for (let y = 0; y <= this.gridHeight; y++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y * this.gridSize);
+                    ctx.lineTo(this.canvas.width, y * this.gridSize);
+                    ctx.stroke();
+                }
+            } catch (error) {
+                console.warn('Error drawing grid:', error);
+                // Continue without grid
+            }
+            
+            // Draw food (white square)
+            try {
+                ctx.fillStyle = this.foregroundColor;
+                ctx.fillRect(
+                    this.food.x * this.gridSize + 1,
+                    this.food.y * this.gridSize + 1,
+                    this.gridSize - 2,
+                    this.gridSize - 2
+                );
+            } catch (error) {
+                console.warn('Error drawing food:', error);
+            }
+            
+            // Draw snake (white squares)
+            try {
+                ctx.fillStyle = this.foregroundColor;
+                for (let segment of this.snake) {
+                    if (segment && typeof segment.x === 'number' && typeof segment.y === 'number') {
+                        ctx.fillRect(
+                            segment.x * this.gridSize + 1,
+                            segment.y * this.gridSize + 1,
+                            this.gridSize - 2,
+                            this.gridSize - 2
+                        );
+                    }
+                }
+            } catch (error) {
+                console.warn('Error drawing snake:', error);
+            }
+            
+            // Draw score
+            try {
+                ctx.fillStyle = this.foregroundColor;
+                ctx.font = '20px VT323, Courier New, monospace';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`Score: ${this.score}`, 10, 10);
+                
+                // Draw high score
+                const highScore = HighScoreManager.getHighScore('snake');
+                ctx.fillText(`High: ${highScore}`, 10, 35);
+            } catch (error) {
+                console.warn('Error drawing score:', error);
+            }
+        } catch (error) {
+            console.error('Critical error rendering snake game:', error);
+            throw error; // Re-throw to trigger game exit
         }
-        for (let y = 0; y <= this.gridHeight; y++) {
-            ctx.beginPath();
-            ctx.moveTo(0, y * this.gridSize);
-            ctx.lineTo(this.canvas.width, y * this.gridSize);
-            ctx.stroke();
-        }
-        
-        // Draw food (white square)
-        ctx.fillStyle = this.foregroundColor;
-        ctx.fillRect(
-            this.food.x * this.gridSize + 1,
-            this.food.y * this.gridSize + 1,
-            this.gridSize - 2,
-            this.gridSize - 2
-        );
-        
-        // Draw snake (white squares)
-        ctx.fillStyle = this.foregroundColor;
-        for (let segment of this.snake) {
-            ctx.fillRect(
-                segment.x * this.gridSize + 1,
-                segment.y * this.gridSize + 1,
-                this.gridSize - 2,
-                this.gridSize - 2
-            );
-        }
-        
-        // Draw score
-        ctx.fillStyle = this.foregroundColor;
-        ctx.font = '20px VT323, Courier New, monospace';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.fillText(`Score: ${this.score}`, 10, 10);
-        
-        // Draw high score
-        const highScore = HighScoreManager.getHighScore('snake');
-        ctx.fillText(`High: ${highScore}`, 10, 35);
     }
     
     /**
@@ -247,25 +275,47 @@ export class SnakeGame extends Game {
      * Spawn food at a random empty location
      */
     spawnFood() {
-        let validPosition = false;
-        let newFood = { x: 0, y: 0 };
-        
-        // Keep trying until we find a position not occupied by snake
-        while (!validPosition) {
-            newFood.x = Math.floor(Math.random() * this.gridWidth);
-            newFood.y = Math.floor(Math.random() * this.gridHeight);
+        try {
+            let validPosition = false;
+            let newFood = { x: 0, y: 0 };
+            let attempts = 0;
+            const maxAttempts = 1000; // Prevent infinite loop
             
-            // Check if position is occupied by snake
-            validPosition = true;
-            for (let segment of this.snake) {
-                if (segment.x === newFood.x && segment.y === newFood.y) {
-                    validPosition = false;
-                    break;
+            // Keep trying until we find a position not occupied by snake
+            while (!validPosition && attempts < maxAttempts) {
+                attempts++;
+                newFood.x = Math.floor(Math.random() * this.gridWidth);
+                newFood.y = Math.floor(Math.random() * this.gridHeight);
+                
+                // Validate coordinates
+                if (newFood.x < 0 || newFood.x >= this.gridWidth || 
+                    newFood.y < 0 || newFood.y >= this.gridHeight) {
+                    continue;
+                }
+                
+                // Check if position is occupied by snake
+                validPosition = true;
+                for (let segment of this.snake) {
+                    if (segment.x === newFood.x && segment.y === newFood.y) {
+                        validPosition = false;
+                        break;
+                    }
                 }
             }
+            
+            // If we couldn't find a valid position (board is full), game over
+            if (!validPosition) {
+                console.warn('Could not find valid food position - board may be full');
+                this.gameOver = true;
+                return;
+            }
+            
+            this.food = newFood;
+        } catch (error) {
+            console.error('Error spawning food:', error);
+            // Use a fallback position
+            this.food = { x: 0, y: 0 };
         }
-        
-        this.food = newFood;
     }
     
     /**

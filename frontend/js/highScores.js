@@ -18,21 +18,55 @@ export class HighScoreManager {
     static KEY_PREFIX = 'arcade_highscore_';
     
     /**
+     * Check if localStorage is available
+     * @returns {boolean} - True if localStorage is available
+     */
+    static isLocalStorageAvailable() {
+        try {
+            const test = '__localStorage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+    
+    /**
      * Get high score for a specific game
      * @param {string} gameName - Name of the game (snake, tetris, breakout)
-     * @returns {number} - High score (0 if none exists)
+     * @returns {number} - High score (0 if none exists or localStorage unavailable)
      */
     static getHighScore(gameName) {
         try {
+            // Check if localStorage is available
+            if (!this.isLocalStorageAvailable()) {
+                console.warn('localStorage is not available - high scores will not persist');
+                return 0;
+            }
+            
+            // Validate game name
+            if (!gameName || typeof gameName !== 'string') {
+                console.warn('Invalid game name provided to getHighScore');
+                return 0;
+            }
+            
             const key = this.KEY_PREFIX + gameName.toLowerCase();
             const stored = localStorage.getItem(key);
             
-            if (stored === null) {
+            if (stored === null || stored === undefined) {
                 return 0;
             }
             
             const score = parseInt(stored, 10);
-            return isNaN(score) ? 0 : score;
+            
+            // Validate parsed score
+            if (isNaN(score) || score < 0) {
+                console.warn(`Invalid high score data for ${gameName}: ${stored}`);
+                return 0;
+            }
+            
+            return score;
         } catch (error) {
             console.warn('Failed to retrieve high score:', error);
             return 0;
@@ -47,11 +81,33 @@ export class HighScoreManager {
      */
     static setHighScore(gameName, score) {
         try {
+            // Check if localStorage is available
+            if (!this.isLocalStorageAvailable()) {
+                console.warn('localStorage is not available - high score will not be saved');
+                return false;
+            }
+            
+            // Validate inputs
+            if (!gameName || typeof gameName !== 'string') {
+                console.warn('Invalid game name provided to setHighScore');
+                return false;
+            }
+            
+            if (typeof score !== 'number' || isNaN(score) || score < 0) {
+                console.warn('Invalid score provided to setHighScore:', score);
+                return false;
+            }
+            
             const key = this.KEY_PREFIX + gameName.toLowerCase();
             localStorage.setItem(key, score.toString());
             return true;
         } catch (error) {
-            console.warn('Failed to save high score:', error);
+            // Handle quota exceeded or other localStorage errors
+            if (error.name === 'QuotaExceededError') {
+                console.warn('localStorage quota exceeded - high score cannot be saved');
+            } else {
+                console.warn('Failed to save high score:', error);
+            }
             return false;
         }
     }
@@ -63,8 +119,18 @@ export class HighScoreManager {
      * @returns {boolean} - True if this is a new high score
      */
     static isNewHighScore(gameName, score) {
-        const currentHighScore = this.getHighScore(gameName);
-        return score > currentHighScore;
+        try {
+            // Validate inputs
+            if (typeof score !== 'number' || isNaN(score) || score < 0) {
+                return false;
+            }
+            
+            const currentHighScore = this.getHighScore(gameName);
+            return score > currentHighScore;
+        } catch (error) {
+            console.warn('Error checking if new high score:', error);
+            return false;
+        }
     }
     
     /**
@@ -74,9 +140,14 @@ export class HighScoreManager {
      * @returns {boolean} - True if high score was updated
      */
     static updateHighScore(gameName, score) {
-        if (this.isNewHighScore(gameName, score)) {
-            return this.setHighScore(gameName, score);
+        try {
+            if (this.isNewHighScore(gameName, score)) {
+                return this.setHighScore(gameName, score);
+            }
+            return false;
+        } catch (error) {
+            console.warn('Error updating high score:', error);
+            return false;
         }
-        return false;
     }
 }
