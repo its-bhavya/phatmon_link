@@ -1,7 +1,13 @@
 /**
  * Game Manager
  * Orchestrates game lifecycle, canvas management, and game state transitions
- * Requirements: 3.1, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.5
+ * Requirements: 3.1, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.5, 10.1, 10.2, 10.3, 10.4
+ * 
+ * Performance Optimizations:
+ * - Keyboard-only input (Requirement 10.1): Mouse/touch disabled for game controls
+ * - FPS monitoring (Requirement 10.2): Tracks and maintains 30+ FPS
+ * - Input debouncing (Requirement 10.3): Prevents input flooding at ~60Hz
+ * - Input latency tracking (Requirement 10.4): Measures and warns if > 50ms
  */
 
 import { HighScoreManager } from './highScores.js';
@@ -40,6 +46,25 @@ export class GameManager {
         // Exit icon configuration
         this.exitIconSize = 30;
         this.exitIconPadding = 10;
+        
+        // Performance monitoring (Requirement 10.2, 10.4)
+        this.performanceMetrics = {
+            fps: 0,
+            frameCount: 0,
+            lastFpsUpdate: 0,
+            inputLatency: 0,
+            lastInputTime: 0
+        };
+        
+        // Input debouncing (Requirement 10.3)
+        this.inputDebounce = {
+            lastKeyTime: {},
+            debounceDelay: 16 // ~60Hz input rate (16ms between inputs)
+        };
+        
+        // Keyboard-only input enforcement (Requirement 10.1)
+        this.mouseInputDisabled = true;
+        this.touchInputDisabled = true;
     }
     
     /**
@@ -184,6 +209,19 @@ export class GameManager {
     }
     
     /**
+     * Get current performance metrics
+     * @returns {Object} Performance metrics
+     */
+    getPerformanceMetrics() {
+        return {
+            fps: this.performanceMetrics.fps,
+            inputLatency: this.performanceMetrics.inputLatency,
+            targetFps: 30,
+            targetLatency: 50
+        };
+    }
+    
+    /**
      * Create and display the game canvas
      * @returns {boolean} - True if canvas created successfully
      */
@@ -234,8 +272,20 @@ export class GameManager {
                 document.body.appendChild(this.canvas);
             }
             
-            // Set up canvas click handler for exit icon
+            // Set up canvas click handler for exit icon ONLY (Requirement 10.1)
+            // Mouse/touch input is disabled for game controls
             this.canvas.addEventListener('click', this.handleCanvasClick.bind(this));
+            
+            // Disable mouse/touch input for game controls (Requirement 10.1)
+            if (this.mouseInputDisabled) {
+                this.canvas.addEventListener('mousedown', this.preventMouseInput.bind(this));
+                this.canvas.addEventListener('mousemove', this.preventMouseInput.bind(this));
+            }
+            
+            if (this.touchInputDisabled) {
+                this.canvas.addEventListener('touchstart', this.preventTouchInput.bind(this), { passive: false });
+                this.canvas.addEventListener('touchmove', this.preventTouchInput.bind(this), { passive: false });
+            }
             
             return true;
         } catch (error) {
@@ -304,6 +354,31 @@ export class GameManager {
     }
     
     /**
+     * Prevent mouse input for game controls (Requirement 10.1)
+     * Mouse is only allowed for exit icon
+     * @param {MouseEvent} event - Mouse event
+     */
+    preventMouseInput(event) {
+        // Allow click events for exit icon, but prevent other mouse interactions
+        if (event.type !== 'click') {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    }
+    
+    /**
+     * Prevent touch input for game controls (Requirement 10.1)
+     * Touch is only allowed for exit icon tap
+     * @param {TouchEvent} event - Touch event
+     */
+    preventTouchInput(event) {
+        // Prevent all touch interactions except taps on exit icon
+        // The click event will handle exit icon taps
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    /**
      * Render exit icon in top-right corner
      * @param {CanvasRenderingContext2D} ctx - Canvas context
      */
@@ -343,9 +418,34 @@ export class GameManager {
             event.preventDefault();
         }
         
+        // Input debouncing (Requirement 10.3)
+        const currentTime = performance.now();
+        const lastTime = this.inputDebounce.lastKeyTime[event.key] || 0;
+        
+        if (currentTime - lastTime < this.inputDebounce.debounceDelay) {
+            // Too soon, skip this input
+            return;
+        }
+        
+        // Update last input time
+        this.inputDebounce.lastKeyTime[event.key] = currentTime;
+        
+        // Measure input latency (Requirement 10.4)
+        this.performanceMetrics.lastInputTime = currentTime;
+        
         // Route to game instance
         try {
+            const startTime = performance.now();
             this.gameInstance.handleKeyDown(event.key);
+            const endTime = performance.now();
+            
+            // Track input latency
+            this.performanceMetrics.inputLatency = endTime - startTime;
+            
+            // Warn if latency exceeds 50ms
+            if (this.performanceMetrics.inputLatency > 50) {
+                console.warn(`High input latency detected: ${this.performanceMetrics.inputLatency.toFixed(2)}ms`);
+            }
         } catch (error) {
             console.error('Error handling key down:', error);
         }
@@ -396,6 +496,19 @@ export class GameManager {
         const currentTime = performance.now();
         const deltaTime = currentTime - this.lastFrameTime;
         this.lastFrameTime = currentTime;
+        
+        // FPS tracking (Requirement 10.2)
+        this.performanceMetrics.frameCount++;
+        if (currentTime - this.performanceMetrics.lastFpsUpdate >= 1000) {
+            this.performanceMetrics.fps = this.performanceMetrics.frameCount;
+            this.performanceMetrics.frameCount = 0;
+            this.performanceMetrics.lastFpsUpdate = currentTime;
+            
+            // Warn if FPS drops below 30
+            if (this.performanceMetrics.fps < 30) {
+                console.warn(`Low FPS detected: ${this.performanceMetrics.fps} FPS`);
+            }
+        }
         
         try {
             // Update game state

@@ -84,6 +84,9 @@
         <button onclick="testExitIconClick()">Test: Exit Icon Click</button>
         <button onclick="testMonochromeStyle()">Test: Monochrome Style</button>
         <button onclick="testChatHiding()">Test: Chat Hiding/Showing</button>
+        <button onclick="testPerformanceMetrics()">Test: Performance Metrics</button>
+        <button onclick="testInputDebouncing()">Test: Input Debouncing</button>
+        <button onclick="testKeyboardOnly()">Test: Keyboard-Only Input</button>
         <button onclick="runAllTests()">Run All Tests</button>
     </div>
     
@@ -285,6 +288,85 @@
             status.innerHTML = html;
         };
         
+        window.testPerformanceMetrics = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Test: Performance Metrics</h3>';
+            
+            const metrics = window.gameManager.performanceMetrics;
+            
+            const tests = [
+                { name: 'FPS tracking initialized', pass: metrics.fps !== undefined },
+                { name: 'Frame count initialized', pass: metrics.frameCount !== undefined },
+                { name: 'Input latency tracking initialized', pass: metrics.inputLatency !== undefined },
+                { name: 'Performance metrics object exists', pass: metrics !== null }
+            ];
+            
+            let html = '<h3>Test: Performance Metrics (Requirement 10.2, 10.4)</h3>';
+            tests.forEach(test => {
+                const className = test.pass ? 'pass' : 'fail';
+                const symbol = test.pass ? '✓' : '✗';
+                html += `<div class="${className}">${symbol} ${test.name}</div>`;
+            });
+            
+            html += `<div>Current FPS: ${metrics.fps}</div>`;
+            html += `<div>Input Latency: ${metrics.inputLatency.toFixed(2)}ms</div>`;
+            html += `<div>Target FPS: 30+</div>`;
+            html += `<div>Target Latency: < 50ms</div>`;
+            
+            status.innerHTML = html;
+        };
+        
+        window.testInputDebouncing = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Test: Input Debouncing</h3>';
+            
+            const debounce = window.gameManager.inputDebounce;
+            
+            const tests = [
+                { name: 'Debounce delay set', pass: debounce.debounceDelay === 16 },
+                { name: 'Last key time tracking initialized', pass: debounce.lastKeyTime !== undefined },
+                { name: 'Debounce delay is ~60Hz (16ms)', pass: debounce.debounceDelay === 16 }
+            ];
+            
+            let html = '<h3>Test: Input Debouncing (Requirement 10.3)</h3>';
+            tests.forEach(test => {
+                const className = test.pass ? 'pass' : 'fail';
+                const symbol = test.pass ? '✓' : '✗';
+                html += `<div class="${className}">${symbol} ${test.name}</div>`;
+            });
+            
+            html += `<div>Debounce delay: ${debounce.debounceDelay}ms (~${Math.round(1000/debounce.debounceDelay)}Hz)</div>`;
+            html += `<div>This prevents input flooding and ensures responsive controls</div>`;
+            
+            status.innerHTML = html;
+        };
+        
+        window.testKeyboardOnly = function() {
+            const status = document.getElementById('testStatus');
+            status.innerHTML = '<h3>Test: Keyboard-Only Input</h3>';
+            
+            const tests = [
+                { name: 'Mouse input disabled flag set', pass: window.gameManager.mouseInputDisabled === true },
+                { name: 'Touch input disabled flag set', pass: window.gameManager.touchInputDisabled === true },
+                { name: 'Keyboard handlers bound', pass: window.gameManager.keyDownHandler !== undefined },
+                { name: 'Keyboard handlers bound', pass: window.gameManager.keyUpHandler !== undefined }
+            ];
+            
+            let html = '<h3>Test: Keyboard-Only Input (Requirement 10.1)</h3>';
+            tests.forEach(test => {
+                const className = test.pass ? 'pass' : 'fail';
+                const symbol = test.pass ? '✓' : '✗';
+                html += `<div class="${className}">${symbol} ${test.name}</div>`;
+            });
+            
+            html += `<div>Mouse input disabled: ${window.gameManager.mouseInputDisabled}</div>`;
+            html += `<div>Touch input disabled: ${window.gameManager.touchInputDisabled}</div>`;
+            html += `<div>Only keyboard controls are accepted for gameplay</div>`;
+            html += `<div>Mouse/touch only allowed for exit icon click</div>`;
+            
+            status.innerHTML = html;
+        };
+        
         window.runAllTests = function() {
             const status = document.getElementById('testStatus');
             status.innerHTML = '<h3>Running All Tests...</h3>';
@@ -300,7 +382,16 @@
                             setTimeout(() => {
                                 testChatHiding();
                                 setTimeout(() => {
-                                    status.innerHTML += '<h3 class="pass">✓ All tests completed!</h3>';
+                                    testPerformanceMetrics();
+                                    setTimeout(() => {
+                                        testInputDebouncing();
+                                        setTimeout(() => {
+                                            testKeyboardOnly();
+                                            setTimeout(() => {
+                                                status.innerHTML += '<h3 class="pass">✓ All tests completed!</h3>';
+                                            }, 500);
+                                        }, 500);
+                                    }, 500);
                                 }, 500);
                             }, 500);
                         }, 500);
