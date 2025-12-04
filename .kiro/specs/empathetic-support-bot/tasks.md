@@ -33,8 +33,14 @@
   - Create database tables for support logging
   - _Requirements: 8.1, 8.2, 8.3, 9.1, 9.5_
 
-- [ ] 3. Implement sentiment analysis for emotional support
-  - [ ] 3.1 Update SentimentAnalyzer for emotion detection
+- [x] 3. Implement sentiment analysis for emotional support
+
+
+
+
+  - [x] 3.1 Update SentimentAnalyzer for emotion detection
+
+
     - Modify sentiment.py to detect sadness, anger, frustration, anxiety
     - Add emotion type classification
     - Add intensity calculation for emotions
@@ -45,7 +51,9 @@
     - **Property 2: Negative emotion detection triggers support**
     - **Validates: Requirements 1.2, 1.3, 1.4, 1.5**
 
-- [ ] 4. Implement crisis detection system
+- [-] 4. Implement crisis detection system
+
+
   - [ ] 4.1 Create crisis detection service
     - Implement CrisisType enum (self-harm, suicide, abuse)
     - Add crisis keyword detection

@@ -142,6 +142,7 @@ class SentimentAnalyzer:
             CrisisType.ABUSE: [
                 "abuse",
                 "abused",
+                "abusing",
                 "hitting me",
                 "hurting me",
                 "violence",
