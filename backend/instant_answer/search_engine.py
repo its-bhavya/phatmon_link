@@ -244,11 +244,31 @@ class SemanticSearchEngine:
                 timestamp = datetime.now()
             
             # Reconstruct MessageTags from metadata
+            # Handle both list format (from tests) and string format (from storage)
+            topic_tags_raw = metadata.get('topic_tags', '')
+            if isinstance(topic_tags_raw, list):
+                topic_tags = topic_tags_raw
+            elif isinstance(topic_tags_raw, str):
+                topic_tags = [tag.strip() for tag in topic_tags_raw.split(',') if tag.strip()] if topic_tags_raw else []
+            else:
+                topic_tags = []
+            
+            tech_keywords_raw = metadata.get('tech_keywords', '')
+            if isinstance(tech_keywords_raw, list):
+                tech_keywords = tech_keywords_raw
+            elif isinstance(tech_keywords_raw, str):
+                tech_keywords = [kw.strip() for kw in tech_keywords_raw.split(',') if kw.strip()] if tech_keywords_raw else []
+            else:
+                tech_keywords = []
+            
+            code_language = metadata.get('code_language', '')
+            code_language = code_language if code_language else None
+            
             tags = MessageTags(
-                topic_tags=metadata.get('topic_tags', []),
-                tech_keywords=metadata.get('tech_keywords', []),
+                topic_tags=topic_tags,
+                tech_keywords=tech_keywords,
                 contains_code=metadata.get('contains_code', False),
-                code_language=metadata.get('code_language')
+                code_language=code_language
             )
             
             # Create SearchResult
