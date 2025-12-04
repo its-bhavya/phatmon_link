@@ -18,6 +18,10 @@ from backend.instant_answer.search_engine import (
     SearchResult,
     SemanticSearchEngine
 )
+from backend.instant_answer.summary_generator import (
+    InstantAnswer,
+    SummaryGenerator
+)
 
 __all__ = [
     "MessageType",
@@ -28,4 +32,6 @@ __all__ = [
     "AutoTagger",
     "SearchResult",
     "SemanticSearchEngine",
+    "InstantAnswer",
+    "SummaryGenerator",
 ]
