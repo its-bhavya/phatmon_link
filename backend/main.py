@@ -19,6 +19,10 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 from sqlalchemy.orm import Session
 import os
 import asyncio
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 from backend.database import init_database, get_db, close_database
 from backend.auth.service import AuthService
@@ -30,6 +34,10 @@ from backend.config import get_config
 from backend.vecna.gemini_service import GeminiService, GeminiServiceError
 from backend.sysop.brain import SysOpBrain
 from backend.vecna.user_profile import UserProfileService
+from backend.support.sentiment import SentimentAnalyzer, CrisisType
+from backend.support.bot import SupportBot
+from backend.support.room_service import SupportRoomService
+from backend.support.logger import SupportInteractionLogger
 
 
 @asynccontextmanager
@@ -84,13 +92,25 @@ async def lifespan(app: FastAPI):
             )
             print("SysOp Brain initialized")
             
+            # Initialize Support Bot services
+            app.state.sentiment_analyzer = SentimentAnalyzer(intensity_threshold=0.6)
+            app.state.support_bot = SupportBot(gemini_service=app.state.gemini_service)
+            app.state.support_room_service = SupportRoomService(room_service=app.state.room_service)
+            print("Support Bot services initialized")
+            
         except GeminiServiceError as e:
             print(f"Warning: Gemini service initialization failed: {e}")
             app.state.gemini_service = None
             app.state.sysop_brain = None
+            app.state.sentiment_analyzer = None
+            app.state.support_bot = None
+            app.state.support_room_service = None
     else:
         app.state.gemini_service = None
         app.state.sysop_brain = None
+        app.state.sentiment_analyzer = None
+        app.state.support_bot = None
+        app.state.support_room_service = None
         print("Gemini service disabled (no API key)")
     
     # Start session cleanup task
@@ -832,6 +852,163 @@ async def websocket_endpoint(
                     except Exception as e:
                         # Log error but don't break message flow
                         print(f"SysOp Brain error: {e}")
+                
+                # Support Bot Integration - Analyze sentiment for emotional support
+                sentiment_analyzer = getattr(app.state, 'sentiment_analyzer', None)
+                support_bot = getattr(app.state, 'support_bot', None)
+                support_room_service = getattr(app.state, 'support_room_service', None)
+                
+                if sentiment_analyzer and support_bot and support_room_service:
+                    try:
+                        # Analyze message sentiment
+                        sentiment = sentiment_analyzer.analyze(content)
+                        
+                        # Check for crisis situations first
+                        if sentiment.crisis_type != CrisisType.NONE:
+                            # Crisis detected - provide hotline information
+                            crisis_response = support_bot.generate_crisis_response(sentiment.crisis_type)
+                            
+                            # Send crisis response to user
+                            await app.state.websocket_manager.send_to_user(websocket, {
+                                "type": "support_response",
+                                "content": f"[SUPPORT] {crisis_response}",
+                                "timestamp": datetime.utcnow().isoformat()
+                            })
+                            
+                            # Log crisis detection
+                            support_logger = SupportInteractionLogger(db)
+                            hotline_names = [h.name for h in support_bot.hotline_service.get_hotlines(sentiment.crisis_type)]
+                            support_logger.log_crisis_detection(
+                                user_id=user.id,
+                                crisis_type=sentiment.crisis_type,
+                                message=content,
+                                hotlines_provided=hotline_names
+                            )
+                            
+                            logger.warning(f"Crisis detected for user {user.username}: {sentiment.crisis_type.value}")
+                        
+                        # Check if support should be triggered (non-crisis negative sentiment)
+                        elif sentiment.requires_support:
+                            # Check if user already has a support room
+                            existing_support_room = support_room_service.get_support_room(user.id)
+                            
+                            if not existing_support_room:
+                                # Create new support room
+                                support_room_name = support_room_service.create_support_room(user, current_room)
+                                
+                                # Leave current room
+                                app.state.room_service.leave_room(user, current_room)
+                                
+                                # Notify old room
+                                await app.state.websocket_manager.broadcast_to_room(
+                                    current_room,
+                                    {
+                                        "type": "system",
+                                        "content": f"* {user.username} has left the room"
+                                    }
+                                )
+                                
+                                # Join support room
+                                app.state.room_service.join_room(user, support_room_name)
+                                app.state.websocket_manager.update_user_room(websocket, support_room_name)
+                                current_room = support_room_name
+                                
+                                # Send room_change message to update side panel
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "room_change",
+                                    "room": support_room_name,
+                                    "content": f"You are now in: {support_room_name}"
+                                })
+                                
+                                # Generate and send greeting
+                                greeting = await support_bot.generate_greeting(
+                                    user_profile=user_profile,
+                                    trigger_message=content,
+                                    sentiment=sentiment
+                                )
+                                
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "support_response",
+                                    "content": f"[SUPPORT] {greeting}",
+                                    "timestamp": datetime.utcnow().isoformat()
+                                })
+                                
+                                # Log support activation
+                                support_logger = SupportInteractionLogger(db)
+                                support_logger.log_support_activation(
+                                    user_id=user.id,
+                                    sentiment=sentiment,
+                                    trigger_message=content
+                                )
+                                
+                                # Broadcast updated room list
+                                rooms = app.state.room_service.get_rooms()
+                                await app.state.websocket_manager.broadcast_to_all({
+                                    "type": "room_list",
+                                    "rooms": [
+                                        {
+                                            "name": room.name,
+                                            "count": app.state.room_service.get_room_count(room.name),
+                                            "description": room.description
+                                        }
+                                        for room in rooms
+                                    ]
+                                })
+                                
+                                logger.info(f"Support activated for user {user.username}: {sentiment.emotion.value}")
+                                
+                                # Don't broadcast the original message - user is now in support room
+                                continue
+                        
+                        # Check if user is currently in a support room
+                        if support_room_service.is_support_room(current_room):
+                            # User is in support room - generate bot response
+                            # Get conversation history from room
+                            room = app.state.room_service.get_room(current_room)
+                            conversation_history = []
+                            if room:
+                                recent_messages = room.get_recent_messages(limit=10)
+                                for msg in recent_messages:
+                                    if msg.get('type') == 'chat_message':
+                                        conversation_history.append({
+                                            'role': 'user',
+                                            'content': msg.get('content', '')
+                                        })
+                                    elif msg.get('type') == 'support_response':
+                                        conversation_history.append({
+                                            'role': 'assistant',
+                                            'content': msg.get('content', '').replace('[SUPPORT] ', '')
+                                        })
+                            
+                            # Generate support response
+                            bot_response = await support_bot.generate_response(
+                                user_message=content,
+                                user_profile=user_profile,
+                                conversation_history=conversation_history
+                            )
+                            
+                            # Send bot response
+                            await app.state.websocket_manager.send_to_user(websocket, {
+                                "type": "support_response",
+                                "content": f"[SUPPORT] {bot_response}",
+                                "timestamp": datetime.utcnow().isoformat()
+                            })
+                            
+                            # Log interaction
+                            support_logger = SupportInteractionLogger(db)
+                            support_logger.log_bot_interaction(
+                                user_id=user.id,
+                                user_message=content,
+                                bot_response=bot_response
+                            )
+                            
+                            # Don't broadcast user message in support room - it's private
+                            continue
+                    
+                    except Exception as e:
+                        # Log error but don't break message flow
+                        logger.error(f"Support Bot error: {e}")
+                        print(f"Support Bot error: {e}")
                 
                 # Create message with timestamp
                 message = {

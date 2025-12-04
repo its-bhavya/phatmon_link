@@ -169,8 +169,14 @@
     - Test anonymization
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 8. Integrate Support Bot into message flow
-  - [ ] 8.1 Update main.py message handling
+- [x] 8. Integrate Support Bot into message flow
+
+
+
+
+  - [x] 8.1 Update main.py message handling
+
+
     - Remove Vecna integration code
     - Add sentiment analysis for support detection
     - Add crisis detection check
