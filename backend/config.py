@@ -53,6 +53,11 @@ class Config:
     PROFILE_RETENTION_DAYS: int
     PROFILE_CACHE_TTL_SECONDS: int
     
+    # Support Bot Configuration
+    SUPPORT_BOT_ENABLED: bool
+    SUPPORT_SENTIMENT_THRESHOLD: float
+    SUPPORT_CRISIS_DETECTION_ENABLED: bool
+    
     def __init__(self):
         """Initialize configuration from environment variables."""
         self._load_config()
@@ -142,6 +147,23 @@ class Config:
             raise ConfigurationError(
                 f"PROFILE_CACHE_TTL_SECONDS must be an integer, got: {profile_cache_str}"
             )
+        
+        # Support Bot Configuration
+        support_enabled_str = os.getenv("SUPPORT_BOT_ENABLED", "true")
+        self.SUPPORT_BOT_ENABLED = support_enabled_str.lower() in ("true", "1", "yes")
+        
+        # Parse Support sentiment threshold
+        support_threshold_str = os.getenv("SUPPORT_SENTIMENT_THRESHOLD", "0.6")
+        try:
+            self.SUPPORT_SENTIMENT_THRESHOLD = float(support_threshold_str)
+        except ValueError:
+            raise ConfigurationError(
+                f"SUPPORT_SENTIMENT_THRESHOLD must be a float, got: {support_threshold_str}"
+            )
+        
+        # Parse Support crisis detection enabled
+        crisis_enabled_str = os.getenv("SUPPORT_CRISIS_DETECTION_ENABLED", "true")
+        self.SUPPORT_CRISIS_DETECTION_ENABLED = crisis_enabled_str.lower() in ("true", "1", "yes")
     
     def _validate_config(self):
         """
@@ -235,6 +257,12 @@ class Config:
         if self.PROFILE_CACHE_TTL_SECONDS < 0:
             errors.append(
                 f"PROFILE_CACHE_TTL_SECONDS must be non-negative, got: {self.PROFILE_CACHE_TTL_SECONDS}"
+            )
+        
+        # Validate Support Bot configuration
+        if not (0.0 <= self.SUPPORT_SENTIMENT_THRESHOLD <= 1.0):
+            errors.append(
+                f"SUPPORT_SENTIMENT_THRESHOLD must be between 0.0 and 1.0, got: {self.SUPPORT_SENTIMENT_THRESHOLD}"
             )
         
         # If there are validation errors, raise exception

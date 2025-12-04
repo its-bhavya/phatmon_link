@@ -168,9 +168,85 @@ class BoardTracking(Base):
         return f"<BoardTracking(id={self.id}, user_id={self.user_id}, board_name='{self.board_name}', completed={self.completed})>"
 
 
+class SupportActivation(Base):
+    """
+    Support activation model for logging support bot triggers.
+    
+    Attributes:
+        id: Primary key, auto-incrementing integer
+        user_id: Foreign key to users table
+        emotion_type: Type of emotion detected (sadness, anger, etc.)
+        intensity: Intensity score (0.0-1.0)
+        trigger_message_hash: Hashed trigger message for privacy
+        activated_at: Timestamp when support was activated
+    """
+    __tablename__ = "support_activations"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    emotion_type = Column(String(50), nullable=False)
+    intensity = Column(Float, nullable=False)
+    trigger_message_hash = Column(String(64), nullable=True)
+    activated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    def __repr__(self):
+        return f"<SupportActivation(id={self.id}, user_id={self.user_id}, emotion_type='{self.emotion_type}')>"
+
+
+class CrisisDetection(Base):
+    """
+    Crisis detection model for logging crisis situations.
+    
+    Attributes:
+        id: Primary key, auto-incrementing integer
+        user_id: Foreign key to users table
+        crisis_type: Type of crisis (self_harm, suicide, abuse)
+        message_hash: Hashed message for privacy
+        hotlines_provided: JSON array of hotline names provided
+        detected_at: Timestamp when crisis was detected
+    """
+    __tablename__ = "crisis_detections"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    crisis_type = Column(String(50), nullable=False)
+    message_hash = Column(String(64), nullable=True)
+    hotlines_provided = Column(Text, nullable=True)  # JSON array
+    detected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    def __repr__(self):
+        return f"<CrisisDetection(id={self.id}, user_id={self.user_id}, crisis_type='{self.crisis_type}')>"
+
+
+class SupportInteraction(Base):
+    """
+    Support interaction model for logging bot conversations.
+    
+    Attributes:
+        id: Primary key, auto-incrementing integer
+        user_id: Foreign key to users table
+        user_message_hash: Hashed user message for privacy
+        bot_response_hash: Hashed bot response for privacy
+        interaction_at: Timestamp of interaction
+    """
+    __tablename__ = "support_interactions"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_message_hash = Column(String(64), nullable=True)
+    bot_response_hash = Column(String(64), nullable=True)
+    interaction_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    def __repr__(self):
+        return f"<SupportInteraction(id={self.id}, user_id={self.user_id})>"
+
+
 # Indexes for performance optimization
 Index('idx_command_history_user_time', CommandHistory.user_id, CommandHistory.executed_at)
 Index('idx_board_tracking_user', BoardTracking.user_id)
+Index('idx_support_activations_user', SupportActivation.user_id)
+Index('idx_crisis_detections_user', CrisisDetection.user_id)
+Index('idx_support_interactions_user', SupportInteraction.user_id)
 
 
 # Database engine and session configuration

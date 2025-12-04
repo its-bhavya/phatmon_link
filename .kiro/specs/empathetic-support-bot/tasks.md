@@ -20,7 +20,12 @@
   - Keep the auto-routing for normal messages to different rooms
   - _Requirements: All (cleanup)_
 
-- [ ] 2. Set up Support Bot infrastructure
+- [x] 2. Set up Support Bot infrastructure
+
+
+
+
+
   - Create backend/support directory structure
   - Move and rename sentiment.py from vecna to support
   - Keep gemini_service.py and user_profile.py for reuse

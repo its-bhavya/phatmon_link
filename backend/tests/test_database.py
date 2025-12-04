@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from backend.database import (
     init_database, get_db, User, Session as SessionModel, Base,
-    UserProfile, CommandHistory, BoardTracking, VecnaActivation
+    UserProfile, CommandHistory, BoardTracking, 
+    SupportActivation, CrisisDetection, SupportInteraction
 )
 import backend.database
 
@@ -188,8 +189,8 @@ def test_token_index_exists():
     assert 'idx_token' in index_names
 
 
-def test_vecna_tables_created():
-    """Test that Vecna-related tables are created during initialization."""
+def test_support_tables_created():
+    """Test that Support Bot-related tables are created during initialization."""
     init_database("sqlite:///:memory:")
     
     from sqlalchemy import inspect
@@ -199,7 +200,9 @@ def test_vecna_tables_created():
     assert "user_profiles" in tables
     assert "command_history" in tables
     assert "board_tracking" in tables
-    assert "vecna_activations" in tables
+    assert "support_activations" in tables
+    assert "crisis_detections" in tables
+    assert "support_interactions" in tables
 
 
 def test_user_profile_creation(test_db: Session):
@@ -296,19 +299,18 @@ def test_board_tracking_creation(test_db: Session):
     assert board.completed_at is None
 
 
-def test_vecna_activation_creation(test_db: Session):
-    """Test creating Vecna activation log entries."""
+def test_support_activation_creation(test_db: Session):
+    """Test creating Support Bot activation log entries."""
     user = User(username="testuser", password_hash="hash")
     test_db.add(user)
     test_db.commit()
     test_db.refresh(user)
     
-    activation = VecnaActivation(
+    activation = SupportActivation(
         user_id=user.id,
-        trigger_type="emotional",
-        reason="high negative sentiment",
+        emotion_type="sadness",
         intensity=0.85,
-        response_content="[VECNA] Your frustration is noted..."
+        trigger_message_hash="abc123"
     )
     
     test_db.add(activation)
@@ -317,8 +319,7 @@ def test_vecna_activation_creation(test_db: Session):
     
     assert activation.id is not None
     assert activation.user_id == user.id
-    assert activation.trigger_type == "emotional"
-    assert activation.reason == "high negative sentiment"
+    assert activation.emotion_type == "sadness"
     assert activation.intensity == 0.85
     assert activation.activated_at is not None
 
@@ -376,26 +377,52 @@ def test_user_board_tracking_relationship(test_db: Session):
     assert len(user.board_tracking) == 2
 
 
-def test_user_vecna_activations_relationship(test_db: Session):
-    """Test the relationship between User and VecnaActivation."""
+def test_crisis_detection_creation(test_db: Session):
+    """Test creating crisis detection log entries."""
     user = User(username="testuser", password_hash="hash")
     test_db.add(user)
     test_db.commit()
     test_db.refresh(user)
     
-    activation1 = VecnaActivation(user_id=user.id, trigger_type="emotional")
-    activation2 = VecnaActivation(user_id=user.id, trigger_type="system")
-    test_db.add(activation1)
-    test_db.add(activation2)
+    crisis = CrisisDetection(
+        user_id=user.id,
+        crisis_type="self_harm",
+        message_hash="xyz789",
+        hotlines_provided='["AASRA", "Vandrevala Foundation"]'
+    )
+    test_db.add(crisis)
     test_db.commit()
+    test_db.refresh(crisis)
     
+    assert crisis.id is not None
+    assert crisis.user_id == user.id
+    assert crisis.crisis_type == "self_harm"
+    assert crisis.detected_at is not None
+
+
+def test_support_interaction_creation(test_db: Session):
+    """Test creating support interaction log entries."""
+    user = User(username="testuser", password_hash="hash")
+    test_db.add(user)
+    test_db.commit()
     test_db.refresh(user)
     
-    assert len(user.vecna_activations) == 2
+    interaction = SupportInteraction(
+        user_id=user.id,
+        user_message_hash="msg123",
+        bot_response_hash="resp456"
+    )
+    test_db.add(interaction)
+    test_db.commit()
+    test_db.refresh(interaction)
+    
+    assert interaction.id is not None
+    assert interaction.user_id == user.id
+    assert interaction.interaction_at is not None
 
 
-def test_vecna_indexes_exist():
-    """Test that Vecna-related indexes exist for performance."""
+def test_support_indexes_exist():
+    """Test that Support Bot-related indexes exist for performance."""
     init_database("sqlite:///:memory:")
     
     from sqlalchemy import inspect
@@ -406,10 +433,20 @@ def test_vecna_indexes_exist():
     cmd_index_names = [idx['name'] for idx in cmd_indexes]
     assert 'idx_command_history_user_time' in cmd_index_names
     
-    # Check vecna_activations indexes
-    vecna_indexes = inspector.get_indexes("vecna_activations")
-    vecna_index_names = [idx['name'] for idx in vecna_indexes]
-    assert 'idx_vecna_activations_user' in vecna_index_names
+    # Check support_activations indexes
+    support_indexes = inspector.get_indexes("support_activations")
+    support_index_names = [idx['name'] for idx in support_indexes]
+    assert 'idx_support_activations_user' in support_index_names
+    
+    # Check crisis_detections indexes
+    crisis_indexes = inspector.get_indexes("crisis_detections")
+    crisis_index_names = [idx['name'] for idx in crisis_indexes]
+    assert 'idx_crisis_detections_user' in crisis_index_names
+    
+    # Check support_interactions indexes
+    interaction_indexes = inspector.get_indexes("support_interactions")
+    interaction_index_names = [idx['name'] for idx in interaction_indexes]
+    assert 'idx_support_interactions_user' in interaction_index_names
     
     # Check board_tracking indexes
     board_indexes = inspector.get_indexes("board_tracking")
