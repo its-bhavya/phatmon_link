@@ -310,13 +310,17 @@
 
 
 
+
   - Add support_activation message type
   - Add support_response message type
   - Add crisis_hotlines message type
   - Update WebSocket manager documentation
   - _Requirements: 11.5_
 
-- [ ] 15. Create support bot documentation
+- [x] 15. Create support bot documentation
+
+
+
 
   - Document Support Bot purpose and boundaries
   - Document crisis detection and hotlines

@@ -7,6 +7,8 @@ A modern reimagining of the 1980s Bulletin Board System (BBS) that combines retr
 - **Retro Terminal UI**: Authentic CRT monitor effects including scanlines, phosphor glow, and subtle flicker
 - **Multi-Room Chat**: Navigate between different themed rooms (Lobby, Techline, Arcade Hall, Archives)
 - **Real-Time Communication**: WebSocket-based instant messaging with sub-100ms latency
+- **Empathetic Support Bot**: AI-powered emotional support that detects distress and provides compassionate assistance
+- **Crisis Detection**: Automatic detection of crisis situations with immediate hotline information
 - **User Authentication**: Secure registration and login with JWT tokens and bcrypt password hashing
 - **Command System**: Terminal-style commands for navigation and system interaction
 - **Active User Tracking**: See who's online and which room they're in
@@ -47,6 +49,13 @@ phantom-link/
 │   │   ├── service.py          # Room management service
 │   │   ├── models.py           # Room data models
 │   │   └── __init__.py
+│   ├── support/                # Support Bot system
+│   │   ├── bot.py              # Empathetic AI bot
+│   │   ├── sentiment.py        # Sentiment analysis
+│   │   ├── hotlines.py         # Crisis hotline service
+│   │   ├── room_service.py     # Support room management
+│   │   ├── logger.py           # Support interaction logging
+│   │   └── __init__.py
 │   ├── websocket/
 │   │   ├── manager.py          # WebSocket connection manager
 │   │   └── __init__.py
@@ -55,6 +64,8 @@ phantom-link/
 │       ├── test_command_handler.py
 │       ├── test_room_service.py
 │       ├── test_websocket.py
+│       ├── test_support_bot.py
+│       ├── test_sentiment.py
 │       └── ...
 ├── frontend/
 │   ├── index.html              # Main terminal UI
@@ -335,6 +346,69 @@ Commands are prefixed with `/` and entered in the command line bar:
 - **Techline**: Technology and programming discussions
 - **Arcade Hall**: Gaming and entertainment
 - **Archives**: Historical BBS content and nostalgia
+- **Support Rooms**: Private rooms created automatically when emotional distress is detected
+
+## Support Bot
+
+The Empathetic Support Bot provides compassionate AI assistance when users are experiencing emotional distress.
+
+### How It Works
+
+1. **Automatic Detection**: The system analyzes messages for negative emotions (sadness, anger, frustration, anxiety)
+2. **Private Room Creation**: When distress is detected, a private support room is created
+3. **Empathetic Conversation**: The AI bot provides non-judgmental listening and support
+4. **Crisis Handling**: For crisis situations, immediate hotline information is provided
+
+### Features
+
+- **Sentiment Analysis**: Detects emotional content in messages
+- **Context-Aware Responses**: Uses user interests and conversation history for personalization
+- **Crisis Detection**: Identifies self-harm, suicide, and abuse situations
+- **Indian Crisis Hotlines**: Provides appropriate hotline numbers for crisis situations
+- **Privacy Protected**: All conversations are hashed and kept private
+- **User Autonomy**: Users can leave support rooms at any time
+
+### Support Bot Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `/leave` | Exit support room and return to previous room | `/leave` |
+| `/join <room>` | Return to your support room | `/join support_alice_1733356800` |
+
+### Crisis Hotlines (India)
+
+The system provides these crisis resources when needed:
+
+- **AASRA**: 91-9820466726 (24/7 crisis helpline)
+- **Vandrevala Foundation**: 1860-2662-345 (Mental health support)
+- **Sneha India**: 91-44-24640050 (Suicide prevention)
+- **Women's Helpline**: 1091 (For women in distress)
+- **Childline India**: 1098 (For children in need)
+
+### Documentation
+
+For detailed information about the Support Bot:
+
+- **User Guide**: See `USER_GUIDE_SUPPORT_BOT.md` for how to use the Support Bot
+- **Overview**: See `backend/support/SUPPORT_BOT_OVERVIEW.md` for purpose and boundaries
+- **Crisis Detection**: See `backend/support/CRISIS_DETECTION_AND_HOTLINES.md` for crisis handling
+- **Privacy**: See `backend/support/PRIVACY_AND_SECURITY.md` for privacy protections
+- **Technical**: See `backend/support/ERROR_HANDLING_SUMMARY.md` for error handling
+- **WebSocket Messages**: See `backend/websocket/SUPPORT_MESSAGE_TYPES.md` for message formats
+
+### Important Notes
+
+⚠️ **The Support Bot is NOT**:
+- A replacement for professional mental health care
+- A licensed therapist or counselor
+- A diagnostic tool for mental health conditions
+- An emergency crisis intervention service
+
+✅ **The Support Bot IS**:
+- A compassionate listener providing a safe, non-judgmental space
+- An AI assistant demonstrating curiosity and empathy
+- A source of practical coping strategies within appropriate boundaries
+- A bridge to professional resources when crisis situations are detected
 
 ## Testing
 
