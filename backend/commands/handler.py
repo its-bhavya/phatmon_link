@@ -48,6 +48,8 @@ class CommandHandler:
             "clear": self.clear_command,
             "join": self.join_command,
             "leave": self.leave_command,
+            "play": self.play_command,
+            "exit_game": self.exit_game_command,
         }
     
     def handle_command(self, command: str, user: User, args: Optional[str] = None) -> dict:
@@ -73,8 +75,8 @@ class CommandHandler:
         
         # Execute the command
         try:
-            # Some commands need arguments (like join), others don't
-            if command == "join":
+            # Some commands need arguments (like join and play), others don't
+            if command in ["join", "play"]:
                 return self.commands[command](user, args)
             else:
                 return self.commands[command](user)
@@ -101,6 +103,8 @@ class CommandHandler:
   /join <room>   - Join a different room (e.g., /join Techline)
   /leave         - Leave current support room and return to previous room
   /clear         - Clear the terminal display
+  /play <game>   - Launch a game in Arcade Room (snake, tetris, breakout)
+  /exit_game     - Exit the current game and return to chat
   /logout        - Disconnect and return to login screen
 """
         
@@ -261,6 +265,77 @@ class CommandHandler:
             "type": "leave_support_room",
             "content": "Leaving support room...",
             "current_room": current_room
+        }
+    
+    def play_command(self, user: User, game_name: Optional[str] = None) -> dict:
+        """
+        Handle game launch command.
+        
+        This command launches a game in the Arcade Room. Games can only be
+        launched when the user is in the Arcade Room (Arcade Hall).
+        
+        Args:
+            user: User object requesting to play a game
+            game_name: Name of the game to launch (snake, tetris, breakout)
+            
+        Returns:
+            Response dictionary with launch_game signal or error
+            
+        Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
+        """
+        # Check if game name was provided
+        if not game_name or not game_name.strip():
+            return self._error_response(
+                "Please specify a game name. Usage: /play <game>\n"
+                "Available games: snake, tetris, breakout"
+            )
+        
+        game_name = game_name.strip().lower()
+        
+        # Get user's current room
+        current_room = self.websocket_manager.get_user_room(user.username)
+        
+        # Check if user is in Arcade Room (Arcade Hall)
+        if current_room != "Arcade Hall":
+            return self._error_response(
+                "Games are only available in the Arcade Room. "
+                "Use /join Arcade Hall to access games."
+            )
+        
+        # Validate game name
+        valid_games = ["snake", "tetris", "breakout"]
+        if game_name not in valid_games:
+            return self._error_response(
+                f"Unknown game: {game_name}. Available games: {', '.join(valid_games)}"
+            )
+        
+        # Return success response with game launch info
+        return {
+            "type": "launch_game",
+            "content": f"Launching {game_name.capitalize()}...",
+            "game": game_name
+        }
+    
+    def exit_game_command(self, user: User) -> dict:
+        """
+        Handle game exit command.
+        
+        This command exits the current game and returns the user to the
+        Arcade Room chat interface.
+        
+        Args:
+            user: User object requesting to exit game
+            
+        Returns:
+            Response dictionary with exit_game signal
+            
+        Requirements: 4.2
+        """
+        # Return exit game signal
+        # The frontend will handle the actual game termination
+        return {
+            "type": "exit_game",
+            "content": "Exiting game..."
         }
     
     def _error_response(self, message: str) -> dict:

@@ -1,609 +1,873 @@
 # Documentation Update Summary
 
-## Commit Information
-- **Commit Hash**: 265863e610429f02735e1f9b005822721ee187e3
-- **Commit Message**: implemented user context provision
-- **Date**: Thu Dec 4 16:27:55 2025 +0530
-- **Author**: its-bhavya
-
----
+**Commit:** `9f2dd69cbd168aadb93e7b0b86eaa914edaaad86`  
+**Message:** setup game infrastructure and core components  
+**Date:** December 4, 2025
 
 ## Overview
 
-This commit implements comprehensive user context provision for the Support Bot, fulfilling Requirements 3.1-3.5. The Support Bot now receives and utilizes:
-- Message history (conversation context)
-- User interests (from profile)
-- Room activity (frequent and recent rooms)
-- Trigger message (that activated support)
-- Read-only access to user data (no modifications)
+This commit introduces the core game infrastructure for the Arcade Room Games feature, implementing three new JavaScript modules that provide the foundation for retro-style games (Snake, Tetris, Breakout) in the Iris BBS terminal interface.
 
 ---
 
-## Files Changed
+## Files Added
 
-### 1. `backend/support/bot.py`
-**Type**: Core Implementation  
-**Lines Changed**: +44, -19
+### 1. `frontend/js/game.js`
+**Purpose:** Abstract base class defining the interface that all games must implement.
 
-### 2. `backend/tests/test_support_bot.py`
-**Type**: Test Coverage  
-**Lines Changed**: +76, -2
+### 2. `frontend/js/gameManager.js`
+**Purpose:** Orchestrates game lifecycle, canvas management, and game state transitions.
 
----
-
-## API Changes and Documentation
-
-### `backend/support/bot.py`
-
-#### Class: `SupportBot`
-
-**Updated Class Documentation**:
-```python
-"""
-Support Bot for providing empathetic emotional support.
-
-This bot provides a safe, non-judgmental space for users experiencing
-negative emotions. It uses Gemini AI to generate empathetic responses
-that demonstrate curiosity and understanding.
-
-For crisis situations, it provides hotline information instead of
-conversational support.
-
-User Context Provision (Requirements 3.1-3.5):
-- Message history: Provided via conversation_history parameter
-- User interests: Extracted from user_profile.interests
-- Room activity: Extracted from user_profile.frequent_rooms and recent_rooms
-- Trigger message: Provided via trigger_message parameter (for greeting)
-- Read-only access: UserProfile objects are passed by reference but not modified
-
-Responsibilities:
-- Generate empathetic greeting messages with full user context
-- Generate supportive responses with user context (history, interests, activity)
-- Handle crisis situations with hotline information
-- Maintain appropriate boundaries (no therapy/diagnoses)
-- Ensure read-only access to user data
-
-Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 9.1, 9.2, 9.3
-"""
-```
+### 3. `frontend/js/highScores.js`
+**Purpose:** Manages localStorage-based high score persistence for all games.
 
 ---
 
-#### Method: `generate_greeting()`
+## API Documentation
 
-**Updated Signature**:
-```python
-async def generate_greeting(
-    self,
-    user_profile: UserProfile,
-    trigger_message: str,
-    sentiment: SentimentResult
-) -> str
+## `frontend/js/game.js`
+
+### Class: `Game` (Abstract)
+
+Base class that defines the interface for all arcade games. Cannot be instantiated directly.
+
+#### Constructor
+
+```javascript
+constructor(canvas, context)
 ```
 
-**Updated Documentation**:
-```python
-"""
-Generate an empathetic greeting message for a new support session.
+**Parameters:**
+- `canvas` (HTMLCanvasElement) - The game canvas element
+- `context` (CanvasRenderingContext2D) - The canvas 2D rendering context
 
-Creates a warm, empathetic greeting that acknowledges the user's
-emotional state and sets appropriate expectations for the conversation.
-Provides user context including interests, room activity, and trigger message.
+**Throws:**
+- `TypeError` - If attempting to instantiate Game directly (must be subclassed)
 
-Args:
-    user_profile: User's behavioral profile for personalization (includes
-                 interests, frequent rooms, and recent room activity)
-    trigger_message: The message that triggered support
-    sentiment: Sentiment analysis result
-
-Returns:
-    Greeting message acknowledging user's emotional state
-
-Requirements: 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 9.1, 9.2, 9.3
-"""
-```
-
-**Changes**:
-- Now extracts and utilizes `user_profile.recent_rooms` in addition to existing context
-- Updated documentation to clarify that user_profile includes interests, frequent rooms, AND recent room activity
-- Added Requirements 3.2, 3.3, 3.4 to the requirements list
-
-**User Context Provided**:
-1. **User Interests** (Requirement 3.2): Top 5 interests from `user_profile.interests`
-2. **Room Activity** (Requirement 3.3): 
-   - Top 3 frequent rooms from `user_profile.frequent_rooms`
-   - Last 5 recent rooms from `user_profile.recent_rooms` (NEW)
-3. **Trigger Message** (Requirement 3.4): The exact message that activated support
-
-**Usage Example**:
-```python
-from backend.support.bot import SupportBot
-from backend.support.sentiment import SentimentAnalyzer, EmotionType
-from backend.vecna.gemini_service import GeminiService
-from backend.vecna.user_profile import UserProfileService
-
-# Initialize services
-gemini_service = GeminiService(api_key="your-api-key")
-support_bot = SupportBot(gemini_service=gemini_service)
-sentiment_analyzer = SentimentAnalyzer(intensity_threshold=0.6)
-
-# Analyze user's message
-trigger_message = "I'm feeling really down today"
-sentiment = sentiment_analyzer.analyze(trigger_message)
-
-# Get user profile (includes interests, frequent_rooms, recent_rooms)
-user_profile = user_profile_service.get_profile(user_id=123)
-
-# Generate personalized greeting with full context
-greeting = await support_bot.generate_greeting(
-    user_profile=user_profile,
-    trigger_message=trigger_message,
-    sentiment=sentiment
-)
-
-# greeting will be personalized based on:
-# - User's interests (e.g., "programming", "music")
-# - User's room activity (e.g., frequently visits "Tech", recently in "Lobby")
-# - The trigger message content
-# - Detected emotion (e.g., sadness)
-```
+**Properties:**
+- `canvas` (HTMLCanvasElement) - Reference to the game canvas
+- `context` (CanvasRenderingContext2D) - Reference to the canvas context
+- `gameOver` (boolean) - Game over state flag (default: false)
+- `score` (number) - Current game score (default: 0)
 
 ---
 
-#### Method: `generate_response()`
+#### Methods
 
-**Updated Signature**:
-```python
-async def generate_response(
-    self,
-    user_message: str,
-    user_profile: UserProfile,
-    conversation_history: list[dict]
-) -> str
-```
+##### `init()`
+Initialize game state. Must be implemented by subclasses.
 
-**Updated Documentation**:
-```python
-"""
-Generate an empathetic response to a user's message.
-
-Creates a supportive response that demonstrates curiosity and empathy,
-includes open-ended questions, and provides practical advice within
-appropriate boundaries. Provides comprehensive user context including
-message history, interests, and room activity.
-
-Args:
-    user_message: The user's message to respond to
-    user_profile: User's behavioral profile for context (includes
-                 interests, frequent rooms, and recent room activity)
-    conversation_history: Recent conversation messages (message history)
-
-Returns:
-    Supportive response with curiosity and empathy
-
-Requirements: 3.1, 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.5, 9.1, 9.2, 9.3
-"""
-```
-
-**Changes**:
-- Now extracts and utilizes `user_profile.recent_rooms` in addition to existing context
-- Updated documentation to clarify all three types of user context provided
-- Added Requirements 3.1, 3.2, 3.3 to the requirements list
-
-**User Context Provided**:
-1. **Message History** (Requirement 3.1): Last 5 messages from `conversation_history`
-2. **User Interests** (Requirement 3.2): Top 5 interests from `user_profile.interests`
-3. **Room Activity** (Requirement 3.3):
-   - Top 3 frequent rooms from `user_profile.frequent_rooms`
-   - Last 5 recent rooms from `user_profile.recent_rooms` (NEW)
-
-**Usage Example**:
-```python
-# Continuing support conversation with full context
-conversation_history = [
-    {"role": "assistant", "content": "I'm here to listen..."},
-    {"role": "user", "content": "I'm feeling really down today"},
-    {"role": "assistant", "content": "I hear you..."},
-    {"role": "user", "content": "Everything feels overwhelming"}
-]
-
-user_message = "I don't know how to cope anymore"
-
-# Generate response with full context
-response = await support_bot.generate_response(
-    user_message=user_message,
-    user_profile=user_profile,  # Includes interests and room activity
-    conversation_history=conversation_history  # Message history
-)
-
-# response will be personalized based on:
-# - Previous conversation (last 5 messages)
-# - User's interests for relatable examples
-# - User's room activity for context
-# - Current message content
-```
+**Throws:**
+- `Error` - If not implemented by subclass
 
 ---
 
-#### Method: `_create_greeting_prompt()` (Private)
+##### `start()`
+Start the game. Must be implemented by subclasses.
 
-**Updated Signature**:
-```python
-def _create_greeting_prompt(
-    self,
-    user_profile: UserProfile,
-    trigger_message: str,
-    sentiment: SentimentResult
-) -> str
-```
-
-**Changes**:
-- Now extracts `user_profile.recent_rooms` (last 5 rooms)
-- Includes "Recent room activity" in the prompt sent to Gemini
-- Updated requirements to include 3.1, 3.2, 3.3, 3.4
-
-**Prompt Structure** (NEW):
-```
-You are a supportive, empathetic listener...
-
-User Context:
-- Interests: programming, music, gaming
-- Frequent rooms: Tech, Lobby, Gaming
-- Recent room activity: Lobby, Tech, Support-123, Gaming, Lobby  <-- NEW
-- Trigger message: "I'm feeling really down"
-
-Generate a warm, empathetic greeting that:
-1. Acknowledges their emotional state (sadness or distress)
-2. Creates a safe, non-judgmental space
-3. Sets expectations (listening, not therapy)
-...
-```
+**Throws:**
+- `Error` - If not implemented by subclass
 
 ---
 
-#### Method: `_create_empathetic_prompt()` (Private)
+##### `stop()`
+Stop the game. Must be implemented by subclasses.
 
-**Updated Signature**:
-```python
-def _create_empathetic_prompt(
-    self,
-    user_message: str,
-    user_profile: UserProfile,
-    conversation_history: list[dict]
-) -> str
-```
-
-**Changes**:
-- Now extracts `user_profile.recent_rooms` (last 5 rooms)
-- Includes "Recent room activity" in the prompt sent to Gemini
-- Updated requirements to include 3.1, 3.2, 3.3
-- Added comment clarifying message history extraction (Requirement 3.1)
-
-**Prompt Structure** (NEW):
-```
-You are a supportive, empathetic listener...
-
-User Context:
-- Interests: programming, music, gaming
-- Frequent rooms: Tech, Lobby, Gaming
-- Recent room activity: Lobby, Tech, Support-123, Gaming, Lobby  <-- NEW
-
-Conversation History:
-User: I'm struggling
-Assistant: I'm here to listen...
-User: Everything is overwhelming  <-- Last 5 messages (Requirement 3.1)
-
-Current message: "I don't know how to cope anymore"
-
-Respond with empathy and curiosity...
-```
+**Throws:**
+- `Error` - If not implemented by subclass
 
 ---
 
-### `backend/tests/test_support_bot.py`
+##### `reset()`
+Reset game to initial state. Must be implemented by subclasses.
 
-#### New Test Class: `TestSupportBotReadOnlyAccess`
-
-**Purpose**: Validates Requirement 3.5 (Read-only access to user data)
-
-**Test Methods**:
-
-##### 1. `test_greeting_does_not_modify_user_profile()`
-```python
-@pytest.mark.asyncio
-async def test_greeting_does_not_modify_user_profile(
-    self,
-    support_bot,
-    mock_gemini_service,
-    sample_user_profile,
-    sample_sentiment
-):
-    """Test that generate_greeting does not modify user profile."""
-```
-
-**What It Tests**:
-- Stores original values of `interests`, `frequent_rooms`, and `recent_rooms`
-- Calls `generate_greeting()` with the user profile
-- Verifies that all three attributes remain unchanged after the call
-- **Validates**: Requirement 3.5 (Read-only access)
-
-**Usage**:
-```bash
-pytest backend/tests/test_support_bot.py::TestSupportBotReadOnlyAccess::test_greeting_does_not_modify_user_profile -v
-```
+**Throws:**
+- `Error` - If not implemented by subclass
 
 ---
 
-##### 2. `test_response_does_not_modify_user_profile()`
-```python
-@pytest.mark.asyncio
-async def test_response_does_not_modify_user_profile(
-    self,
-    support_bot,
-    mock_gemini_service,
-    sample_user_profile
-):
-    """Test that generate_response does not modify user profile."""
-```
+##### `update(deltaTime)`
+Update game state based on elapsed time.
 
-**What It Tests**:
-- Stores original values of `interests`, `frequent_rooms`, and `recent_rooms`
-- Calls `generate_response()` with the user profile and conversation history
-- Verifies that all three attributes remain unchanged after the call
-- **Validates**: Requirement 3.5 (Read-only access)
+**Parameters:**
+- `deltaTime` (number) - Time elapsed since last update in milliseconds
 
-**Usage**:
-```bash
-pytest backend/tests/test_support_bot.py::TestSupportBotReadOnlyAccess::test_response_does_not_modify_user_profile -v
-```
+**Throws:**
+- `Error` - If not implemented by subclass
 
 ---
 
-#### Updated Test Methods
+##### `render()`
+Render game graphics to the canvas. Must be implemented by subclasses.
 
-##### `test_greeting_prompt_includes_user_context()`
-**Changes**:
-- Added assertion for "recent room" activity in prompt
-- Updated docstring to reference Requirements 3.2, 3.3, 3.4
-- Now validates all three aspects of user context:
-  - Interests (Requirement 3.2)
-  - Room activity including recent rooms (Requirement 3.3)
-  - Trigger message (Requirement 3.4)
-
-```python
-def test_greeting_prompt_includes_user_context(
-    self,
-    support_bot,
-    sample_user_profile,
-    sample_sentiment
-):
-    """Test that greeting prompt includes user context (Requirements 3.2, 3.3, 3.4)."""
-    prompt = support_bot._create_greeting_prompt(
-        sample_user_profile,
-        "I'm feeling really down",
-        sample_sentiment
-    )
-
-    # Requirement 3.2: User interests
-    assert "programming" in prompt or "music" in prompt
-    # Requirement 3.3: Room activity (frequent rooms and recent rooms)
-    assert "Lobby" in prompt or "Techline" in prompt
-    assert "room activity" in prompt.lower() or "recent room" in prompt.lower()  # NEW
-    # Requirement 3.4: Trigger message
-    assert "feeling really down" in prompt
-    assert "sadness" in prompt.lower() or "distress" in prompt.lower()
-```
+**Throws:**
+- `Error` - If not implemented by subclass
 
 ---
 
-##### `test_empathetic_prompt_includes_user_context()`
-**Changes**:
-- Added assertion for "recent room" activity in prompt
-- Updated docstring to reference Requirements 3.1, 3.2, 3.3
-- Reorganized assertions to match requirement order
-- Now validates all three aspects of user context:
-  - Message history (Requirement 3.1)
-  - Interests (Requirement 3.2)
-  - Room activity including recent rooms (Requirement 3.3)
+##### `handleKeyDown(key)`
+Handle keyboard key press events.
 
-```python
-def test_empathetic_prompt_includes_user_context(
-    self,
-    support_bot,
-    sample_user_profile
-):
-    """Test that empathetic prompt includes user context (Requirements 3.1, 3.2, 3.3)."""
-    conversation_history = [
-        {"role": "user", "content": "I'm struggling"}
-    ]
+**Parameters:**
+- `key` (string) - The key that was pressed (e.g., 'ArrowUp', 'w')
 
-    prompt = support_bot._create_empathetic_prompt(
-        "Everything is overwhelming",
-        sample_user_profile,
-        conversation_history
-    )
-
-    # Requirement 3.1: Message history
-    assert "struggling" in prompt
-    # Requirement 3.2: User interests
-    assert "programming" in prompt or "music" in prompt
-    # Requirement 3.3: Room activity
-    assert "room activity" in prompt.lower() or "recent room" in prompt.lower()  # NEW
-    assert "overwhelming" in prompt
-```
+**Throws:**
+- `Error` - If not implemented by subclass
 
 ---
 
-## Requirements Fulfilled
+##### `handleKeyUp(key)`
+Handle keyboard key release events.
 
-### Requirement 3.1: Message History
-- ✅ `generate_response()` receives `conversation_history` parameter
-- ✅ Last 5 messages are formatted and included in the prompt
-- ✅ Tested in `test_empathetic_prompt_includes_user_context()`
+**Parameters:**
+- `key` (string) - The key that was released
 
-### Requirement 3.2: User Interests
-- ✅ Both methods extract top 5 interests from `user_profile.interests`
-- ✅ Interests are included in prompts for personalization
-- ✅ Tested in both greeting and response prompt tests
-
-### Requirement 3.3: Room Activity
-- ✅ Both methods extract top 3 frequent rooms from `user_profile.frequent_rooms`
-- ✅ Both methods now extract last 5 recent rooms from `user_profile.recent_rooms` (NEW)
-- ✅ Both types of room activity included in prompts
-- ✅ Tested in both greeting and response prompt tests
-
-### Requirement 3.4: Trigger Message
-- ✅ `generate_greeting()` receives `trigger_message` parameter
-- ✅ Trigger message is included in greeting prompt
-- ✅ Tested in `test_greeting_prompt_includes_user_context()`
-
-### Requirement 3.5: Read-Only Access
-- ✅ UserProfile objects are passed by reference but never modified
-- ✅ New test class `TestSupportBotReadOnlyAccess` validates this
-- ✅ Two comprehensive tests ensure no modifications occur:
-  - `test_greeting_does_not_modify_user_profile()`
-  - `test_response_does_not_modify_user_profile()`
+**Throws:**
+- `Error` - If not implemented by subclass
 
 ---
 
-## Testing
+##### `isGameOver()`
+Check if the game is over.
 
-### Run All Support Bot Tests
-```bash
-pytest backend/tests/test_support_bot.py -v
+**Returns:**
+- (boolean) - True if game is over, false otherwise
+
+---
+
+##### `getScore()`
+Get the current game score.
+
+**Returns:**
+- (number) - Current score
+
+---
+
+##### `getGameName()`
+Get the name of the game. Must be implemented by subclasses.
+
+**Returns:**
+- (string) - Game name (e.g., 'snake', 'tetris', 'breakout')
+
+**Throws:**
+- `Error` - If not implemented by subclass
+
+---
+
+## `frontend/js/gameManager.js`
+
+### Class: `GameManager`
+
+Orchestrates the complete game lifecycle including canvas management, game state transitions, input handling, and integration with the BBS interface.
+
+#### Constructor
+
+```javascript
+constructor(chatDisplay, commandBar, sidePanel)
 ```
 
-### Run Only Context Provision Tests
-```bash
-# Test read-only access
-pytest backend/tests/test_support_bot.py::TestSupportBotReadOnlyAccess -v
+**Parameters:**
+- `chatDisplay` (ChatDisplay) - Reference to the chat display component
+- `commandBar` (CommandLineBar) - Reference to the command bar component
+- `sidePanel` (SidePanel) - Reference to the side panel component
 
-# Test prompt generation with context
-pytest backend/tests/test_support_bot.py::TestSupportBotPromptGeneration::test_greeting_prompt_includes_user_context -v
-pytest backend/tests/test_support_bot.py::TestSupportBotPromptGeneration::test_empathetic_prompt_includes_user_context -v
+**Properties:**
+- `chatDisplay` - Reference to chat display
+- `commandBar` - Reference to command bar
+- `sidePanel` - Reference to side panel
+- `isActive` (boolean) - Whether a game is currently running
+- `currentGame` (string|null) - Name of active game ('snake', 'tetris', 'breakout')
+- `canvas` (HTMLCanvasElement|null) - Canvas element reference
+- `gameInstance` (Game|null) - Active game instance
+- `animationFrameId` (number|null) - RequestAnimationFrame ID for cleanup
+- `lastFrameTime` (number) - Timestamp for delta time calculation
+- `canvasConfig` (object) - Canvas styling configuration
+  - `backgroundColor` (string) - '#000000' (pure black)
+  - `foregroundColor` (string) - '#FFFFFF' (pure white)
+  - `font` (string) - 'VT323, Courier New, monospace'
+  - `fontSize` (number) - 19
+- `exitIconSize` (number) - Exit icon dimensions (30px)
+- `exitIconPadding` (number) - Exit icon padding from edge (10px)
+
+---
+
+#### Methods
+
+##### `launchGame(gameName)`
+Launch a game by name.
+
+**Parameters:**
+- `gameName` (string) - Name of the game to launch ('snake', 'tetris', or 'breakout')
+
+**Returns:**
+- (boolean) - True if game launched successfully, false otherwise
+
+**Behavior:**
+1. Validates game name against allowed games
+2. Exits any currently active game
+3. Creates canvas and hides chat interface
+4. Initializes game instance
+5. Sets up keyboard event listeners
+6. Starts game loop
+
+**Error Handling:**
+- Returns false if game name is invalid
+- Returns false if canvas creation fails
+- Returns false if game instance creation fails
+- Cleans up and restores chat on any error
+
+---
+
+##### `exitGame()`
+Exit the current game and restore chat interface.
+
+**Behavior:**
+1. Stops game loop
+2. Saves high score if applicable
+3. Stops game instance
+4. Removes keyboard event listeners
+5. Removes canvas and restores chat display
+6. Resets all game state
+
+**Note:** Safe to call even if no game is active (no-op).
+
+---
+
+##### `isGameActive()`
+Check if a game is currently active.
+
+**Returns:**
+- (boolean) - True if a game is running, false otherwise
+
+---
+
+##### `getCurrentGame()`
+Get the name of the currently active game.
+
+**Returns:**
+- (string|null) - Game name ('snake', 'tetris', 'breakout') or null if no game active
+
+---
+
+##### `createCanvas()`
+Create and display the game canvas, hiding the chat interface.
+
+**Returns:**
+- (boolean) - True if canvas created successfully, false otherwise
+
+**Behavior:**
+1. Hides chat display container
+2. Hides command bar
+3. Creates canvas element with monochrome styling
+4. Sets canvas dimensions to match terminal content area
+5. Appends canvas to DOM
+6. Sets up click handler for exit icon
+
+**Fallback:** Uses 800x600 dimensions if terminal content area not found.
+
+---
+
+##### `removeCanvas()`
+Remove the game canvas and restore chat display.
+
+**Behavior:**
+1. Removes canvas from DOM
+2. Restores chat display visibility
+3. Restores command bar visibility
+4. Nullifies canvas reference
+
+**Error Handling:** Catches and logs any errors during cleanup.
+
+---
+
+##### `handleRoomChange(newRoom)`
+Handle room change events - terminates game if user leaves Arcade Room.
+
+**Parameters:**
+- `newRoom` (string) - Name of the new room
+
+**Behavior:**
+- Calls `exitGame()` if active game exists and new room is not 'Arcade Hall' or 'Arcade Room'
+
+---
+
+##### `createGameInstance(gameName)`
+Create a game instance based on game name.
+
+**Parameters:**
+- `gameName` (string) - Name of the game
+
+**Returns:**
+- (Game|null) - Game instance or null
+
+**Note:** Currently returns null as individual games are not yet implemented. Will be updated when Snake, Tetris, and Breakout classes are added.
+
+---
+
+##### `handleCanvasClick(event)`
+Handle canvas click events (for exit icon detection).
+
+**Parameters:**
+- `event` (MouseEvent) - Click event
+
+**Behavior:**
+- Calculates click position relative to canvas
+- Checks if click is within exit icon bounds (top-right corner)
+- Calls `exitGame()` if exit icon was clicked
+
+---
+
+##### `renderExitIcon(ctx)`
+Render the exit icon in the top-right corner of the canvas.
+
+**Parameters:**
+- `ctx` (CanvasRenderingContext2D) - Canvas rendering context
+
+**Rendering:**
+- Draws white 'X' symbol
+- Draws white border around icon
+- Uses monochrome color scheme
+- Positioned with 10px padding from top-right corner
+
+---
+
+##### `handleKeyDown(event)`
+Handle keyboard key down events and route to active game.
+
+**Parameters:**
+- `event` (KeyboardEvent) - Keyboard event
+
+**Behavior:**
+- Prevents default behavior for arrow keys and space
+- Routes key press to game instance's `handleKeyDown()` method
+- Catches and logs any errors
+
+**Note:** Only processes events when a game is active.
+
+---
+
+##### `handleKeyUp(event)`
+Handle keyboard key up events and route to active game.
+
+**Parameters:**
+- `event` (KeyboardEvent) - Keyboard event
+
+**Behavior:**
+- Routes key release to game instance's `handleKeyUp()` method
+- Catches and logs any errors
+
+**Note:** Only processes events when a game is active.
+
+---
+
+##### `startGameLoop()`
+Start the game loop using requestAnimationFrame.
+
+**Behavior:**
+- Initializes `lastFrameTime` with current timestamp
+- Calls `gameLoop()` to begin animation loop
+
+---
+
+##### `stopGameLoop()`
+Stop the game loop.
+
+**Behavior:**
+- Cancels pending animation frame
+- Nullifies animation frame ID
+
+---
+
+##### `gameLoop()`
+Main game loop - updates and renders game state.
+
+**Behavior:**
+1. Calculates delta time since last frame
+2. Updates game state via `gameInstance.update(deltaTime)`
+3. Clears canvas
+4. Renders game via `gameInstance.render()`
+5. Renders exit icon overlay
+6. Checks for game over condition
+7. Schedules next frame via requestAnimationFrame
+
+**Error Handling:**
+- Catches errors and calls `exitGame()` to clean up
+- Automatically stops loop if game is over
+
+---
+
+##### `handleGameOver()`
+Handle game over state - display results and update high scores.
+
+**Behavior:**
+1. Retrieves final score from game instance
+2. Compares with stored high score
+3. Renders game over screen with:
+   - "GAME OVER" title
+   - Final score
+   - High score or "NEW HIGH SCORE!" message
+   - Exit instruction
+4. Updates high score in localStorage if applicable
+5. Stops game loop but keeps canvas visible
+
+---
+
+## `frontend/js/highScores.js`
+
+### Class: `HighScoreManager` (Static)
+
+Utility class for managing high score persistence using browser localStorage. All methods are static.
+
+#### Static Properties
+
+##### `KEY_PREFIX`
+Storage key prefix for high scores.
+
+**Value:** `'arcade_highscore_'`
+
+**Usage:** Combined with game name to create unique localStorage keys (e.g., 'arcade_highscore_snake')
+
+---
+
+#### Static Methods
+
+##### `getHighScore(gameName)`
+Retrieve the high score for a specific game.
+
+**Parameters:**
+- `gameName` (string) - Name of the game ('snake', 'tetris', 'breakout')
+
+**Returns:**
+- (number) - High score, or 0 if none exists or on error
+
+**Behavior:**
+- Constructs localStorage key using `KEY_PREFIX + gameName.toLowerCase()`
+- Retrieves value from localStorage
+- Parses as integer
+- Returns 0 if value is null, NaN, or error occurs
+
+**Error Handling:**
+- Catches localStorage errors (e.g., quota exceeded, unavailable)
+- Logs warning and returns 0 on error
+
+---
+
+##### `setHighScore(gameName, score)`
+Save a high score for a specific game.
+
+**Parameters:**
+- `gameName` (string) - Name of the game
+- `score` (number) - Score to save
+
+**Returns:**
+- (boolean) - True if save was successful, false on error
+
+**Behavior:**
+- Constructs localStorage key
+- Converts score to string
+- Stores in localStorage
+
+**Error Handling:**
+- Catches localStorage errors
+- Logs warning and returns false on error
+
+---
+
+##### `isNewHighScore(gameName, score)`
+Check if a score qualifies as a new high score.
+
+**Parameters:**
+- `gameName` (string) - Name of the game
+- `score` (number) - Score to check
+
+**Returns:**
+- (boolean) - True if score is higher than current high score
+
+**Behavior:**
+- Retrieves current high score
+- Compares with provided score
+- Returns true only if new score is strictly greater
+
+---
+
+##### `updateHighScore(gameName, score)`
+Update high score if the new score is higher.
+
+**Parameters:**
+- `gameName` (string) - Name of the game
+- `score` (number) - Score to potentially save
+
+**Returns:**
+- (boolean) - True if high score was updated, false otherwise
+
+**Behavior:**
+- Checks if score is a new high score
+- Saves score only if it's higher than current high score
+- Returns false if score is not higher (no update performed)
+
+---
+
+## Usage Examples
+
+### Example 1: Implementing a Game
+
+```javascript
+import { Game } from './game.js';
+
+class SnakeGame extends Game {
+    constructor(canvas, context) {
+        super(canvas, context);
+        this.snake = [];
+        this.direction = { x: 1, y: 0 };
+        this.food = { x: 0, y: 0 };
+    }
+    
+    init() {
+        // Initialize snake at center
+        this.snake = [
+            { x: 10, y: 10 },
+            { x: 9, y: 10 },
+            { x: 8, y: 10 }
+        ];
+        this.spawnFood();
+        this.score = 0;
+        this.gameOver = false;
+    }
+    
+    start() {
+        // Game starts immediately
+    }
+    
+    stop() {
+        // Cleanup if needed
+    }
+    
+    reset() {
+        this.init();
+    }
+    
+    update(deltaTime) {
+        // Move snake, check collisions, etc.
+    }
+    
+    render() {
+        // Draw snake and food on canvas
+        this.context.fillStyle = '#FFFFFF';
+        this.snake.forEach(segment => {
+            this.context.fillRect(segment.x * 20, segment.y * 20, 18, 18);
+        });
+    }
+    
+    handleKeyDown(key) {
+        if (key === 'ArrowUp' && this.direction.y === 0) {
+            this.direction = { x: 0, y: -1 };
+        }
+        // Handle other directions...
+    }
+    
+    handleKeyUp(key) {
+        // Not needed for Snake
+    }
+    
+    getGameName() {
+        return 'snake';
+    }
+    
+    spawnFood() {
+        this.food = {
+            x: Math.floor(Math.random() * 30),
+            y: Math.floor(Math.random() * 20)
+        };
+    }
+}
 ```
 
-### Expected Results
-- All tests should pass
-- User profile should never be modified by Support Bot methods
-- Prompts should include all required context (interests, room activity, history, trigger message)
+### Example 2: Integrating GameManager
+
+```javascript
+import { GameManager } from './gameManager.js';
+
+// In main.js initialization
+const gameManager = new GameManager(chatDisplay, commandBar, sidePanel);
+
+// Handle game launch command from WebSocket
+websocket.on('message', (data) => {
+    if (data.type === 'launch_game') {
+        const success = gameManager.launchGame(data.game);
+        if (!success) {
+            chatDisplay.addSystemMessage('Failed to launch game');
+        }
+    }
+});
+
+// Handle room changes
+websocket.on('room_change', (data) => {
+    gameManager.handleRoomChange(data.room);
+});
+
+// Handle exit game command
+commandBar.on('command', (cmd) => {
+    if (cmd === '/exit_game') {
+        gameManager.exitGame();
+    }
+});
+```
+
+### Example 3: Using HighScoreManager
+
+```javascript
+import { HighScoreManager } from './highScores.js';
+
+// Get high score for display
+const snakeHighScore = HighScoreManager.getHighScore('snake');
+console.log(`Snake High Score: ${snakeHighScore}`);
+
+// Check if player achieved new high score
+const finalScore = 150;
+if (HighScoreManager.isNewHighScore('snake', finalScore)) {
+    console.log('Congratulations! New high score!');
+    HighScoreManager.setHighScore('snake', finalScore);
+}
+
+// Or use the convenience method
+const wasUpdated = HighScoreManager.updateHighScore('tetris', 2500);
+if (wasUpdated) {
+    console.log('High score updated!');
+}
+```
+
+### Example 4: Complete Game Launch Flow
+
+```javascript
+// User types: /play snake
+
+// 1. Backend validates command and sends WebSocket message
+{
+    type: 'launch_game',
+    game: 'snake'
+}
+
+// 2. Frontend receives message and launches game
+gameManager.launchGame('snake');
+
+// 3. GameManager:
+//    - Hides chat display
+//    - Creates canvas
+//    - Initializes SnakeGame instance
+//    - Starts game loop
+//    - Listens for keyboard input
+
+// 4. User plays game...
+
+// 5. User clicks exit icon or types /exit_game
+gameManager.exitGame();
+
+// 6. GameManager:
+//    - Stops game loop
+//    - Saves high score if applicable
+//    - Removes canvas
+//    - Restores chat display
+```
 
 ---
 
 ## Integration Points
 
-### How User Context Flows Through the System
+### Required Integrations
 
-1. **User Profile Service** (`backend/vecna/user_profile.py`):
-   - Tracks user interests from messages
-   - Tracks frequent rooms (visit counts)
-   - Tracks recent rooms (chronological list)
+1. **Command Handler** (`backend/commands/handler.py`)
+   - Add `/play <game>` command
+   - Add `/exit_game` command
+   - Validate user is in Arcade Room
+   - Send `launch_game` WebSocket message
 
-2. **Support Bot** (`backend/support/bot.py`):
-   - Receives UserProfile object (read-only)
-   - Extracts relevant context (interests, rooms, history)
-   - Includes context in Gemini prompts
-   - Generates personalized responses
+2. **Main Application** (`frontend/js/main.js`)
+   - Import and instantiate GameManager
+   - Handle `launch_game` WebSocket messages
+   - Handle room change events
+   - Route `/exit_game` commands
 
-3. **Main Application** (`backend/main.py`):
-   - Gets user profile from UserProfileService
-   - Passes profile to Support Bot methods
-   - Profile remains unchanged after Support Bot operations
+3. **Sidebar** (`frontend/js/sidePanel.js`)
+   - Add collapsible game menu under Arcade Room
+   - Add click handlers for Snake, Tetris, Breakout
+   - Trigger game launch on click
 
-### Data Flow Example
-```
-User sends message
-    ↓
-UserProfileService.get_profile(user_id)
-    ↓
-UserProfile {
-    interests: ["programming", "music"],
-    frequent_rooms: {"Tech": 10, "Lobby": 5},
-    recent_rooms: ["Lobby", "Tech", "Support-123"]
-}
-    ↓
-SupportBot.generate_greeting(user_profile, trigger_message, sentiment)
-    ↓
-Prompt includes:
-    - Interests: programming, music
-    - Frequent rooms: Tech, Lobby
-    - Recent room activity: Lobby, Tech, Support-123
-    - Trigger message: "I'm feeling down"
-    ↓
-Gemini generates personalized greeting
-    ↓
-UserProfile remains unchanged (read-only access)
-```
+4. **Individual Games** (To be implemented)
+   - `frontend/js/snake.js` - Implement SnakeGame class
+   - `frontend/js/tetris.js` - Implement TetrisGame class
+   - `frontend/js/breakout.js` - Implement BreakoutGame class
+   - Update `GameManager.createGameInstance()` to instantiate games
 
 ---
 
-## README Update
+## Design Decisions
 
-**README.md update skipped** — No new public exports were introduced.
+### Monochrome Aesthetic
+All games use pure black (#000000) and white (#FFFFFF) colors to maintain the retro terminal aesthetic. No gradients, colors, or anti-aliasing.
 
-The changes enhance existing methods (`generate_greeting()` and `generate_response()`) by utilizing additional fields from the existing `UserProfile` object. The public API signatures remain unchanged, and no new classes or functions were added to the public interface.
+### Silent Operation
+No audio is played. All feedback is visual only, maintaining the quiet BBS atmosphere.
 
----
+### localStorage for Persistence
+High scores are stored client-side in browser localStorage. This is appropriate because:
+- Scores are non-sensitive
+- No server-side storage required
+- Works offline
+- Per-user, per-browser persistence
 
-## Manual Review Areas
+### Canvas Replacement Strategy
+The game canvas completely replaces the chat area rather than overlaying it. This:
+- Provides maximum space for gameplay
+- Eliminates visual distractions
+- Maintains clear separation between chat and game modes
+- Simplifies state management
 
-### 1. UserProfile.recent_rooms Availability
-**Action Required**: Verify that `UserProfile` class has a `recent_rooms` attribute.
-
-**Check**:
-```python
-# In backend/vecna/user_profile.py
-class UserProfile:
-    def __init__(self):
-        self.recent_rooms = []  # Should exist
-```
-
-**If Missing**: The code will fail at runtime when accessing `user_profile.recent_rooms`.
-
----
-
-### 2. Prompt Length
-**Consideration**: Adding recent room activity increases prompt length.
-
-**Current Context Included**:
-- Interests: ~5 items
-- Frequent rooms: ~3 items
-- Recent rooms: ~5 items (NEW)
-- Conversation history: ~5 messages
-- Trigger message: 1 message
-
-**Recommendation**: Monitor Gemini API token usage to ensure prompts stay within limits.
+### Room-Based Game Termination
+Games automatically terminate when users leave the Arcade Room. This prevents:
+- Games running in background
+- Resource leaks
+- Confusion about game state
+- Unexpected behavior when returning to Arcade Room
 
 ---
 
-### 3. Test Coverage
-**Status**: ✅ Comprehensive
+## Error Handling
 
-**Coverage Includes**:
-- User context inclusion in prompts (Requirements 3.1-3.4)
-- Read-only access validation (Requirement 3.5)
-- Both greeting and response generation
-- All three types of user context (history, interests, room activity)
+### Canvas Creation Failures
+- Returns false from `createCanvas()`
+- Logs error to console
+- Allows retry by user
+
+### localStorage Unavailability
+- Games continue to function
+- High scores not persisted
+- Warning logged to console
+- No user-facing error (graceful degradation)
+
+### Game Instance Errors
+- Caught in game loop
+- Triggers `exitGame()` for cleanup
+- Restores chat interface
+- Logs error for debugging
+
+### Keyboard Event Errors
+- Caught and logged
+- Game continues running
+- Prevents single input error from crashing game
 
 ---
 
-## Summary
+## Performance Considerations
 
-**Commit**: 265863e610429f02735e1f9b005822721ee187e3  
-**Message**: implemented user context provision  
-**Files Processed**: 2 code files (bot.py, test_support_bot.py)  
-**Functions/Classes Documented**: 
-- `SupportBot` class (updated)
-- `generate_greeting()` method (updated)
-- `generate_response()` method (updated)
-- `_create_greeting_prompt()` method (updated)
-- `_create_empathetic_prompt()` method (updated)
-- `TestSupportBotReadOnlyAccess` class (new)
-- 2 new test methods
-- 2 updated test methods
+### Frame Rate
+- Uses `requestAnimationFrame` for optimal frame rate
+- Target: 30+ FPS (per requirements)
+- Delta time calculation for smooth animation
+- Automatic throttling by browser
 
-**README Updated**: No (no new public exports)
+### Memory Management
+- Canvas removed from DOM on exit
+- Event listeners cleaned up
+- Animation frames cancelled
+- Game instances nullified for garbage collection
 
-**Requirements Fulfilled**: 3.1, 3.2, 3.3, 3.4, 3.5
+### Input Responsiveness
+- Direct event routing to game instance
+- Minimal processing overhead
+- Target: <50ms input latency (per requirements)
 
-**Key Achievement**: Support Bot now receives comprehensive user context (message history, interests, room activity, trigger message) while maintaining read-only access to user data, enabling more personalized and contextually aware emotional support responses.
+---
+
+## Testing Recommendations
+
+### Unit Tests
+
+1. **Game Base Class**
+   - Test abstract class cannot be instantiated
+   - Test all methods throw errors when not implemented
+   - Test `isGameOver()` and `getScore()` return correct values
+
+2. **GameManager**
+   - Test `launchGame()` with valid/invalid game names
+   - Test `exitGame()` cleans up properly
+   - Test `handleRoomChange()` terminates games correctly
+   - Test canvas creation and removal
+   - Test keyboard event routing
+   - Test game loop execution
+
+3. **HighScoreManager**
+   - Test `getHighScore()` returns 0 for new games
+   - Test `setHighScore()` persists scores
+   - Test `isNewHighScore()` comparison logic
+   - Test `updateHighScore()` only updates when higher
+   - Test localStorage error handling
+
+### Integration Tests
+
+1. **Complete Game Flow**
+   - Launch game → Play → Exit → Verify chat restored
+   - Launch game → Switch rooms → Verify game terminated
+   - Launch game → Achieve high score → Verify saved
+
+2. **Multi-Game Session**
+   - Launch Snake → Exit → Launch Tetris → Exit
+   - Verify independent high scores
+   - Verify clean state transitions
+
+3. **Error Scenarios**
+   - localStorage disabled
+   - Canvas creation failure
+   - Game instance errors during gameplay
+
+---
+
+## Future Enhancements
+
+1. **Game Implementations**
+   - Snake game with grid-based movement
+   - Tetris with falling blocks and line clearing
+   - Breakout with paddle and ball physics
+
+2. **Additional Features**
+   - Pause functionality
+   - Difficulty levels
+   - Server-side leaderboards
+   - Game replays
+   - Achievements system
+
+3. **Performance Optimizations**
+   - Off-screen canvas for complex rendering
+   - Dirty rectangle optimization
+   - Web Workers for game logic
+
+---
+
+## Related Requirements
+
+This implementation satisfies the following requirements from the spec:
+
+- **Requirement 3.1-3.5**: Canvas display and monochrome styling
+- **Requirement 4.1-4.5**: Game exit mechanisms and chat restoration
+- **Requirement 5.1-5.5**: Room change handling and game termination
+- **Requirement 9.1-9.5**: High score persistence and display
+- **Requirement 10.1-10.5**: Performance and input handling
+- **Requirement 11.1-11.5**: Silent operation (no audio)
+
+---
+
+## Changelog
+
+### 2025-12-04 - Initial Implementation
+- Added `Game` abstract base class
+- Added `GameManager` for game lifecycle orchestration
+- Added `HighScoreManager` for score persistence
+- Implemented canvas management and UI transitions
+- Implemented keyboard input routing
+- Implemented game loop with requestAnimationFrame
+- Implemented exit icon rendering and click handling
+- Implemented room change detection and game termination
+- Implemented high score comparison and storage
+
+---
+
+**README.md update skipped** — No new public exports requiring README documentation. These are internal game infrastructure modules that will be integrated into the existing BBS application.

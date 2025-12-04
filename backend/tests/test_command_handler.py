@@ -69,7 +69,7 @@ class TestCommandHandler:
         assert "content" in response
         assert "rooms" in response
         assert isinstance(response["rooms"], list)
-        assert len(response["rooms"]) == 4
+        assert len(response["rooms"]) == 5
         
         # Check that all default rooms are present
         room_names = [room["name"] for room in response["rooms"]]
@@ -77,6 +77,7 @@ class TestCommandHandler:
         assert "Techline" in room_names
         assert "Arcade Hall" in room_names
         assert "Archives" in room_names
+        assert "Support" in room_names
         
         # Check room structure
         for room in response["rooms"]:
@@ -103,6 +104,7 @@ class TestCommandHandler:
         assert rooms_dict["Techline"]["count"] == 1
         assert rooms_dict["Arcade Hall"]["count"] == 0
         assert rooms_dict["Archives"]["count"] == 0
+        assert rooms_dict["Support"]["count"] == 0
     
     def test_users_command_no_users(self, command_handler, test_user):
         """Test that users command returns empty list when no users connected."""
@@ -273,3 +275,152 @@ class TestCommandHandler:
         
         assert response["type"] == "system"
         assert "/help" in response["content"]
+    
+    def test_play_command_success_snake(self, command_handler, test_user, websocket_manager):
+        """Test that play command launches snake game in Arcade Hall."""
+        # Set user's current room to Arcade Hall
+        from unittest.mock import Mock
+        ws = Mock()
+        from backend.websocket.manager import ActiveUser
+        websocket_manager.active_connections[ws] = ActiveUser(ws, test_user, "Arcade Hall")
+        websocket_manager.user_websockets[test_user.username] = ws
+        
+        response = command_handler.play_command(test_user, "snake")
+        
+        assert response["type"] == "launch_game"
+        assert response["game"] == "snake"
+        assert "Snake" in response["content"]
+    
+    def test_play_command_success_tetris(self, command_handler, test_user, websocket_manager):
+        """Test that play command launches tetris game in Arcade Hall."""
+        # Set user's current room to Arcade Hall
+        from unittest.mock import Mock
+        ws = Mock()
+        from backend.websocket.manager import ActiveUser
+        websocket_manager.active_connections[ws] = ActiveUser(ws, test_user, "Arcade Hall")
+        websocket_manager.user_websockets[test_user.username] = ws
+        
+        response = command_handler.play_command(test_user, "tetris")
+        
+        assert response["type"] == "launch_game"
+        assert response["game"] == "tetris"
+        assert "Tetris" in response["content"]
+    
+    def test_play_command_success_breakout(self, command_handler, test_user, websocket_manager):
+        """Test that play command launches breakout game in Arcade Hall."""
+        # Set user's current room to Arcade Hall
+        from unittest.mock import Mock
+        ws = Mock()
+        from backend.websocket.manager import ActiveUser
+        websocket_manager.active_connections[ws] = ActiveUser(ws, test_user, "Arcade Hall")
+        websocket_manager.user_websockets[test_user.username] = ws
+        
+        response = command_handler.play_command(test_user, "breakout")
+        
+        assert response["type"] == "launch_game"
+        assert response["game"] == "breakout"
+        assert "Breakout" in response["content"]
+    
+    def test_play_command_wrong_room(self, command_handler, test_user, websocket_manager):
+        """Test that play command returns error when not in Arcade Hall."""
+        # Set user's current room to Lobby
+        from unittest.mock import Mock
+        ws = Mock()
+        from backend.websocket.manager import ActiveUser
+        websocket_manager.active_connections[ws] = ActiveUser(ws, test_user, "Lobby")
+        websocket_manager.user_websockets[test_user.username] = ws
+        
+        response = command_handler.play_command(test_user, "snake")
+        
+        assert response["type"] == "error"
+        assert "only available in the Arcade Room" in response["content"]
+    
+    def test_play_command_invalid_game(self, command_handler, test_user, websocket_manager):
+        """Test that play command returns error for invalid game name."""
+        # Set user's current room to Arcade Hall
+        from unittest.mock import Mock
+        ws = Mock()
+        from backend.websocket.manager import ActiveUser
+        websocket_manager.active_connections[ws] = ActiveUser(ws, test_user, "Arcade Hall")
+        websocket_manager.user_websockets[test_user.username] = ws
+        
+        response = command_handler.play_command(test_user, "pong")
+        
+        assert response["type"] == "error"
+        assert "Unknown game" in response["content"]
+        assert "pong" in response["content"]
+        assert "snake" in response["content"]
+        assert "tetris" in response["content"]
+        assert "breakout" in response["content"]
+    
+    def test_play_command_no_game_name(self, command_handler, test_user):
+        """Test that play command returns error when no game name provided."""
+        response = command_handler.play_command(test_user, None)
+        
+        assert response["type"] == "error"
+        assert "specify a game name" in response["content"].lower()
+        assert "snake" in response["content"]
+        assert "tetris" in response["content"]
+        assert "breakout" in response["content"]
+    
+    def test_play_command_empty_game_name(self, command_handler, test_user):
+        """Test that play command returns error for empty game name."""
+        response = command_handler.play_command(test_user, "   ")
+        
+        assert response["type"] == "error"
+        assert "specify a game name" in response["content"].lower()
+    
+    def test_play_command_case_insensitive(self, command_handler, test_user, websocket_manager):
+        """Test that play command handles game names case insensitively."""
+        # Set user's current room to Arcade Hall
+        from unittest.mock import Mock
+        ws = Mock()
+        from backend.websocket.manager import ActiveUser
+        websocket_manager.active_connections[ws] = ActiveUser(ws, test_user, "Arcade Hall")
+        websocket_manager.user_websockets[test_user.username] = ws
+        
+        response1 = command_handler.play_command(test_user, "SNAKE")
+        response2 = command_handler.play_command(test_user, "Snake")
+        response3 = command_handler.play_command(test_user, "snake")
+        
+        assert response1["type"] == "launch_game"
+        assert response2["type"] == "launch_game"
+        assert response3["type"] == "launch_game"
+        assert response1["game"] == "snake"
+        assert response2["game"] == "snake"
+        assert response3["game"] == "snake"
+    
+    def test_exit_game_command(self, command_handler, test_user):
+        """Test that exit_game command returns exit signal."""
+        response = command_handler.exit_game_command(test_user)
+        
+        assert response["type"] == "exit_game"
+        assert "content" in response
+    
+    def test_handle_command_play(self, command_handler, test_user, websocket_manager):
+        """Test that handle_command routes to play command with args."""
+        # Set user's current room to Arcade Hall
+        from unittest.mock import Mock
+        ws = Mock()
+        from backend.websocket.manager import ActiveUser
+        websocket_manager.active_connections[ws] = ActiveUser(ws, test_user, "Arcade Hall")
+        websocket_manager.user_websockets[test_user.username] = ws
+        
+        response = command_handler.handle_command("play", test_user, "snake")
+        
+        assert response["type"] == "launch_game"
+        assert response["game"] == "snake"
+    
+    def test_handle_command_exit_game(self, command_handler, test_user):
+        """Test that handle_command routes to exit_game command."""
+        response = command_handler.handle_command("exit_game", test_user)
+        
+        assert response["type"] == "exit_game"
+    
+    def test_help_command_includes_game_commands(self, command_handler, test_user):
+        """Test that help command includes game commands."""
+        response = command_handler.help_command(test_user)
+        
+        assert response["type"] == "system"
+        assert "/play" in response["content"]
+        assert "/exit_game" in response["content"]

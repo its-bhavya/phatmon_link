@@ -16,7 +16,12 @@
   - **Property 10: Game state not persisted**
   - **Validates: Requirements 4.5, 5.3**
 
-- [ ] 2. Extend command handler for game commands
+- [x] 2. Extend command handler for game commands
+
+
+
+
+
   - Add /play command to backend command handler with game name validation
   - Add /exit_game command to backend command handler
   - Implement room restriction logic (games only in Arcade Room)
