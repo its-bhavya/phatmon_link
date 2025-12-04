@@ -22,6 +22,19 @@ from backend.instant_answer.summary_generator import (
     InstantAnswer,
     SummaryGenerator
 )
+from backend.instant_answer.storage import (
+    StoredMessage,
+    MessageStorageService
+)
+from backend.instant_answer.service import (
+    InstantAnswerService,
+    User,
+    InstantAnswerError,
+    ClassificationError,
+    SearchError,
+    SummaryError,
+    StorageError
+)
 
 __all__ = [
     "MessageType",
@@ -34,4 +47,13 @@ __all__ = [
     "SemanticSearchEngine",
     "InstantAnswer",
     "SummaryGenerator",
+    "StoredMessage",
+    "MessageStorageService",
+    "InstantAnswerService",
+    "User",
+    "InstantAnswerError",
+    "ClassificationError",
+    "SearchError",
+    "SummaryError",
+    "StorageError",
 ]
