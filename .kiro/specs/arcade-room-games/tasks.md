@@ -297,7 +297,10 @@
   - Add try-catch blocks around critical operations
   - _Requirements: All requirements (error handling)_
 
-- [-] 13. Checkpoint - Ensure all tests pass
+- [x] 13. Checkpoint - Ensure all tests pass
+
+
+
 
 
   - Ensure all tests pass, ask the user if questions arise.

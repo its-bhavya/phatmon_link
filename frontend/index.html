@@ -354,6 +354,11 @@
             gap: 8px;
         }
         
+        .room-container {
+            display: flex;
+            flex-direction: column;
+        }
+        
         .room-item {
             padding: 6px 12px;
             border-left: 3px solid #000;
@@ -402,6 +407,41 @@
             font-size: 12px;
             opacity: 0.8;
             margin-left: 5px;
+        }
+        
+        /* Arcade games container */
+        .arcade-games-container {
+            display: flex;
+            flex-direction: column;
+            margin-left: 20px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .game-launcher-item {
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #FFFFFF;
+            font-size: 13px;
+            background-color: #050505;
+            margin-bottom: 2px;
+            border-left: 2px solid #404040;
+        }
+        
+        .game-launcher-item::before {
+            content: '▸ ';
+            color: #808080;
+        }
+        
+        .game-launcher-item:hover {
+            background-color: #1a1a1a;
+            border-left-color: #8ECFFF;
+            color: #8ECFFF;
+        }
+        
+        .game-launcher-item:hover::before {
+            color: #8ECFFF;
         }
         
         /* Users list */

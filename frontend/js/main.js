@@ -443,6 +443,30 @@ function handleCommandSubmit(command, args, fullInput) {
             });
             break;
             
+        case 'play':
+            // Send play command to server with game name (Requirement 1.1, 1.2)
+            if (args.length === 0) {
+                chatDisplay.addMessage({
+                    type: 'error',
+                    content: 'Usage: /play <game_name> (snake, tetris, breakout)'
+                });
+            } else {
+                const gameName = args.join(' ');
+                wsClient.send({
+                    type: 'command',
+                    command: `play ${gameName}`
+                });
+            }
+            break;
+            
+        case 'leave':
+            // Send leave command to server (for leaving support rooms)
+            wsClient.send({
+                type: 'command',
+                command: 'leave'
+            });
+            break;
+            
         case 'join':
             // Join a room
             if (args.length === 0) {
@@ -500,10 +524,11 @@ function handleCommandSubmit(command, args, fullInput) {
             
         default:
             // Unknown command - send to server for handling (Requirement 7.5)
+            // Combine command and args into a single string for backend parsing
+            const fullCommand = args.length > 0 ? `${command} ${args.join(' ')}` : command;
             wsClient.send({
                 type: 'command',
-                command: command,
-                args: args
+                command: fullCommand
             });
             break;
     }
