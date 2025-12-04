@@ -38,6 +38,12 @@ from backend.support.sentiment import SentimentAnalyzer, CrisisType
 from backend.support.bot import SupportBot
 from backend.support.room_service import SupportRoomService
 from backend.support.logger import SupportInteractionLogger
+from backend.instant_answer.config import InstantAnswerConfig
+from backend.instant_answer.chroma_client import (
+    init_chromadb_client,
+    init_chromadb_collection,
+    close_chromadb_client
+)
 
 
 @asynccontextmanager
@@ -98,6 +104,41 @@ async def lifespan(app: FastAPI):
             app.state.support_room_service = SupportRoomService(room_service=app.state.room_service)
             print("Support Bot services initialized")
             
+            # Initialize Instant Answer Recall system
+            if config.INSTANT_ANSWER_ENABLED:
+                try:
+                    # Create instant answer configuration
+                    app.state.instant_answer_config = InstantAnswerConfig.from_app_config(config)
+                    
+                    # Initialize ChromaDB client
+                    app.state.chromadb_client = init_chromadb_client(app.state.instant_answer_config)
+                    
+                    if app.state.chromadb_client:
+                        # Initialize ChromaDB collection
+                        app.state.chromadb_collection = init_chromadb_collection(
+                            app.state.chromadb_client,
+                            app.state.instant_answer_config
+                        )
+                        
+                        if app.state.chromadb_collection:
+                            print(f"Instant Answer Recall system initialized for room: {config.INSTANT_ANSWER_TARGET_ROOM}")
+                        else:
+                            print("Warning: ChromaDB collection initialization failed")
+                            app.state.chromadb_client = None
+                    else:
+                        print("Warning: ChromaDB client initialization failed")
+                        
+                except Exception as e:
+                    print(f"Warning: Instant Answer Recall initialization failed: {e}")
+                    app.state.instant_answer_config = None
+                    app.state.chromadb_client = None
+                    app.state.chromadb_collection = None
+            else:
+                app.state.instant_answer_config = None
+                app.state.chromadb_client = None
+                app.state.chromadb_collection = None
+                print("Instant Answer Recall system disabled")
+            
         except GeminiServiceError as e:
             print(f"Warning: Gemini service initialization failed: {e}")
             app.state.gemini_service = None
@@ -111,6 +152,9 @@ async def lifespan(app: FastAPI):
         app.state.sentiment_analyzer = None
         app.state.support_bot = None
         app.state.support_room_service = None
+        app.state.instant_answer_config = None
+        app.state.chromadb_client = None
+        app.state.chromadb_collection = None
         print("Gemini service disabled (no API key)")
     
     # Start session cleanup task
@@ -124,6 +168,10 @@ async def lifespan(app: FastAPI):
         await cleanup_task
     except asyncio.CancelledError:
         pass
+    
+    # Close ChromaDB client
+    if hasattr(app.state, 'chromadb_client') and app.state.chromadb_client:
+        close_chromadb_client(app.state.chromadb_client)
     
     close_database()
     print("Database connection closed")

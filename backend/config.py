@@ -58,6 +58,17 @@ class Config:
     SUPPORT_SENTIMENT_THRESHOLD: float
     SUPPORT_CRISIS_DETECTION_ENABLED: bool
     
+    # Instant Answer Recall Configuration
+    INSTANT_ANSWER_ENABLED: bool
+    INSTANT_ANSWER_MIN_SIMILARITY: float
+    INSTANT_ANSWER_MAX_RESULTS: int
+    INSTANT_ANSWER_CONFIDENCE_THRESHOLD: float
+    INSTANT_ANSWER_MAX_SUMMARY_TOKENS: int
+    CHROMADB_HOST: str
+    CHROMADB_PORT: int
+    CHROMADB_COLLECTION_NAME: str
+    INSTANT_ANSWER_TARGET_ROOM: str
+    
     def __init__(self):
         """Initialize configuration from environment variables."""
         self._load_config()
@@ -164,6 +175,61 @@ class Config:
         # Parse Support crisis detection enabled
         crisis_enabled_str = os.getenv("SUPPORT_CRISIS_DETECTION_ENABLED", "true")
         self.SUPPORT_CRISIS_DETECTION_ENABLED = crisis_enabled_str.lower() in ("true", "1", "yes")
+        
+        # Instant Answer Recall Configuration
+        instant_answer_enabled_str = os.getenv("INSTANT_ANSWER_ENABLED", "true")
+        self.INSTANT_ANSWER_ENABLED = instant_answer_enabled_str.lower() in ("true", "1", "yes")
+        
+        # Parse Instant Answer minimum similarity threshold
+        instant_answer_similarity_str = os.getenv("INSTANT_ANSWER_MIN_SIMILARITY", "0.7")
+        try:
+            self.INSTANT_ANSWER_MIN_SIMILARITY = float(instant_answer_similarity_str)
+        except ValueError:
+            raise ConfigurationError(
+                f"INSTANT_ANSWER_MIN_SIMILARITY must be a float, got: {instant_answer_similarity_str}"
+            )
+        
+        # Parse Instant Answer max results
+        instant_answer_max_results_str = os.getenv("INSTANT_ANSWER_MAX_RESULTS", "5")
+        try:
+            self.INSTANT_ANSWER_MAX_RESULTS = int(instant_answer_max_results_str)
+        except ValueError:
+            raise ConfigurationError(
+                f"INSTANT_ANSWER_MAX_RESULTS must be an integer, got: {instant_answer_max_results_str}"
+            )
+        
+        # Parse Instant Answer confidence threshold
+        instant_answer_confidence_str = os.getenv("INSTANT_ANSWER_CONFIDENCE_THRESHOLD", "0.6")
+        try:
+            self.INSTANT_ANSWER_CONFIDENCE_THRESHOLD = float(instant_answer_confidence_str)
+        except ValueError:
+            raise ConfigurationError(
+                f"INSTANT_ANSWER_CONFIDENCE_THRESHOLD must be a float, got: {instant_answer_confidence_str}"
+            )
+        
+        # Parse Instant Answer max summary tokens
+        instant_answer_max_tokens_str = os.getenv("INSTANT_ANSWER_MAX_SUMMARY_TOKENS", "300")
+        try:
+            self.INSTANT_ANSWER_MAX_SUMMARY_TOKENS = int(instant_answer_max_tokens_str)
+        except ValueError:
+            raise ConfigurationError(
+                f"INSTANT_ANSWER_MAX_SUMMARY_TOKENS must be an integer, got: {instant_answer_max_tokens_str}"
+            )
+        
+        # ChromaDB Configuration
+        self.CHROMADB_HOST = os.getenv("CHROMADB_HOST", "localhost")
+        
+        # Parse ChromaDB port
+        chromadb_port_str = os.getenv("CHROMADB_PORT", "8001")
+        try:
+            self.CHROMADB_PORT = int(chromadb_port_str)
+        except ValueError:
+            raise ConfigurationError(
+                f"CHROMADB_PORT must be an integer, got: {chromadb_port_str}"
+            )
+        
+        self.CHROMADB_COLLECTION_NAME = os.getenv("CHROMADB_COLLECTION_NAME", "techline_messages")
+        self.INSTANT_ANSWER_TARGET_ROOM = os.getenv("INSTANT_ANSWER_TARGET_ROOM", "Techline")
     
     def _validate_config(self):
         """
@@ -263,6 +329,38 @@ class Config:
             errors.append(
                 f"SUPPORT_SENTIMENT_THRESHOLD must be between 0.0 and 1.0, got: {self.SUPPORT_SENTIMENT_THRESHOLD}"
             )
+        
+        # Validate Instant Answer Recall configuration
+        if not (0.0 <= self.INSTANT_ANSWER_MIN_SIMILARITY <= 1.0):
+            errors.append(
+                f"INSTANT_ANSWER_MIN_SIMILARITY must be between 0.0 and 1.0, got: {self.INSTANT_ANSWER_MIN_SIMILARITY}"
+            )
+        
+        if self.INSTANT_ANSWER_MAX_RESULTS <= 0:
+            errors.append(
+                f"INSTANT_ANSWER_MAX_RESULTS must be positive, got: {self.INSTANT_ANSWER_MAX_RESULTS}"
+            )
+        
+        if not (0.0 <= self.INSTANT_ANSWER_CONFIDENCE_THRESHOLD <= 1.0):
+            errors.append(
+                f"INSTANT_ANSWER_CONFIDENCE_THRESHOLD must be between 0.0 and 1.0, got: {self.INSTANT_ANSWER_CONFIDENCE_THRESHOLD}"
+            )
+        
+        if self.INSTANT_ANSWER_MAX_SUMMARY_TOKENS <= 0:
+            errors.append(
+                f"INSTANT_ANSWER_MAX_SUMMARY_TOKENS must be positive, got: {self.INSTANT_ANSWER_MAX_SUMMARY_TOKENS}"
+            )
+        
+        if not (1 <= self.CHROMADB_PORT <= 65535):
+            errors.append(
+                f"CHROMADB_PORT must be between 1 and 65535, got: {self.CHROMADB_PORT}"
+            )
+        
+        if not self.CHROMADB_COLLECTION_NAME:
+            errors.append("CHROMADB_COLLECTION_NAME cannot be empty.")
+        
+        if not self.INSTANT_ANSWER_TARGET_ROOM:
+            errors.append("INSTANT_ANSWER_TARGET_ROOM cannot be empty.")
         
         # If there are validation errors, raise exception
         if errors:
