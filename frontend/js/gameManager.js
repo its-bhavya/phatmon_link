@@ -45,9 +45,9 @@ export class GameManager {
     /**
      * Launch a game
      * @param {string} gameName - Name of the game to launch (snake, tetris, breakout)
-     * @returns {boolean} - True if game launched successfully
+     * @returns {Promise<boolean>} - True if game launched successfully
      */
-    launchGame(gameName) {
+    async launchGame(gameName) {
         // Validate game name
         const validGames = ['snake', 'tetris', 'breakout'];
         if (!validGames.includes(gameName.toLowerCase())) {
@@ -69,7 +69,7 @@ export class GameManager {
         // Initialize game instance (will be implemented when games are created)
         try {
             this.currentGame = gameName.toLowerCase();
-            this.gameInstance = this.createGameInstance(gameName);
+            this.gameInstance = await this.createGameInstance(gameName);
             
             if (!this.gameInstance) {
                 throw new Error('Failed to create game instance');
@@ -101,11 +101,24 @@ export class GameManager {
      * @param {string} gameName - Name of the game
      * @returns {Game|null} - Game instance or null
      */
-    createGameInstance(gameName) {
-        // This will be implemented when individual games are created
-        // For now, return null to indicate games aren't implemented yet
-        console.warn(`Game "${gameName}" not yet implemented`);
-        return null;
+    async createGameInstance(gameName) {
+        const ctx = this.canvas.getContext('2d');
+        
+        switch (gameName.toLowerCase()) {
+            case 'snake': {
+                const { SnakeGame } = await import('./snake.js');
+                return new SnakeGame(this.canvas, ctx);
+            }
+            case 'tetris':
+                console.warn('Tetris not yet implemented');
+                return null;
+            case 'breakout':
+                console.warn('Breakout not yet implemented');
+                return null;
+            default:
+                console.error('Unknown game:', gameName);
+                return null;
+        }
     }
     
     /**

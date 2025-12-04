@@ -731,7 +731,7 @@ function handleCrisisHotlines(message) {
  * Handle game launch message from server (Requirement 3.1, 4.1)
  * @param {Object} message - Launch game message
  */
-function handleLaunchGame(message) {
+async function handleLaunchGame(message) {
     if (!message.game) {
         console.error('Launch game message missing game name');
         return;
@@ -746,7 +746,7 @@ function handleLaunchGame(message) {
     }
     
     // Launch the game
-    const success = gameManager.launchGame(message.game);
+    const success = await gameManager.launchGame(message.game);
     
     if (!success) {
         chatDisplay.addMessage({
