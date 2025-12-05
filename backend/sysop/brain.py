@@ -102,10 +102,12 @@ class SysOpBrain:
             suggestion = await self.gemini.suggest_best_room(
                 message=message,
                 available_rooms=available_rooms,
-                user_profile=profile_data
+                user_profile=profile_data,
+                current_room=current_room
             )
             
             # Only route if suggested room is different from current room
+            # If suggested_room is None, it means stay in current room (e.g., simple greeting)
             if suggestion["suggested_room"] and suggestion["suggested_room"] != current_room:
                 
                 # Check if we should create a new board

@@ -654,7 +654,8 @@ REASON: Technical programming question doesn't fit general lobby
         self,
         message: str,
         available_rooms: Dict[str, str],
-        user_profile: Optional[Dict[str, Any]] = None
+        user_profile: Optional[Dict[str, Any]] = None,
+        current_room: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Suggest the best room for a message from available rooms.
@@ -697,18 +698,42 @@ REASON: Technical programming question doesn't fit general lobby
                 if frequent_rooms:
                     user_context += f"\nUser's frequent rooms: {', '.join(frequent_rooms.keys())}"
             
+            # Add current room context
+            current_room_context = f"\nCurrent Room: {current_room}" if current_room else ""
+            
             prompt = f"""Suggest the best room for this message.
 
-Message: "{message}"
+Message: "{message}"{current_room_context}
 
 Available Rooms:
 {room_list}
 {user_context}
 
+IMPORTANT RULES:
+1. Simple greetings (hi, hello, hey, how are you, what's up, etc.) should STAY in the current room - do NOT route them
+2. Personal life topics (my day, feelings, food preferences, hobbies, weather, etc.) should go to Lobby
+3. Technical/specific topics should go to their appropriate specialized rooms (Techline, Arcade Hall, etc.)
+4. If in a specialized room (like Techline) and message is clearly off-topic, route to Lobby
+5. Be aggressive about routing off-topic messages from specialized rooms
+
+Examples of Lobby topics:
+- "I had such a weird day today"
+- "What do you like to eat?"
+- "How's the weather?"
+- "I'm feeling tired"
+- Any general life/personal conversation
+- Random questions about daily life
+
+Examples that should STAY in Techline:
+- Programming questions
+- Tech troubleshooting
+- Software discussions
+- Code help
+
 Determine which room best fits this message. If none fit well, suggest creating a new room.
 
 Respond in this exact format:
-SUGGESTED_ROOM: room name or "CREATE_NEW"
+SUGGESTED_ROOM: room name or "CREATE_NEW" or "STAY"
 CONFIDENCE: 0.0-1.0
 REASON: brief explanation
 NEW_ROOM_TOPIC: topic name (only if CREATE_NEW)
@@ -720,6 +745,12 @@ REASON: Technical programming question
 NEW_ROOM_TOPIC: none
 
 Example 2:
+SUGGESTED_ROOM: STAY
+CONFIDENCE: 0.95
+REASON: Simple greeting, appropriate in any room
+NEW_ROOM_TOPIC: none
+
+Example 3:
 SUGGESTED_ROOM: CREATE_NEW
 CONFIDENCE: 0.8
 REASON: Specific topic not covered by existing rooms
@@ -741,6 +772,9 @@ NEW_ROOM_TOPIC: React Development
                     room = line.split(':', 1)[1].strip()
                     if room == "CREATE_NEW":
                         should_create_new = True
+                    elif room == "STAY":
+                        # Return None to indicate no routing needed
+                        suggested_room = None
                     else:
                         suggested_room = room
                 elif line.startswith('CONFIDENCE:'):
