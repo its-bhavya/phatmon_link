@@ -43,6 +43,7 @@ class CommandHandler:
         # Command routing table
         self.commands = {
             "help": self.help_command,
+            "status": self.status_command,
             "rooms": self.rooms_command,
             "users": self.users_command,
             "clear": self.clear_command,
@@ -98,6 +99,7 @@ class CommandHandler:
         help_text = """Available Commands:
 
   /help          - Show this help message
+  /status        - Show your current room and connection info
   /rooms         - List all available rooms with user counts
   /users         - Show all active users and their current rooms
   /join <room>   - Join a different room (e.g., /join Techline)
@@ -111,6 +113,33 @@ class CommandHandler:
         return {
             "type": "system",
             "content": help_text
+        }
+    
+    def status_command(self, user: User) -> dict:
+        """
+        Show user's current status and room.
+        
+        Args:
+            user: User object requesting status
+            
+        Returns:
+            Response dictionary with status information
+        """
+        current_room = self.websocket_manager.get_user_room(user.username)
+        active_users = self.websocket_manager.get_active_users()
+        
+        status_text = f"""Your Status:
+
+  Username: {user.username}
+  Current Room: {current_room}
+  Total Active Users: {len(active_users)}
+  
+Instant Answer: {'Active in Techline' if current_room == 'Techline' else 'Only active in Techline room'}
+"""
+        
+        return {
+            "type": "system",
+            "content": status_text
         }
     
     def rooms_command(self, user: User) -> dict:

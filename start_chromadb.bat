@@ -1,0 +1,3 @@
+@echo off
+echo Starting ChromaDB server on localhost:8001...
+chroma run --host localhost --port 8001

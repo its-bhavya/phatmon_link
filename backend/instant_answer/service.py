@@ -166,6 +166,7 @@ class InstantAnswerService:
                 f"Processing message from {user.username} in {room}: "
                 f"{message[:50]}..."
             )
+            print(f"[INSTANT ANSWER] Processing: {message[:50]}... (from {user.username})")
             
             # Step 1: Classify the message
             classification = await self._classify_message_with_fallback(message)
@@ -205,9 +206,11 @@ class InstantAnswerService:
                             f"Generated instant answer with {len(instant_answer.source_messages)} "
                             f"sources (confidence: {instant_answer.confidence:.2f})"
                         )
+                        print(f"[INSTANT ANSWER] ✓ Generated answer with {len(instant_answer.source_messages)} sources (confidence: {instant_answer.confidence:.2f})")
                         return instant_answer
                 else:
                     logger.info("No relevant search results found, returning novel question")
+                    print(f"[INSTANT ANSWER] ℹ Novel question - no similar discussions found")
                     return InstantAnswer(
                         summary="This appears to be a novel question! No similar discussions found in the history.",
                         source_messages=[],
@@ -333,6 +336,7 @@ class InstantAnswerService:
                 tags=tags
             )
             logger.debug(f"Stored message in ChromaDB")
+            print(f"[INSTANT ANSWER] ✓ Message indexed in ChromaDB")
         
         except Exception as e:
             logger.error(

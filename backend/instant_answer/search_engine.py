@@ -64,7 +64,7 @@ class SemanticSearchEngine:
         self,
         gemini_service,
         chroma_collection: chromadb.Collection,
-        embedding_model: str = "models/embedding-001"
+        embedding_model: str = "models/text-embedding-004"
     ):
         """
         Initialize the semantic search engine.
@@ -123,10 +123,16 @@ class SemanticSearchEngine:
                 operation_name="embedding_generation"
             )
             
-            # Build metadata filter
-            where_filter = {"room": room_filter}
+            # Build metadata filter with proper ChromaDB operators
             if message_type_filter:
-                where_filter["message_type"] = message_type_filter.value
+                where_filter = {
+                    "$and": [
+                        {"room": {"$eq": room_filter}},
+                        {"message_type": {"$eq": message_type_filter.value}}
+                    ]
+                }
+            else:
+                where_filter = {"room": {"$eq": room_filter}}
             
             logger.info(
                 f"Searching ChromaDB with filters: room={room_filter}, "
@@ -213,9 +219,9 @@ class SemanticSearchEngine:
         try:
             import google.generativeai as genai
             
-            # Generate embedding using Gemini API
+            # Generate embedding using Gemini API (newer model)
             result = genai.embed_content(
-                model=self.embedding_model,
+                model="models/text-embedding-004",
                 content=text,
                 task_type="retrieval_document"
             )

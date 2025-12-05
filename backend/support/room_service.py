@@ -54,25 +54,37 @@ class SupportRoomService:
         Create a support session for a user.
         
         This method:
-        1. Uses the shared "Support" room
-        2. Tracks the support session internally
-        3. Stores the user's previous room for return
+        1. Creates a unique internal room ID (support-username-counter)
+        2. Creates the room in the room service
+        3. Tracks the support session internally
+        4. Stores the user's previous room for return
+        
+        Note: The room ID is unique internally but displayed as "Support" to users.
         
         Args:
             user: User object for whom to create the support session
             previous_room: Optional name of room user was in before support
             
         Returns:
-            Room name (always "Support")
+            Unique room name (e.g., "support-alice-1")
             
         Requirements:
         - 2.1: Create dedicated support room
+        - 2.2: Ensure unique room naming
         - 2.5: Mark room as private
         """
-        # Always use the shared "Support" room
-        room_name = "Support"
+        # Create unique internal room ID
+        self._room_counter += 1
+        room_name = f"support-{user.username}-{self._room_counter}"
         
-        # Track the support session internally for logging
+        # Create the room in the room service with display name "Support"
+        room = Room(
+            name=room_name,
+            description=f"Private support room for {user.username} - emotional support and listening"
+        )
+        self.room_service.rooms[room_name] = room
+        
+        # Track the support session internally
         self.active_support_rooms[user.id] = room_name
         
         # Store previous room for return functionality
@@ -103,7 +115,8 @@ class SupportRoomService:
         Returns:
             True if room is a support room, False otherwise
         """
-        return room_name == "Support"
+        # Check if room name starts with "support-" or is exactly "Support"
+        return room_name.startswith("support-") or room_name == "Support"
     
     def get_previous_room(self, user_id: int) -> Optional[str]:
         """
@@ -147,6 +160,9 @@ class SupportRoomService:
         Args:
             user_id: User ID whose support session to cleanup
         """
+        # Get the room name before removing from tracking
+        room_name = self.active_support_rooms.get(user_id)
+        
         # Remove from tracking
         if user_id in self.active_support_rooms:
             del self.active_support_rooms[user_id]
@@ -154,6 +170,10 @@ class SupportRoomService:
         if user_id in self.previous_rooms:
             del self.previous_rooms[user_id]
         
-        # Note: We don't delete the "Support" room as it's a shared default room
+        # Delete the unique support room if it exists
+        if room_name and room_name in self.room_service.rooms:
+            # Only delete if it's a unique support room (not the default "Support" room)
+            if room_name.startswith("support-"):
+                del self.room_service.rooms[room_name]
     
 

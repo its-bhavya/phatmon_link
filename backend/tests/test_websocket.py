@@ -85,18 +85,18 @@ def client():
     # Create tables in test database BEFORE creating the client
     Base.metadata.create_all(bind=engine)
     
+    # Initialize app state on test_app BEFORE creating the client
+    # This is necessary because the websocket endpoint uses the global app variable
+    test_app.state.room_service = RoomService()
+    test_app.state.room_service.create_default_rooms()
+    test_app.state.websocket_manager = WebSocketManager()
+    test_app.state.command_handler = CommandHandler(
+        test_app.state.room_service,
+        test_app.state.websocket_manager
+    )
+    
     try:
         with TestClient(test_app) as test_client:
-            # Manually initialize app state on the client's app instance
-            # TestClient wraps the app, so we need to access it through client.app
-            test_client.app.state.room_service = RoomService()
-            test_client.app.state.room_service.create_default_rooms()
-            test_client.app.state.websocket_manager = WebSocketManager()
-            test_client.app.state.command_handler = CommandHandler(
-                test_client.app.state.room_service,
-                test_client.app.state.websocket_manager
-            )
-            
             yield test_client
     finally:
         # Drop tables after test

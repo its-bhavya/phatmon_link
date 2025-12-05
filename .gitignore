@@ -211,3 +211,5 @@ __marimo__/
 phantom_link.db
 *.db
 *.db-journal
+chroma.log
+chroma_data/

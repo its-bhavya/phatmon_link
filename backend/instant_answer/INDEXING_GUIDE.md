@@ -42,6 +42,60 @@ To enable automatic indexing when the application starts:
 
 ## Manual Indexing
 
+### Via Command Line Script (Recommended)
+
+The easiest way to index historical messages is using the provided script:
+
+**Standard indexing** (processes one message at a time):
+```bash
+python index_historical_messages.py --room Techline --limit 1000
+```
+
+**Fast indexing** (parallel batch processing, 10-15x faster):
+```bash
+python index_historical_messages.py --fast --room Techline --limit 1000
+```
+
+**Options**:
+- `--fast`: Use parallel batch embedding (recommended for large datasets)
+- `--room ROOM_NAME`: Room to index (default: Techline)
+- `--limit N`: Maximum messages to index (default: 1000)
+
+**Example output**:
+```
+============================================================
+HISTORICAL MESSAGE INDEXING
+============================================================
+
+1. Checking environment...
+   ✓ GEMINI_API_KEY: Set
+   ✓ ChromaDB: localhost:8001
+
+2. Initializing services...
+   ✓ GeminiService initialized
+   ✓ ChromaDB connected
+   ✓ Collection 'techline_messages' ready (existing: 0 messages)
+   ✓ InstantAnswerService initialized
+   ✓ RoomService initialized
+
+3. Loading messages from room 'Techline'...
+   ✓ Found 150 messages to index
+
+4. Indexing messages (FAST mode)...
+   [Progress logs...]
+
+============================================================
+INDEXING COMPLETE
+============================================================
+Processed: 150
+Stored:    145
+Failed:    5
+
+Total messages in ChromaDB: 145
+
+✓ Messages successfully indexed!
+```
+
 ### Via API Endpoint
 
 You can trigger indexing manually using the API endpoint:
@@ -74,6 +128,7 @@ curl -X POST "http://localhost:8000/api/instant-answer/index?token=YOUR_TOKEN&ro
 
 You can also trigger indexing programmatically:
 
+**Standard indexing**:
 ```python
 from backend.instant_answer.indexer import index_historical_messages
 
@@ -83,6 +138,22 @@ stats = await index_historical_messages(
     room_service=app.state.room_service,
     target_room="Techline",
     batch_size=10
+)
+
+print(f"Indexed {stats['stored']}/{stats['processed']} messages")
+```
+
+**Fast indexing** (recommended for large datasets):
+```python
+from backend.instant_answer.fast_indexer import fast_index_historical_messages
+
+# In an async context
+stats = await fast_index_historical_messages(
+    instant_answer_service=app.state.instant_answer_service,
+    room_service=app.state.room_service,
+    target_room="Techline",
+    embedding_batch_size=12,
+    max_workers=10
 )
 
 print(f"Indexed {stats['stored']}/{stats['processed']} messages")
@@ -145,45 +216,92 @@ After indexing completes, you'll receive statistics:
 
 ## Performance Considerations
 
+### Standard vs Fast Indexing
+
+**Standard Indexing**:
+- Processes one message at a time
+- 1 embedding API call per message
+- 1 ChromaDB insert per message
+- Good for: Small datasets (<100 messages), real-time processing
+
+**Fast Indexing** (Recommended):
+- Parallel batch embedding (12 texts per API call)
+- Bulk ChromaDB inserts (1000 messages at once)
+- 10 parallel workers
+- Good for: Large datasets (>100 messages), initial setup
+
+**Performance Comparison**:
+- 100 messages: Standard ~5-10 min, Fast ~1-2 min (5x faster)
+- 1000 messages: Standard ~50-100 min, Fast ~5-10 min (10x faster)
+
 ### Batch Size
 
+**Standard indexing**:
 - **Smaller batches (5-10)**: More frequent progress updates, lower memory usage
 - **Larger batches (20-50)**: Faster overall processing, higher memory usage
+
+**Fast indexing**:
+- `embedding_batch_size=12`: Texts per embedding API call (recommended: 10-15)
+- `max_workers=10`: Parallel workers (recommended: 5-10)
+- `chromadb_batch_size=1000`: Items per ChromaDB insert (recommended: 500-1000)
 
 Adjust based on your needs:
 
 ```python
+# Standard
 await index_historical_messages(
     instant_answer_service=service,
     room_service=room_service,
     target_room="Techline",
-    batch_size=20  # Adjust this value
+    batch_size=20
+)
+
+# Fast
+await fast_index_historical_messages(
+    instant_answer_service=service,
+    room_service=room_service,
+    target_room="Techline",
+    embedding_batch_size=12,
+    max_workers=10
 )
 ```
 
 ### API Rate Limits
 
-The indexer makes Gemini API calls for:
+**Standard indexing** makes Gemini API calls for:
 - Message classification (1 call per message)
 - Message tagging (1 call per message)
 - Embedding generation (1 call per message)
+- **Total**: ~3 API calls per message
 
-**Total**: ~3 API calls per message
+**Fast indexing** makes Gemini API calls for:
+- Message classification (1 call per message)
+- Message tagging (1 call per message)
+- Embedding generation (1 call per 12 messages with parallel batches)
+- **Total**: ~2.1 API calls per message (30% reduction)
 
-For 100 messages, expect ~300 API calls. Consider Gemini API rate limits when indexing large message histories.
+For 1000 messages:
+- Standard: ~3000 API calls
+- Fast: ~2100 API calls (with parallel processing)
 
 ### Processing Time
 
-Approximate processing times:
+**Standard indexing**:
 - 10 messages: ~30-60 seconds
 - 100 messages: ~5-10 minutes
 - 1000 messages: ~50-100 minutes
+
+**Fast indexing**:
+- 10 messages: ~10-20 seconds
+- 100 messages: ~1-2 minutes
+- 1000 messages: ~5-10 minutes
 
 Times vary based on:
 - API response times
 - Network latency
 - Batch size
 - Message complexity
+- Parallel worker count
 
 ## Troubleshooting
 

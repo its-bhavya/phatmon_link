@@ -23,6 +23,10 @@ import logging
 
 # Configure logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
 from backend.database import init_database, get_db, close_database
 from backend.auth.service import AuthService
@@ -129,7 +133,11 @@ async def lifespan(app: FastAPI):
                                 chroma_collection=app.state.chromadb_collection,
                                 config=app.state.instant_answer_config
                             )
-                            print(f"Instant Answer Recall system initialized for room: {config.INSTANT_ANSWER_TARGET_ROOM}")
+                            print("=" * 60)
+                            print(f"✓ INSTANT ANSWER SYSTEM ACTIVE")
+                            print(f"  Target Room: {config.INSTANT_ANSWER_TARGET_ROOM}")
+                            print(f"  Messages in ChromaDB: {app.state.chromadb_collection.count()}")
+                            print("=" * 60)
                             
                             # Auto-index historical messages on startup if configured
                             if config.INSTANT_ANSWER_AUTO_INDEX_ON_STARTUP:
@@ -819,6 +827,8 @@ async def websocket_endpoint(
             if message_type == "chat_message":
                 # Handle chat message
                 content = data.get("content", "").strip()
+                logger.info(f"[MESSAGE RECEIVED] From: {user.username}, Content: {content[:50]}...")
+                print(f"[MESSAGE RECEIVED] From: {user.username}, Content: {content[:50]}...", flush=True)
                 if not content:
                     continue
                 
@@ -857,6 +867,11 @@ async def websocket_endpoint(
                 # Process message for instant answer if in Techline room
                 instant_answer_service = getattr(current_app.state, 'instant_answer_service', None)
                 instant_answer = None
+                
+                logger.info(f"[DEBUG] Instant answer service available: {instant_answer_service is not None}")
+                logger.info(f"[DEBUG] Current room: {current_room}")
+                print(f"[DEBUG] Instant answer service available: {instant_answer_service is not None}", flush=True)
+                print(f"[DEBUG] Current room: {current_room}", flush=True)
                 
                 if instant_answer_service:
                     try:

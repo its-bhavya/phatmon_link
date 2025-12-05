@@ -367,7 +367,7 @@ class MessageStorageService:
             
             # Generate embedding using Gemini API
             result = genai.embed_content(
-                model="models/embedding-001",
+                model="models/text-embedding-004",
                 content=text,
                 task_type="retrieval_document"
             )
@@ -380,6 +380,44 @@ class MessageStorageService:
         
         except Exception as e:
             logger.error(f"Embedding generation failed: {e}")
+            raise
+    
+    async def _generate_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
+        """
+        Generate embeddings for multiple texts in a single API call.
+        
+        This is much faster than generating embeddings one at a time.
+        Gemini API supports batch embedding which reduces API calls significantly.
+        
+        Args:
+            texts: List of texts to embed (max ~100 per batch recommended)
+        
+        Returns:
+            List of embedding vectors
+        
+        Raises:
+            Exception: If embedding generation fails
+        
+        Requirements: 6.1
+        """
+        try:
+            import google.generativeai as genai
+            
+            # Batch embedding using Gemini API
+            result = genai.embed_content(
+                model="models/text-embedding-004",
+                content=texts,
+                task_type="retrieval_document"
+            )
+            
+            embeddings = result['embedding']
+            
+            logger.debug(f"Generated {len(embeddings)} embeddings in batch")
+            
+            return embeddings
+        
+        except Exception as e:
+            logger.error(f"Batch embedding generation failed: {e}")
             raise
     
     async def _store_in_chromadb(self, stored_message: StoredMessage) -> None:

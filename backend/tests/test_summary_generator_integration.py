@@ -10,11 +10,15 @@ Requirements: 4.2, 4.4, 4.5
 import pytest
 import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 from backend.vecna.gemini_service import GeminiService
 from backend.instant_answer.summary_generator import SummaryGenerator
 from backend.instant_answer.search_engine import SearchResult
 from backend.instant_answer.tagger import MessageTags
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 @pytest.fixture
@@ -22,7 +26,7 @@ def gemini_service():
     """Create a real Gemini service instance."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        pytest.skip("GEMINI_API_KEY not set")
+        pytest.skip("GEMINI_API_KEY not set in .env file")
     return GeminiService(api_key=api_key)
 
 

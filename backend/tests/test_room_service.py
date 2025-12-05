@@ -43,12 +43,13 @@ class TestRoomService:
         service = RoomService()
         service.create_default_rooms()
         
-        # Check that all 4 default rooms exist
-        assert len(service.rooms) == 4
+        # Check that all 5 default rooms exist (Lobby, Techline, Arcade Hall, Archives, Support)
+        assert len(service.rooms) == 5
         assert "Lobby" in service.rooms
         assert "Techline" in service.rooms
         assert "Arcade Hall" in service.rooms
         assert "Archives" in service.rooms
+        assert "Support" in service.rooms
         
         # Check room properties
         lobby = service.rooms["Lobby"]
@@ -62,7 +63,7 @@ class TestRoomService:
         service.create_default_rooms()
         service.create_default_rooms()
         
-        assert len(service.rooms) == 4
+        assert len(service.rooms) == 5
     
     def test_get_rooms(self):
         """Test that get_rooms returns list of all rooms."""
@@ -72,7 +73,7 @@ class TestRoomService:
         rooms = service.get_rooms()
         
         assert isinstance(rooms, list)
-        assert len(rooms) == 4
+        assert len(rooms) == 5
         assert all(isinstance(room, Room) for room in rooms)
     
     def test_get_room(self):

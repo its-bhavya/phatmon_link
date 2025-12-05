@@ -17,7 +17,7 @@ class TestMessageClassifierIntegration:
         """Create a mock Gemini service that simulates real API responses."""
         service = MagicMock()
         
-        async def mock_generate(prompt, operation=None):
+        async def mock_generate(prompt, operation=None, timeout=None, max_retries=None):
             # Extract the message being classified from the prompt
             # The message is in quotes after "Message to classify:"
             import re
