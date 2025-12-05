@@ -52,6 +52,7 @@ class CommandHandler:
             "play": self.play_command,
             "exit_game": self.exit_game_command,
             "replay": self.replay_command,
+            "create": self.create_command,
         }
     
     def handle_command(self, command: str, user: User, args: Optional[str] = None) -> dict:
@@ -77,8 +78,8 @@ class CommandHandler:
         
         # Execute the command
         try:
-            # Some commands need arguments (like join and play), others don't
-            if command in ["join", "play"]:
+            # Some commands need arguments (like join, play, create), others don't
+            if command in ["join", "play", "create"]:
                 return self.commands[command](user, args)
             else:
                 return self.commands[command](user)
@@ -108,6 +109,8 @@ class CommandHandler:
   - /play <game>   - Launch a game in Arcade Room (snake, tetris, breakout)
   - /exit_game     - Exit the current game and return to chat
   - /replay        - Replay the current game
+  
+  - /create <name>, <description> - Create a new room
   - /logout        - Disconnect and return to login screen
 """
         
@@ -382,6 +385,122 @@ class CommandHandler:
         return {
             "type": "replay_game",
             "content": "Replaying game..."
+        }
+    
+    def create_command(self, user: User, args: str = None) -> dict:
+        """
+        Handle room creation command.
+        
+        Creates a new room with validation checks:
+        1. Ensures no similar room exists
+        2. Validates room name is not offensive
+        3. Integrates with routing system
+        
+        Args:
+            user: User object requesting to create room
+            args: "<room_name> <room_description>"
+            
+        Returns:
+            Response dictionary with success/error message
+        """
+        if not args or len(args.strip()) == 0:
+            return self._error_response(
+                "Usage: /create <room_name>; <room_description>\n"
+                "Example: /create Movie Club; Discussion about films and cinema"
+            )
+        
+        # Parse arguments (semicolon-separated)
+        if ';' not in args:
+            return self._error_response(
+                "Please separate room name and description with a semicolon.\n"
+                "Example: /create Movie Club; Discussion about films and cinema"
+            )
+        
+        parts = args.split(';', 1)
+        room_name = parts[0].strip()
+        room_description = parts[1].strip() if len(parts) > 1 else ""
+        
+        if not room_name or not room_description:
+            return self._error_response(
+                "Please provide both room name and description.\n"
+                "Example: /create Movie Club; Discussion about films and cinema"
+            )
+        
+        # Validate room name length
+        if len(room_name) < 3:
+            return self._error_response("Room name must be at least 3 characters long.")
+        
+        if len(room_name) > 30:
+            return self._error_response("Room name must be 30 characters or less.")
+        
+        # Validate description length
+        if len(room_description) < 10:
+            return self._error_response("Room description must be at least 10 characters long.")
+        
+        if len(room_description) > 200:
+            return self._error_response("Room description must be 200 characters or less.")
+        
+        # Check if room already exists (exact match)
+        existing_room = self.room_service.get_room(room_name)
+        if existing_room:
+            return self._error_response(f"Room '{room_name}' already exists.")
+        
+        # Check for similar room names (case-insensitive)
+        all_rooms = self.room_service.get_rooms()
+        for room in all_rooms:
+            if room.name.lower() == room_name.lower():
+                return self._error_response(
+                    f"A room with a similar name already exists: '{room.name}'"
+                )
+        
+        # Basic offensive content check (simple keyword filter)
+        offensive_keywords = [
+            "fuck", "shit", "damn", "hell", "ass", "bitch", 
+            "bastard", "crap", "piss", "dick", "cock", "pussy",
+            "nazi", "hitler", "racist", "hate", "kill", "death"
+        ]
+        
+        combined_text = (room_name + " " + room_description).lower()
+        for keyword in offensive_keywords:
+            if keyword in combined_text:
+                return self._error_response(
+                    "Room name or description contains inappropriate content. "
+                    "Please choose different wording."
+                )
+        
+        # Create the room
+        from backend.rooms.models import Room
+        new_room = Room(name=room_name, description=room_description)
+        self.room_service.rooms[room_name] = new_room
+        
+        # Broadcast updated room list to all users (so it appears in side panel)
+        import asyncio
+        rooms = self.room_service.get_rooms()
+        room_list_message = {
+            "type": "room_list",
+            "rooms": [
+                {
+                    "name": room.name,
+                    "count": self.room_service.get_room_count(room.name),
+                    "description": room.description
+                }
+                for room in rooms
+            ]
+        }
+        
+        # Schedule the broadcast (since this is a sync function)
+        asyncio.create_task(
+            self.websocket_manager.broadcast_to_all(room_list_message)
+        )
+        
+        # Success message
+        return {
+            "type": "system",
+            "content": (
+                f"✓ Room '{room_name}' created successfully!\n"
+                f"Description: {room_description}\n\n"
+                f"Use /join {room_name} to enter the room."
+            )
         }
     
     def _error_response(self, message: str) -> dict:
