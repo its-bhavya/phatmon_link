@@ -158,11 +158,11 @@ body,
     font-weight: normal;
 }
 
-/* System messages - keep existing support bot styling */
 .message.system {
     color: rgba(135, 206, 235, 0.6);
     text-shadow: none;
     font-weight: normal;
+    white-space: pre-line;
 }
 
 /* Error messages in white */

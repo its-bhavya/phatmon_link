@@ -98,18 +98,17 @@ class CommandHandler:
         Requirements: 7.1
         """
         help_text = """Available Commands:
-
-  /help          - Show this help message
-  /status        - Show your current room and connection info
-  /rooms         - List all available rooms with user counts
-  /users         - Show all active users and their current rooms
-  /join <room>   - Join a different room (e.g., /join Techline)
-  /leave         - Leave current support room and return to previous room
-  /clear         - Clear the terminal display
-  /play <game>   - Launch a game in Arcade Room (snake, tetris, breakout)
-  /exit_game     - Exit the current game and return to chat
-  /replay        - Replay the current game
-  /logout        - Disconnect and return to login screen
+  - /help          - Show this help message
+  - /status        - Show your current room and connection info
+  - /rooms         - List all available rooms with user counts
+  - /users         - Show all active users and their current rooms
+  - /join <room>   - Join a different room (e.g., /join Techline)
+  - /leave         - Leave current support room and return to previous room
+  - /clear         - Clear the terminal display
+  - /play <game>   - Launch a game in Arcade Room (snake, tetris, breakout)
+  - /exit_game     - Exit the current game and return to chat
+  - /replay        - Replay the current game
+  - /logout        - Disconnect and return to login screen
 """
         
         return {
@@ -131,13 +130,10 @@ class CommandHandler:
         active_users = self.websocket_manager.get_active_users()
         
         status_text = f"""Your Status:
-
   Username: {user.username}
   Current Room: {current_room}
   Total Active Users: {len(active_users)}
-  
-Instant Answer: {'Active in Techline' if current_room == 'Techline' else 'Only active in Techline room'}
-"""
+  """
         
         return {
             "type": "system",
@@ -162,7 +158,7 @@ Instant Answer: {'Active in Techline' if current_room == 'Techline' else 'Only a
         room_lines = ["Available Rooms:"]
         for room in rooms:
             count = self.room_service.get_room_count(room.name)
-            room_lines.append(f"  {room.name} ({count} users) - {room.description}")
+            room_lines.append(f"  - {room.name} ({count} users) - {room.description}")
         
         return {
             "type": "room_list",
@@ -197,7 +193,7 @@ Instant Answer: {'Active in Techline' if current_room == 'Techline' else 'Only a
         else:
             user_lines = [f"Active Users ({len(active_users)}):"]
             for active_user in active_users:
-                user_lines.append(f"  {active_user['username']} - in {active_user['room']}")
+                user_lines.append(f"  - {active_user['username']} - in {active_user['room']}")
             user_text = "\n".join(user_lines)
         
         return {
