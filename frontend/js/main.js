@@ -8,6 +8,7 @@ import { CommandLineBar } from './commandBar.js';
 import { ChatDisplay } from './chatDisplay.js';
 import { SidePanel } from './sidePanel.js';
 import { SupportHandler } from './supportHandler.js';
+import { InstantAnswerHandler } from './instantAnswerHandler.js';
 import { GameManager } from './gameManager.js';
 
 // Application state
@@ -16,6 +17,7 @@ let commandBar = null;
 let chatDisplay = null;
 let sidePanel = null;
 let supportHandler = null;
+let instantAnswerHandler = null;
 let gameManager = null;
 let currentRoom = 'Lobby';
 let activeUsers = [];
@@ -48,6 +50,9 @@ function init() {
     
     // Initialize SupportHandler for support bot messages (Requirement 12.1, 12.2, 12.3, 12.4)
     supportHandler = new SupportHandler(chatDisplay, commandBar);
+    
+    // Initialize InstantAnswerHandler for AI recall system (Requirement 7.1, 7.2, 7.4)
+    instantAnswerHandler = new InstantAnswerHandler(chatDisplay);
     
     // Initialize GameManager for arcade games (Requirement 3.1, 4.1, 4.2, 5.1, 5.2, 5.5)
     gameManager = new GameManager(chatDisplay, commandBar, sidePanel);
@@ -549,6 +554,7 @@ function handleCommandSubmit(command, args, fullInput) {
  * - support_activation: Support bot activation and greeting
  * - support_response: Support bot responses
  * - crisis_hotlines: Crisis hotline information
+ * - instant_answer: AI-generated instant answers from recall system
  * 
  * @param {Object} message - The message object from server
  */
@@ -592,6 +598,10 @@ function handleWebSocketMessage(message) {
             
         case 'crisis_hotlines':
             handleCrisisHotlines(message);
+            break;
+            
+        case 'instant_answer':
+            handleInstantAnswer(message);
             break;
             
         case 'launch_game':
@@ -749,6 +759,16 @@ function handleSupportResponse(message) {
 function handleCrisisHotlines(message) {
     if (supportHandler) {
         supportHandler.handleCrisisHotlines(message);
+    }
+}
+
+/**
+ * Handle instant answer from AI recall system (Requirement 7.1, 7.2, 7.4)
+ * @param {Object} message - Instant answer message
+ */
+function handleInstantAnswer(message) {
+    if (instantAnswerHandler) {
+        instantAnswerHandler.handleInstantAnswer(message);
     }
 }
 
@@ -956,6 +976,7 @@ export {
     handleSupportActivation,
     handleSupportResponse,
     handleCrisisHotlines,
+    handleInstantAnswer,
     handleLaunchGame,
     logout
 };

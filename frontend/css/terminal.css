@@ -809,6 +809,187 @@ body {
         font-size: 16px;
     }
 }
+
+/* ============================================
+   INSTANT ANSWER STYLES
+   Requirements: 7.1, 7.2, 7.4
+   AI-powered answer recall system styling
+   Similar presentation to support messages
+   ============================================ */
+
+/* Instant answer color variables for consistency */
+:root {
+    --instant-answer-primary: #9370db;      /* Medium purple - AI/tech feel */
+    --instant-answer-secondary: #ba55d3;    /* Medium orchid - vibrant accent */
+    --instant-answer-accent: #dda0dd;       /* Plum - softer highlight */
+    --instant-answer-bg: rgba(147, 112, 219, 0.08);  /* Subtle background tint */
+    --instant-answer-disclaimer: #ffa500;   /* Orange - attention for disclaimer */
+}
+
+/* Instant answer message styling - similar to support messages */
+.message.instant-answer-message {
+    color: var(--instant-answer-accent);
+    border-left: 3px solid var(--instant-answer-primary);
+    padding: 8px 12px 8px 12px;
+    margin: 10px 5px 10px 8px;
+    background-color: var(--instant-answer-bg);
+    border-radius: 2px;
+    line-height: 1.6;
+    /* Subtle glow for tech feel */
+    box-shadow: 
+        -2px 0 8px rgba(147, 112, 219, 0.15),
+        inset 0 0 20px rgba(147, 112, 219, 0.03);
+}
+
+/* Instant answer prefix styling - distinct AI indicator */
+.instant-answer-prefix {
+    color: var(--instant-answer-primary);
+    font-weight: bold;
+    text-shadow: 
+        0 0 5px rgba(147, 112, 219, 0.6),
+        0 0 10px rgba(147, 112, 219, 0.3);
+    letter-spacing: 1px;
+    margin-right: 4px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Content container for instant answer */
+.instant-answer-content-container {
+    margin-top: 8px;
+    padding-left: 4px;
+}
+
+/* AI disclaimer styling - prominent warning */
+.instant-answer-disclaimer {
+    color: var(--instant-answer-disclaimer);
+    font-size: 16px;
+    font-style: italic;
+    margin-bottom: 10px;
+    padding: 4px 8px;
+    border-left: 2px solid var(--instant-answer-disclaimer);
+    background-color: rgba(255, 165, 0, 0.05);
+    text-shadow: 0 0 3px rgba(255, 165, 0, 0.3);
+}
+
+/* Main content styling - readable and clear */
+.instant-answer-content {
+    color: var(--instant-answer-accent);
+    font-size: 18px;
+    line-height: 1.7;
+    margin-bottom: 12px;
+    text-shadow: 0 0 1px rgba(221, 160, 221, 0.2);
+}
+
+/* Novel question message styling */
+.instant-answer-novel {
+    color: var(--instant-answer-secondary);
+    font-size: 17px;
+    font-style: italic;
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-left: 2px solid var(--instant-answer-secondary);
+    background-color: rgba(186, 85, 211, 0.05);
+}
+
+/* Sources container styling */
+.instant-answer-sources {
+    margin-top: 12px;
+    padding: 8px 10px;
+    border-top: 1px solid rgba(147, 112, 219, 0.3);
+    background-color: rgba(147, 112, 219, 0.03);
+}
+
+/* Sources header styling */
+.instant-answer-sources-header {
+    color: var(--instant-answer-primary);
+    font-weight: bold;
+    font-size: 17px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 3px rgba(147, 112, 219, 0.4);
+}
+
+/* Individual source item styling */
+.instant-answer-source-item {
+    color: var(--instant-answer-accent);
+    font-size: 16px;
+    margin: 4px 0;
+    line-height: 1.5;
+}
+
+/* Source snippet styling */
+.instant-answer-source-snippet {
+    color: var(--terminal-light-gray);
+    font-size: 15px;
+    font-style: italic;
+    margin-top: 2px;
+    opacity: 0.9;
+}
+
+/* Hover effects for instant answer messages - subtle interaction feedback */
+.message.instant-answer-message:hover {
+    background-color: rgba(147, 112, 219, 0.12);
+    box-shadow: 
+        -2px 0 10px rgba(147, 112, 219, 0.2),
+        inset 0 0 25px rgba(147, 112, 219, 0.05);
+}
+
+/* Accessibility - high contrast mode support */
+@media (prefers-contrast: high) {
+    .message.instant-answer-message {
+        border-left-width: 4px;
+        background-color: rgba(147, 112, 219, 0.15);
+    }
+    
+    .instant-answer-prefix,
+    .instant-answer-content,
+    .instant-answer-disclaimer {
+        text-shadow: none;
+        font-weight: bold;
+    }
+}
+
+/* Accessibility - reduced motion for instant answer effects */
+@media (prefers-reduced-motion: reduce) {
+    .message.instant-answer-message:hover {
+        transition: none;
+    }
+}
+
+/* Responsive adjustments for mobile devices */
+@media (max-width: 768px) {
+    .message.instant-answer-message {
+        padding: 6px 10px 6px 10px;
+        margin: 8px 3px 8px 5px;
+        font-size: 16px;
+    }
+    
+    .instant-answer-content {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    
+    .instant-answer-prefix {
+        font-size: 16px;
+    }
+    
+    .instant-answer-disclaimer {
+        font-size: 15px;
+    }
+    
+    .instant-answer-sources-header {
+        font-size: 16px;
+    }
+    
+    .instant-answer-source-item {
+        font-size: 15px;
+    }
+    
+    .instant-answer-source-snippet {
+        font-size: 14px;
+    }
+}
+
 /* =
 ===========================================
    ARCADE ROOM GAME LAUNCHER STYLES

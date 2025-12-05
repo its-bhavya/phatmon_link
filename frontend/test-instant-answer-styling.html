@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant Answer CSS Styling Test</title>
+    <link rel="stylesheet" href="css/terminal.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #0a0a0a;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: rgba(10, 10, 10, 0.8);
+        }
+        h1, h2 {
+            color: var(--terminal-red);
+            font-family: 'VT323', 'Courier New', monospace;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Instant Answer CSS Styling Test</h1>
+        
+        <div class="test-section">
+            <h2>Instant Answer with Sources</h2>
+            
+            <!-- Instant answer message with sources -->
+            <div class="message instant-answer-message">
+                <span class="timestamp">[10:23:45]</span>
+                <span class="instant-answer-prefix">[INSTANT ANSWER]</span>
+                <div class="instant-answer-content-container">
+                    <div class="instant-answer-disclaimer">⚠ AI-generated from past discussions</div>
+                    <div class="instant-answer-content">To implement JWT authentication in FastAPI, you'll need to install python-jose and passlib. Create a security scheme using OAuth2PasswordBearer, then generate tokens with a secret key. Make sure to hash passwords before storing them and verify tokens on protected routes.</div>
+                    <div class="instant-answer-sources">
+                        <div class="instant-answer-sources-header">Sources:</div>
+                        <div class="instant-answer-source-item">
+                            1. alice (12/03 14:30)
+                            <div class="instant-answer-source-snippet">   "You can use FastAPI's OAuth2PasswordBearer for JWT auth..."</div>
+                        </div>
+                        <div class="instant-answer-source-item">
+                            2. bob (12/02 09:15)
+                            <div class="instant-answer-source-snippet">   "Don't forget to hash passwords with bcrypt before storing"</div>
+                        </div>
+                        <div class="instant-answer-source-item">
+                            3. charlie (12/01 16:45)
+                            <div class="instant-answer-source-snippet">   "Here's a working example with python-jose..."</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Instant Answer with Code Snippets</h2>
+            
+            <!-- Instant answer with code -->
+            <div class="message instant-answer-message">
+                <span class="timestamp">[11:15:22]</span>
+                <span class="instant-answer-prefix">[INSTANT ANSWER]</span>
+                <div class="instant-answer-content-container">
+                    <div class="instant-answer-disclaimer">⚠ AI-generated from past discussions</div>
+                    <div class="instant-answer-content">For async database queries in Python, use asyncpg for PostgreSQL or aiomysql for MySQL. Make sure to use 'await' when calling database methods and create connection pools for better performance. Here's a basic pattern: create a pool at startup, use it for queries, and close it on shutdown.</div>
+                    <div class="instant-answer-sources">
+                        <div class="instant-answer-sources-header">Sources:</div>
+                        <div class="instant-answer-source-item">
+                            1. developer_x (11/28 10:20)
+                            <div class="instant-answer-source-snippet">   "asyncpg is the fastest option for PostgreSQL async queries"</div>
+                        </div>
+                        <div class="instant-answer-source-item">
+                            2. tech_guru (11/27 15:30)
+                            <div class="instant-answer-source-snippet">   "Always use connection pools to avoid creating new connections for each query"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Novel Question (No Sources)</h2>
+            
+            <!-- Novel question instant answer -->
+            <div class="message instant-answer-message">
+                <span class="timestamp">[12:45:10]</span>
+                <span class="instant-answer-prefix">[INSTANT ANSWER]</span>
+                <div class="instant-answer-content-container">
+                    <div class="instant-answer-disclaimer">⚠ AI-generated from past discussions</div>
+                    <div class="instant-answer-novel">This appears to be a new question. No similar past discussions found.</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Mixed Messages (for context)</h2>
+            
+            <!-- Regular user question -->
+            <div class="message">
+                <span class="timestamp">[10:23:30]</span>
+                <span class="username">&lt;user123&gt;</span> How do I implement JWT authentication in FastAPI?
+            </div>
+            
+            <!-- Instant answer -->
+            <div class="message instant-answer-message">
+                <span class="timestamp">[10:23:45]</span>
+                <span class="instant-answer-prefix">[INSTANT ANSWER]</span>
+                <div class="instant-answer-content-container">
+                    <div class="instant-answer-disclaimer">⚠ AI-generated from past discussions</div>
+                    <div class="instant-answer-content">To implement JWT authentication in FastAPI, you'll need to install python-jose and passlib. Create a security scheme using OAuth2PasswordBearer.</div>
+                    <div class="instant-answer-sources">
+                        <div class="instant-answer-sources-header">Sources:</div>
+                        <div class="instant-answer-source-item">
+                            1. alice (12/03 14:30)
+                            <div class="instant-answer-source-snippet">   "You can use FastAPI's OAuth2PasswordBearer for JWT auth..."</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Public question posted after instant answer -->
+            <div class="message">
+                <span class="timestamp">[10:23:46]</span>
+                <span class="username">&lt;user123&gt;</span> How do I implement JWT authentication in FastAPI?
+            </div>
+            
+            <!-- Support message for comparison -->
+            <div class="message support-message">
+                <span class="timestamp">[10:24:00]</span>
+                <span class="support-prefix">[SUPPORT]</span>
+                <span class="support-content">I'm here to help you with any concerns you might have.</span>
+            </div>
+            
+            <!-- System message for comparison -->
+            <div class="message system">
+                <span class="timestamp">[10:25:00]</span>
+                <span>* SYSTEM: alice joined the room</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Long Content Test</h2>
+            
+            <!-- Long instant answer for readability test -->
+            <div class="message instant-answer-message">
+                <span class="timestamp">[13:30:15]</span>
+                <span class="instant-answer-prefix">[INSTANT ANSWER]</span>
+                <div class="instant-answer-content-container">
+                    <div class="instant-answer-disclaimer">⚠ AI-generated from past discussions</div>
+                    <div class="instant-answer-content">When building a microservices architecture, there are several key considerations to keep in mind. First, ensure each service has a single responsibility and can be deployed independently. Use API gateways for routing and load balancing. Implement proper service discovery mechanisms like Consul or Eureka. For inter-service communication, consider using message queues like RabbitMQ or Kafka for asynchronous operations, and REST or gRPC for synchronous calls. Don't forget about monitoring and logging - use tools like Prometheus and ELK stack. Finally, implement circuit breakers to handle service failures gracefully.</div>
+                    <div class="instant-answer-sources">
+                        <div class="instant-answer-sources-header">Sources:</div>
+                        <div class="instant-answer-source-item">
+                            1. architect_pro (11/15 09:00)
+                            <div class="instant-answer-source-snippet">   "Single responsibility is crucial for microservices - each service should do one thing well"</div>
+                        </div>
+                        <div class="instant-answer-source-item">
+                            2. devops_master (11/14 14:20)
+                            <div class="instant-answer-source-snippet">   "API gateways are essential for managing routing and authentication across services"</div>
+                        </div>
+                        <div class="instant-answer-source-item">
+                            3. cloud_expert (11/13 16:45)
+                            <div class="instant-answer-source-snippet">   "Use Kafka for event-driven architecture between microservices"</div>
+                        </div>
+                        <div class="instant-answer-source-item">
+                            4. senior_dev (11/12 11:30)
+                            <div class="instant-answer-source-snippet">   "Circuit breakers prevent cascading failures in distributed systems"</div>
+                        </div>
+                        <div class="instant-answer-source-item">
+                            5. tech_lead (11/11 08:15)
+                            <div class="instant-answer-source-snippet">   "Prometheus + Grafana is a great combo for monitoring microservices"</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Accessibility Tests</h2>
+            <p style="color: var(--terminal-white); font-family: 'VT323', monospace;">
+                Hover over messages to see interaction effects.<br>
+                Test with browser's high contrast mode and reduced motion settings.<br>
+                Verify readability on mobile devices by resizing the window.<br>
+                Check that the purple/orchid color scheme is distinct from support messages (blue).
+            </p>
+        </div>
+    </div>
+</body>
+</html>
