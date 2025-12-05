@@ -51,6 +51,7 @@ class CommandHandler:
             "leave": self.leave_command,
             "play": self.play_command,
             "exit_game": self.exit_game_command,
+            "replay": self.replay_command,
         }
     
     def handle_command(self, command: str, user: User, args: Optional[str] = None) -> dict:
@@ -107,6 +108,7 @@ class CommandHandler:
   /clear         - Clear the terminal display
   /play <game>   - Launch a game in Arcade Room (snake, tetris, breakout)
   /exit_game     - Exit the current game and return to chat
+  /replay        - Replay the current game
   /logout        - Disconnect and return to login screen
 """
         
@@ -365,6 +367,25 @@ Instant Answer: {'Active in Techline' if current_room == 'Techline' else 'Only a
         return {
             "type": "exit_game",
             "content": "Exiting game..."
+        }
+    
+    def replay_command(self, user: User) -> dict:
+        """
+        Handle game replay command.
+        
+        This command replays the current game by restarting it.
+        
+        Args:
+            user: User object requesting to replay game
+            
+        Returns:
+            Response dictionary with replay_game signal
+        """
+        # Return replay game signal
+        # The frontend will handle restarting the game
+        return {
+            "type": "replay_game",
+            "content": "Replaying game..."
         }
     
     def _error_response(self, message: str) -> dict:

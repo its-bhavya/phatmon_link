@@ -527,6 +527,22 @@ function handleCommandSubmit(command, args, fullInput) {
             }
             break;
             
+        case 'replay_game':
+            // Replay current game
+            if (gameManager && gameManager.isGameActive()) {
+                gameManager.replayGame();
+                chatDisplay.addMessage({
+                    type: 'system',
+                    content: 'Replaying game...'
+                });
+            } else {
+                chatDisplay.addMessage({
+                    type: 'error',
+                    content: 'No active game to replay'
+                });
+            }
+            break;
+            
         default:
             // Unknown command - send to server for handling (Requirement 7.5)
             // Combine command and args into a single string for backend parsing

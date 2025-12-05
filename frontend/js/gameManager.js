@@ -476,7 +476,7 @@ export class GameManager {
     }
     
     /**
-     * Handle canvas click (for exit icon)
+     * Handle canvas click (for exit and replay icons)
      * @param {MouseEvent} event - Click event
      */
     handleCanvasClick(event) {
@@ -487,13 +487,38 @@ export class GameManager {
         const y = event.clientY - rect.top;
         
         // Check if click is within exit icon bounds (top-right corner)
-        const iconX = this.canvas.width - this.exitIconSize - this.exitIconPadding;
+        const exitIconX = this.canvas.width - this.exitIconSize - this.exitIconPadding;
         const iconY = this.exitIconPadding;
         
-        if (x >= iconX && x <= iconX + this.exitIconSize &&
+        if (x >= exitIconX && x <= exitIconX + this.exitIconSize &&
             y >= iconY && y <= iconY + this.exitIconSize) {
             this.exitGame();
+            return;
         }
+        
+        // Check if click is within replay icon bounds (next to exit icon)
+        const replayIconX = this.canvas.width - (this.exitIconSize * 2) - (this.exitIconPadding * 2) - 5;
+        
+        if (x >= replayIconX && x <= replayIconX + this.exitIconSize &&
+            y >= iconY && y <= iconY + this.exitIconSize) {
+            this.replayGame();
+            return;
+        }
+    }
+    
+    /**
+     * Replay the current game
+     */
+    replayGame() {
+        if (!this.currentGame) return;
+        
+        const gameName = this.currentGame;
+        this.exitGame();
+        
+        // Small delay to ensure clean state
+        setTimeout(() => {
+            this.launchGame(gameName);
+        }, 100);
     }
     
     /**
@@ -541,6 +566,53 @@ export class GameManager {
         ctx.lineTo(x + size - 5, y + size - 5);
         ctx.moveTo(x + size - 5, y + 5);
         ctx.lineTo(x + 5, y + size - 5);
+        ctx.stroke();
+        
+        // Draw border
+        ctx.strokeStyle = this.canvasConfig.foregroundColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, size, size);
+    }
+    
+    /**
+     * Render replay icon in top-right corner (next to exit icon)
+     * @param {CanvasRenderingContext2D} ctx - Canvas context
+     */
+    renderReplayIcon(ctx) {
+        const x = this.canvas.width - (this.exitIconSize * 2) - (this.exitIconPadding * 2) - 5;
+        const y = this.exitIconPadding;
+        const size = this.exitIconSize;
+        const centerX = x + size / 2;
+        const centerY = y + size / 2;
+        const radius = size / 3.5;
+        
+        // Enable anti-aliasing for smoother curves
+        ctx.imageSmoothingEnabled = true;
+        
+        // Draw circular arrow (replay symbol)
+        ctx.strokeStyle = this.canvasConfig.foregroundColor;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Draw main arc (300 degrees for better visibility)
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, -Math.PI / 2, Math.PI * 1.67, false);
+        ctx.stroke();
+        
+        // Draw arrow head (larger and clearer)
+        const arrowSize = 7;
+        const arrowAngle = Math.PI * 1.67;
+        const arrowX = centerX + radius * Math.cos(arrowAngle);
+        const arrowY = centerY + radius * Math.sin(arrowAngle);
+        
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(arrowX - arrowSize * Math.cos(arrowAngle - Math.PI / 4), 
+                   arrowY - arrowSize * Math.sin(arrowAngle - Math.PI / 4));
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(arrowX - arrowSize * Math.cos(arrowAngle + Math.PI / 4), 
+                   arrowY - arrowSize * Math.sin(arrowAngle + Math.PI / 4));
         ctx.stroke();
         
         // Draw border
@@ -676,8 +748,9 @@ export class GameManager {
                 // Render game
                 this.gameInstance.render();
                 
-                // Render exit icon on top
+                // Render exit and replay icons on top
                 this.renderExitIcon(ctx);
+                this.renderReplayIcon(ctx);
             } catch (error) {
                 console.error('Error rendering game:', error);
                 throw error; // Re-throw to trigger game exit
@@ -747,10 +820,14 @@ export class GameManager {
                     }
                     
                     ctx.font = `18px ${this.canvasConfig.font}`;
-                    ctx.fillText('Click X to exit', centerX, centerY + 100);
+                    ctx.fillText('Click X to exit or ↻ to replay', centerX, centerY + 100);
                     
                     // Render exit icon
                     this.renderExitIcon(ctx);
+                    
+                    // Render replay icon
+                    console.log('Rendering replay icon on game over screen');
+                    this.renderReplayIcon(ctx);
                     
                     // Update high score
                     if (isNewHigh) {
