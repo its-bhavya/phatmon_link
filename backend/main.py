@@ -20,13 +20,20 @@ from sqlalchemy.orm import Session
 import os
 import asyncio
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
-logger = logging.getLogger(__name__)
+import sys
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+    force=True
 )
+logger = logging.getLogger(__name__)
 
 from backend.database import init_database, get_db, close_database
 from backend.auth.service import AuthService
@@ -193,6 +200,11 @@ async def lifespan(app: FastAPI):
     # Start session cleanup task
     cleanup_task = asyncio.create_task(cleanup_expired_sessions(app))
     
+    print("\n" + "=" * 60)
+    print("✓ APPLICATION STARTUP COMPLETE")
+    print("=" * 60 + "\n")
+    logger.info("Application startup complete - ready to accept connections")
+    
     yield
     
     # Shutdown
@@ -212,7 +224,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Gatekeeper BBS",
+    title="Obsidian BBS",
     description="A modern reimagining of 1980s BBS with retro terminal aesthetics",
     version="1.0.0",
     lifespan=lifespan
@@ -374,26 +386,6 @@ async def root():
     return FileResponse("frontend/index.html")
 
 
-@app.get("/auth")
-async def auth():
-    """
-    Serve the authentication page at /auth path.
-    
-    Requirements: All (infrastructure)
-    """
-    return FileResponse("frontend/auth.html")
-
-
-@app.get("/auth.html")
-async def auth_html():
-    """
-    Serve the authentication page at /auth.html path.
-    
-    Requirements: All (infrastructure)
-    """
-    return FileResponse("frontend/auth.html")
-
-
 @app.get("/index.html")
 async def index():
     """
@@ -404,27 +396,14 @@ async def index():
     return FileResponse("frontend/index.html")
 
 
-@app.get("/index.html")
-async def index():
-    """
-    Serve the main chat interface page.
-    
-    Requirements: All (infrastructure)
-    """
-    return FileResponse("frontend/index.html")
-
-
 @app.get("/api")
 async def api_root():
     """API health check endpoint."""
     return {
-        "service": "Gatekeeper",
+        "service": "Obsidian BBS",
         "status": "online",
         "version": "1.0.0"
     }
-
-
-
 
 
 @app.post(
@@ -453,6 +432,7 @@ async def register(
     
     Requirements: 1.4, 1.5, 1.6, 1.7
     """
+    logger.info(f"Incoming registration request for username={register_data.username}")
     auth_service = AuthService(db)
     
     # Register user
@@ -460,6 +440,7 @@ async def register(
         username=register_data.username,
         password=register_data.password
     )
+    
     
     if error:
         # Check if it's a duplicate username error
@@ -826,6 +807,7 @@ async def websocket_endpoint(
             
             if message_type == "chat_message":
                 # Handle chat message
+                print(f"[CHAT_MESSAGE] Handler reached!", flush=True)
                 content = data.get("content", "").strip()
                 logger.info(f"[MESSAGE RECEIVED] From: {user.username}, Content: {content[:50]}...")
                 print(f"[MESSAGE RECEIVED] From: {user.username}, Content: {content[:50]}...", flush=True)
@@ -868,11 +850,6 @@ async def websocket_endpoint(
                 instant_answer_service = getattr(current_app.state, 'instant_answer_service', None)
                 instant_answer = None
                 
-                logger.info(f"[DEBUG] Instant answer service available: {instant_answer_service is not None}")
-                logger.info(f"[DEBUG] Current room: {current_room}")
-                print(f"[DEBUG] Instant answer service available: {instant_answer_service is not None}", flush=True)
-                print(f"[DEBUG] Current room: {current_room}", flush=True)
-                
                 if instant_answer_service:
                     try:
                         # Create user object for instant answer service
@@ -882,46 +859,12 @@ async def websocket_endpoint(
                         )
                         
                         # Process message and get instant answer if applicable
+                        # Store result but don't send yet - will send after message broadcast
                         instant_answer = await instant_answer_service.process_message(
                             message=content,
                             user=ia_user,
                             room=current_room
                         )
-                        
-                        # If instant answer generated, send it privately to user
-                        if instant_answer:
-                            # Format source attribution
-                            sources_text = ""
-                            if instant_answer.source_messages:
-                                sources_text = "\n\n**Sources:**\n"
-                                for source in instant_answer.source_messages[:3]:  # Show top 3 sources
-                                    timestamp_str = source.timestamp.strftime("%Y-%m-%d %H:%M")
-                                    sources_text += f"- {source.username} ({timestamp_str})\n"
-                            
-                            # Add AI disclaimer
-                            disclaimer = "\n\n*This is an AI-generated answer based on past discussions. Other users may have additional insights.*"
-                            
-                            # Send instant answer privately to user
-                            await current_app.state.websocket_manager.send_to_user(websocket, {
-                                "type": "instant_answer",
-                                "content": instant_answer.summary + sources_text + disclaimer,
-                                "sources": [
-                                    {
-                                        "username": source.username,
-                                        "timestamp": source.timestamp.isoformat(),
-                                        "snippet": source.message_text[:100] + "..." if len(source.message_text) > 100 else source.message_text
-                                    }
-                                    for source in instant_answer.source_messages
-                                ],
-                                "is_novel": instant_answer.is_novel_question,
-                                "timestamp": datetime.utcnow().isoformat()
-                            })
-                            
-                            logger.info(
-                                f"Sent instant answer to {user.username} "
-                                f"(novel={instant_answer.is_novel_question}, "
-                                f"sources={len(instant_answer.source_messages)})"
-                            )
                     
                     except Exception as e:
                         # Log error but don't break message flow
@@ -1257,6 +1200,43 @@ async def websocket_endpoint(
                 
                 # Broadcast to room (including sender)
                 await app.state.websocket_manager.broadcast_to_room(current_room, message)
+                
+                # Send instant answer AFTER the user's message is broadcast
+                # This ensures the instant answer appears below the user's message
+                # Don't send if it's a novel question (no similar past discussions)
+                if instant_answer and not instant_answer.is_novel_question:
+                    # Format source attribution
+                    sources_text = ""
+                    if instant_answer.source_messages:
+                        sources_text = "\n\n**Sources:**\n"
+                        for source in instant_answer.source_messages[:3]:  # Show top 3 sources
+                            timestamp_str = source.timestamp.strftime("%Y-%m-%d %H:%M")
+                            sources_text += f"- {source.username} ({timestamp_str})\n"
+                    
+                    # Add AI disclaimer
+                    disclaimer = "\n\n*This is an AI-generated answer based on past discussions. Other users may have additional insights.*"
+                    
+                    # Send instant answer privately to user
+                    await current_app.state.websocket_manager.send_to_user(websocket, {
+                        "type": "instant_answer",
+                        "content": instant_answer.summary + sources_text + disclaimer,
+                        "sources": [
+                            {
+                                "username": source.username,
+                                "timestamp": source.timestamp.isoformat(),
+                                "snippet": source.message_text[:100] + "..." if len(source.message_text) > 100 else source.message_text
+                            }
+                            for source in instant_answer.source_messages
+                        ],
+                        "is_novel": instant_answer.is_novel_question,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+                    
+                    logger.info(
+                        f"Sent instant answer to {user.username} "
+                        f"(novel={instant_answer.is_novel_question}, "
+                        f"sources={len(instant_answer.source_messages)})"
+                    )
             
             elif message_type == "command":
                 # Handle command

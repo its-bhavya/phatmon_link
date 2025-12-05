@@ -7,6 +7,7 @@ A modern reimagining of the 1980s Bulletin Board System (BBS) that combines retr
 - **Retro Terminal UI**: Authentic CRT monitor effects including scanlines, phosphor glow, and subtle flicker
 - **Multi-Room Chat**: Navigate between different themed rooms (Lobby, Techline, Arcade Hall, Archives)
 - **Real-Time Communication**: WebSocket-based instant messaging with sub-100ms latency
+- **Instant Answer Recall**: AI-powered knowledge system that searches historical conversations and provides immediate, contextually relevant answers in Techline
 - **Empathetic Support Bot**: AI-powered emotional support that detects distress and provides compassionate assistance
 - **Crisis Detection**: Automatic detection of crisis situations with immediate hotline information
 - **User Authentication**: Secure registration and login with JWT tokens and bcrypt password hashing
@@ -48,6 +49,15 @@ phantom-link/
 │   ├── rooms/
 │   │   ├── service.py          # Room management service
 │   │   ├── models.py           # Room data models
+│   │   └── __init__.py
+│   ├── instant_answer/         # Instant Answer Recall system
+│   │   ├── service.py          # Main orchestrator
+│   │   ├── classifier.py       # Message classification
+│   │   ├── tagger.py           # Auto-tagging service
+│   │   ├── search_engine.py    # Semantic search
+│   │   ├── summary_generator.py # AI summary generation
+│   │   ├── storage.py          # ChromaDB storage
+│   │   ├── indexer.py          # Historical message indexing
 │   │   └── __init__.py
 │   ├── support/                # Support Bot system
 │   │   ├── bot.py              # Empathetic AI bot
@@ -347,6 +357,62 @@ Commands are prefixed with `/` and entered in the command line bar:
 - **Arcade Hall**: Gaming and entertainment
 - **Archives**: Historical BBS content and nostalgia
 - **Support Rooms**: Private rooms created automatically when emotional distress is detected
+
+## Instant Answer Recall
+
+The Instant Answer Recall system provides AI-powered contextual help by searching historical conversations in the Techline room.
+
+### How It Works
+
+1. **You ask a question** in Techline
+2. **AI analyzes and classifies** your message
+3. **System searches** past conversations using semantic similarity
+4. **AI generates a summary** from relevant past answers
+5. **You receive an instant answer** privately (only you see it)
+6. **Your question is posted publicly** so others can respond too
+
+### Features
+
+- **Semantic Search**: Finds relevant answers even with different wording
+- **Code Preservation**: Maintains code snippets and formatting
+- **Source Attribution**: Shows who provided answers and when
+- **Novel Question Detection**: Tells you when asking something new
+- **Private Delivery**: Instant answers sent only to you
+- **Public Discussion**: Questions still posted for community engagement
+
+### Requirements
+
+- **ChromaDB**: Vector database for storing message embeddings
+- **Gemini API**: For AI classification, tagging, and summary generation
+
+### Getting Started
+
+1. **Start ChromaDB**:
+   ```bash
+   docker run -d -p 8001:8000 chromadb/chroma
+   ```
+
+2. **Configure environment** (`.env`):
+   ```bash
+   INSTANT_ANSWER_ENABLED=true
+   CHROMADB_HOST=localhost
+   CHROMADB_PORT=8001
+   ```
+
+3. **Index historical messages**:
+   ```bash
+   python index_historical_messages.py --fast --room Techline --limit 1000
+   ```
+
+4. **Ask questions in Techline** and receive instant answers!
+
+### Documentation
+
+- **User Guide**: `USER_GUIDE_INSTANT_ANSWER.md` - How to use instant answers
+- **Architecture**: `backend/instant_answer/ARCHITECTURE.md` - System design
+- **Troubleshooting**: `TROUBLESHOOTING_INSTANT_ANSWER.md` - Common issues
+- **ChromaDB Setup**: `CHROMADB_SETUP.md` - Database setup and maintenance
+- **Configuration**: `backend/CONFIG.md` - Configuration options
 
 ## Support Bot
 

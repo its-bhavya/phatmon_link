@@ -169,7 +169,7 @@ class InstantAnswerService:
                 f"[INSTANT_ANSWER] Processing message | "
                 f"user={user.username} room={room} message_length={len(message)}"
             )
-            print(f"[INSTANT ANSWER] Processing: {message[:50]}... (from {user.username})")
+            print(f"[INSTANT ANSWER] Processing: {message[:50]}... (from {user.username})", flush=True)
             
             # Step 1: Classify the message
             classify_start = time.time()

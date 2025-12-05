@@ -845,9 +845,6 @@ body {
 .instant-answer-prefix {
     color: var(--instant-answer-primary);
     font-weight: bold;
-    text-shadow: 
-        0 0 5px rgba(147, 112, 219, 0.6),
-        0 0 10px rgba(147, 112, 219, 0.3);
     letter-spacing: 1px;
     margin-right: 4px;
     display: block;
