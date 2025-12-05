@@ -44,6 +44,7 @@ from backend.instant_answer.chroma_client import (
     init_chromadb_collection,
     close_chromadb_client
 )
+from backend.instant_answer.service import InstantAnswerService, User as InstantAnswerUser
 
 
 @asynccontextmanager
@@ -121,22 +122,32 @@ async def lifespan(app: FastAPI):
                         )
                         
                         if app.state.chromadb_collection:
+                            # Initialize InstantAnswerService
+                            app.state.instant_answer_service = InstantAnswerService(
+                                gemini_service=app.state.gemini_service,
+                                chroma_collection=app.state.chromadb_collection,
+                                config=app.state.instant_answer_config
+                            )
                             print(f"Instant Answer Recall system initialized for room: {config.INSTANT_ANSWER_TARGET_ROOM}")
                         else:
                             print("Warning: ChromaDB collection initialization failed")
                             app.state.chromadb_client = None
+                            app.state.instant_answer_service = None
                     else:
                         print("Warning: ChromaDB client initialization failed")
+                        app.state.instant_answer_service = None
                         
                 except Exception as e:
                     print(f"Warning: Instant Answer Recall initialization failed: {e}")
                     app.state.instant_answer_config = None
                     app.state.chromadb_client = None
                     app.state.chromadb_collection = None
+                    app.state.instant_answer_service = None
             else:
                 app.state.instant_answer_config = None
                 app.state.chromadb_client = None
                 app.state.chromadb_collection = None
+                app.state.instant_answer_service = None
                 print("Instant Answer Recall system disabled")
             
         except GeminiServiceError as e:
@@ -155,6 +166,7 @@ async def lifespan(app: FastAPI):
         app.state.instant_answer_config = None
         app.state.chromadb_client = None
         app.state.chromadb_collection = None
+        app.state.instant_answer_service = None
         print("Gemini service disabled (no API key)")
     
     # Start session cleanup task
@@ -768,6 +780,66 @@ async def websocket_endpoint(
                 # Update user profile with room visit and interests
                 user_profile_service.record_room_visit(user.id, current_room)
                 user_profile_service.update_interests(user.id, content)
+                
+                # Instant Answer Recall Integration
+                # Process message for instant answer if in Techline room
+                instant_answer_service = getattr(current_app.state, 'instant_answer_service', None)
+                instant_answer = None
+                
+                if instant_answer_service:
+                    try:
+                        # Create user object for instant answer service
+                        ia_user = InstantAnswerUser(
+                            user_id=user.id,
+                            username=user.username
+                        )
+                        
+                        # Process message and get instant answer if applicable
+                        instant_answer = await instant_answer_service.process_message(
+                            message=content,
+                            user=ia_user,
+                            room=current_room
+                        )
+                        
+                        # If instant answer generated, send it privately to user
+                        if instant_answer:
+                            # Format source attribution
+                            sources_text = ""
+                            if instant_answer.source_messages:
+                                sources_text = "\n\n**Sources:**\n"
+                                for source in instant_answer.source_messages[:3]:  # Show top 3 sources
+                                    timestamp_str = source.timestamp.strftime("%Y-%m-%d %H:%M")
+                                    sources_text += f"- {source.username} ({timestamp_str})\n"
+                            
+                            # Add AI disclaimer
+                            disclaimer = "\n\n*This is an AI-generated answer based on past discussions. Other users may have additional insights.*"
+                            
+                            # Send instant answer privately to user
+                            await current_app.state.websocket_manager.send_to_user(websocket, {
+                                "type": "instant_answer",
+                                "content": instant_answer.summary + sources_text + disclaimer,
+                                "sources": [
+                                    {
+                                        "username": source.username,
+                                        "timestamp": source.timestamp.isoformat(),
+                                        "snippet": source.message_text[:100] + "..." if len(source.message_text) > 100 else source.message_text
+                                    }
+                                    for source in instant_answer.source_messages
+                                ],
+                                "is_novel": instant_answer.is_novel_question,
+                                "timestamp": datetime.utcnow().isoformat()
+                            })
+                            
+                            logger.info(
+                                f"Sent instant answer to {user.username} "
+                                f"(novel={instant_answer.is_novel_question}, "
+                                f"sources={len(instant_answer.source_messages)})"
+                            )
+                    
+                    except Exception as e:
+                        # Log error but don't break message flow
+                        logger.error(f"Instant Answer error: {e}")
+                        print(f"Instant Answer error: {e}")
                 
                 # Get user profile for SysOp Brain
                 user_profile = user_profile_service.get_profile(user.id)
