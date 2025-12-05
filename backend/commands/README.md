@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Command Handler module provides command parsing, routing, and execution for user commands in the Phantom Link BBS system. Commands are prefixed with `/` and trigger system actions such as navigation, information display, and session management.
+The Command Handler module provides command parsing, routing, and execution for user commands in the Obsidian BBS system. Commands are prefixed with `/` and trigger system actions such as navigation, information display, and session management.
 
 ## Module: `backend/commands/handler.py`
 

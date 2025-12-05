@@ -1,1 +1,1 @@
-# Phantom Link BBS Backend
+# Obsidian BBS Backend

@@ -1,4 +1,4 @@
-"""Commands module for Phantom Link BBS."""
+"""Commands module for Obsidian BBS."""
 
 from backend.commands.handler import CommandHandler
 

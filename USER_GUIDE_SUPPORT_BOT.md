@@ -2,7 +2,7 @@
 
 ## Welcome
 
-Welcome to the Phantom Link BBS Support Bot! This guide will help you understand how the Support Bot works, when it activates, and how to use it effectively.
+Welcome to the Obsidian BBS Support Bot! This guide will help you understand how the Support Bot works, when it activates, and how to use it effectively.
 
 ## What is the Support Bot?
 

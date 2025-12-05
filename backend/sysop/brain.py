@@ -1,5 +1,5 @@
 """
-SysOp Brain Service for Phantom Link BBS.
+SysOp Brain Service for Obsidian BBS.
 
 This module provides the primary AI routing system that handles normal
 BBS operations including message routing, dynamic board creation, and

@@ -1,5 +1,5 @@
 """
-Room service for Phantom Link BBS.
+Room service for Obsidian BBS.
 
 This module provides room management functionality including:
 - Creating and managing chat rooms

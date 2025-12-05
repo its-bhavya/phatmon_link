@@ -1,5 +1,5 @@
 """
-WebSocket module for Phantom Link BBS.
+WebSocket module for Obsidian BBS.
 
 This module provides WebSocket connection management and message broadcasting.
 """

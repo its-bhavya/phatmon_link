@@ -1,5 +1,5 @@
 """
-Start the Phantom Link BBS server for testing.
+Start the Obsidian BBS server for testing.
 This script runs the full backend with authentication and WebSocket support.
 """
 import uvicorn
@@ -11,7 +11,7 @@ load_dotenv()
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("🖥️  Phantom Link BBS - Full Server")
+    print("🖥️  Obsidian BBS - Full Server")
     print("=" * 70)
     print("\n📡 Starting server at: http://localhost:8000")
     print("\n✨ Available pages:")
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     
     # Set environment variables if not already set
     if not os.getenv("DATABASE_URL"):
-        os.environ["DATABASE_URL"] = "sqlite:///./phantom_link.db"
+        os.environ["DATABASE_URL"] = "sqlite:///./obsidian_bbs.db"
     if not os.getenv("JWT_SECRET_KEY"):
         os.environ["JWT_SECRET_KEY"] = "dev-secret-key-change-in-production"
     if not os.getenv("CORS_ORIGINS"):

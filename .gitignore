@@ -207,8 +207,8 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Phantom Link BBS specific
-phantom_link.db
+# Obsidian BBS specific
+obsidian_bbs.db
 *.db
 *.db-journal
 chroma.log

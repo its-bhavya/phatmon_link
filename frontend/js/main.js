@@ -1,5 +1,5 @@
 /**
- * Main Application Logic for GATEKEEPER BBS
+ * Main Application Logic for Obsidian BBS
  * Integrates WebSocketClient, CommandLineBar, ChatDisplay, and SidePanel
  * Requirements: 5.1, 5.2, 5.3, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.5, 9.3
  */

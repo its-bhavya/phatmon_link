@@ -1,5 +1,5 @@
 """
-Phantom Link BBS - Main FastAPI Application
+Obsidian BBS - Main FastAPI Application
 
 This module provides the main FastAPI application with:
 - Authentication HTTP endpoints (register, login)

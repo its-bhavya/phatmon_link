@@ -1,5 +1,5 @@
 """
-WebSocket manager for Phantom Link BBS.
+WebSocket manager for Obsidian BBS.
 
 This module provides WebSocket connection management, message routing, and broadcasting.
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Arcade Room Games feature extends the Iris BBS with three playable retro-style games accessible from the Arcade Room (currently named "Arcade Hall"). The implementation follows a modular architecture with a game engine manager that handles canvas rendering, input processing, and game state management. Each game (Snake, Tetris, Breakout) is implemented as a separate module with its own game logic while sharing common infrastructure for rendering, input handling, and high score persistence.
+The Arcade Room Games feature extends the Obsidian BBS with three playable retro-style games accessible from the Arcade Room (currently named "Arcade Hall"). The implementation follows a modular architecture with a game engine manager that handles canvas rendering, input processing, and game state management. Each game (Snake, Tetris, Breakout) is implemented as a separate module with its own game logic while sharing common infrastructure for rendering, input handling, and high score persistence.
 
 The design integrates seamlessly with the existing BBS architecture by:
 - Extending the command handler to recognize game launch commands

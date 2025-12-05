@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `SupportHandler` component manages the display of support bot messages and crisis hotline information in the GATEKEEPER BBS terminal interface. It provides empathetic, warm styling for support messages and prominent, urgent styling for crisis resources.
+The `SupportHandler` component manages the display of support bot messages and crisis hotline information in the Obsidian BBS terminal interface. It provides empathetic, warm styling for support messages and prominent, urgent styling for crisis resources.
 
 ## Requirements
 

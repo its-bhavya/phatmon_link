@@ -1,6 +1,6 @@
 # Configuration Management
 
-The Phantom Link BBS application uses environment variables for configuration management. All configuration is centralized in `backend/config.py`.
+The Obsidian BBS application uses environment variables for configuration management. All configuration is centralized in `backend/config.py`.
 
 ## Environment Variables
 
@@ -18,7 +18,7 @@ The Phantom Link BBS application uses environment variables for configuration ma
   - Affects validation strictness
 
 - **DATABASE_URL**: SQLAlchemy database connection string
-  - Default: `sqlite:///./phantom_link.db`
+  - Default: `sqlite:///./obsidian_bbs.db`
   - Example: `postgresql://user:pass@localhost/dbname`
 
 - **JWT_ALGORITHM**: Algorithm for JWT token signing
@@ -176,7 +176,7 @@ cors_origins = config.CORS_ORIGINS
 2. Edit `.env` with your values:
    ```bash
    ENVIRONMENT=development
-   DATABASE_URL=sqlite:///./phantom_link.db
+   DATABASE_URL=sqlite:///./obsidian_bbs.db
    JWT_SECRET_KEY=your-secret-key-here
    ```
 
@@ -191,19 +191,19 @@ cors_origins = config.CORS_ORIGINS
 **Linux/Mac:**
 ```bash
 export JWT_SECRET_KEY="your-secret-key-here"
-export DATABASE_URL="sqlite:///./phantom_link.db"
+export DATABASE_URL="sqlite:///./obsidian_bbs.db"
 ```
 
 **Windows (PowerShell):**
 ```powershell
 $env:JWT_SECRET_KEY="your-secret-key-here"
-$env:DATABASE_URL="sqlite:///./phantom_link.db"
+$env:DATABASE_URL="sqlite:///./obsidian_bbs.db"
 ```
 
 **Windows (CMD):**
 ```cmd
 set JWT_SECRET_KEY=your-secret-key-here
-set DATABASE_URL=sqlite:///./phantom_link.db
+set DATABASE_URL=sqlite:///./obsidian_bbs.db
 ```
 
 ## Validation

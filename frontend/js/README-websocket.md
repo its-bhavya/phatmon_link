@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `WebSocketClient` class provides a robust WebSocket connection manager for the Phantom Link BBS frontend. It handles connection management, automatic reconnection with exponential backoff, message sending/receiving, and connection status notifications.
+The `WebSocketClient` class provides a robust WebSocket connection manager for the Obsidian BBS frontend. It handles connection management, automatic reconnection with exponential backoff, message sending/receiving, and connection status notifications.
 
 ## Features
 
@@ -180,7 +180,7 @@ window.addEventListener('ws-status', (event) => {
 ```javascript
 {
     type: "system",
-    content: "Welcome to Phantom Link BBS"
+    content: "Welcome to Obsidian BBS"
 }
 ```
 

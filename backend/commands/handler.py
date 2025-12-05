@@ -1,5 +1,5 @@
 """
-Command handler for Phantom Link BBS.
+Command handler for Obsidian BBS.
 
 This module provides command parsing and execution for user commands.
 Commands are prefixed with "/" and trigger system actions.

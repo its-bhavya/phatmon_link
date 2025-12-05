@@ -55,7 +55,7 @@ def override_get_db():
 
 # Create test app without lifespan (will be initialized in fixture)
 test_app = FastAPI(
-    title="Phantom Link BBS - WebSocket Test",
+    title="Obsidian BBS - WebSocket Test",
     description="Test instance for WebSocket tests",
     version="1.0.0"
 )

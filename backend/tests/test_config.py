@@ -33,7 +33,7 @@ class TestConfig:
             config = Config()
             
             # Check defaults
-            assert config.DATABASE_URL == "sqlite:///./phantom_link.db"
+            assert config.DATABASE_URL == "sqlite:///./obsidian_bbs.db"
             assert config.JWT_ALGORITHM == "HS256"
             assert config.JWT_EXPIRATION_HOURS == 1
             assert "http://localhost:3000" in config.CORS_ORIGINS

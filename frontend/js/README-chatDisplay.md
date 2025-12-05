@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `ChatDisplay` component handles displaying chat messages with timestamps, usernames, and proper formatting in the Phantom Link BBS terminal interface. It provides auto-scrolling, message formatting, and support for different message types (chat, system, error).
+The `ChatDisplay` component handles displaying chat messages with timestamps, usernames, and proper formatting in the Obsidian BBS terminal interface. It provides auto-scrolling, message formatting, and support for different message types (chat, system, error).
 
 ## Requirements Addressed
 
@@ -44,12 +44,12 @@ Output: `[12:34:56] <Alice> Hello everyone!`
 ```javascript
 chatDisplay.addMessage({
     type: 'system',
-    content: 'Welcome to Phantom Link BBS',
+    content: 'Welcome to Obsidian BBS',
     timestamp: '2025-12-01T12:34:56Z'
 });
 ```
 
-Output: `[12:34:56] * SYSTEM: Welcome to Phantom Link BBS` (in yellow)
+Output: `[12:34:56] * SYSTEM: Welcome to Obsidian BBS` (in yellow)
 
 #### Error Message
 ```javascript
@@ -250,7 +250,7 @@ const commandBar = new CommandLineBar(
 // Add welcome message
 chatDisplay.addMessage({
     type: 'system',
-    content: 'Welcome to Phantom Link BBS'
+    content: 'Welcome to Obsidian BBS'
 });
 ```
 

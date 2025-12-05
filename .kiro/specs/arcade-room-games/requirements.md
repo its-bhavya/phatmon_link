@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Arcade Room Games feature extends the Iris BBS with three playable retro-style games (Snake, Tetris, and Breakout) that users can access while in the Arcade Room. The games are rendered entirely on HTML Canvas with a minimal, monochrome, retro-terminal aesthetic that matches the existing BBS visual style. Users can launch games via commands or sidebar navigation, play using keyboard controls, and have their high scores persisted locally. The feature maintains the silent, text-based atmosphere of the BBS while providing interactive entertainment.
+The Arcade Room Games feature extends the Obsidian BBS with three playable retro-style games (Snake, Tetris, and Breakout) that users can access while in the Arcade Room. The games are rendered entirely on HTML Canvas with a minimal, monochrome, retro-terminal aesthetic that matches the existing BBS visual style. Users can launch games via commands or sidebar navigation, play using keyboard controls, and have their high scores persisted locally. The feature maintains the silent, text-based atmosphere of the BBS while providing interactive entertainment.
 
 ## Glossary
 
@@ -13,7 +13,7 @@ The Arcade Room Games feature extends the Iris BBS with three playable retro-sty
 - **Exit Icon**: A clickable "X" button displayed in the top-right corner of the Game Canvas
 - **Game Command**: A slash command that launches a specific game (e.g., /play snake)
 - **Sidebar Game Launcher**: A collapsible menu item under "Arcade Room" in the sidebar that launches games
-- **System**: The Iris BBS application
+- **System**: The Obsidian BBS application
 - **User**: An authenticated user of the System
 - **Chat Area**: The main content area of the terminal interface where messages are displayed
 

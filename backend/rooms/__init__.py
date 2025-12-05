@@ -1,5 +1,5 @@
 """
-Rooms module for Phantom Link BBS.
+Rooms module for Obsidian BBS.
 
 This module provides room management functionality.
 """

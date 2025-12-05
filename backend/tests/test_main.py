@@ -73,7 +73,7 @@ async def app_lifespan(app: FastAPI):
 
 # Create test app
 app = FastAPI(
-    title="Phantom Link BBS - Test",
+    title="Obsidian BBS - Test",
     description="Test instance",
     version="1.0.0",
     lifespan=app_lifespan

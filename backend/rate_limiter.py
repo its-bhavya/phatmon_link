@@ -1,5 +1,5 @@
 """
-Rate limiter for Phantom Link BBS.
+Rate limiter for Obsidian BBS.
 
 This module provides rate limiting functionality for messages and commands
 to prevent spam and abuse.

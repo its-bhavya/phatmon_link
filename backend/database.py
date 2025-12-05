@@ -1,5 +1,5 @@
 """
-Database configuration and models for Phantom Link BBS.
+Database configuration and models for Obsidian BBS.
 
 This module provides SQLAlchemy setup for SQLite database with User and Session models.
 """
@@ -254,7 +254,7 @@ engine = None
 SessionLocal = None
 
 
-def init_database(database_url: str = "sqlite:///./phantom_link.db") -> None:
+def init_database(database_url: str = "sqlite:///./obsidian_bbs.db") -> None:
     """
     Initialize the database connection and create all tables.
     

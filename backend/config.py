@@ -1,5 +1,5 @@
 """
-Configuration management for Phantom Link BBS.
+Configuration management for Obsidian BBS.
 
 This module loads and validates environment variables with sensible defaults
 for development. All configuration is centralized here for easy management.
@@ -81,7 +81,7 @@ class Config:
         # Database Configuration
         self.DATABASE_URL = os.getenv(
             "DATABASE_URL",
-            "sqlite:///./phantom_link.db"
+            "sqlite:///./obsidian_bbs.db"
         )
         
         # JWT Configuration

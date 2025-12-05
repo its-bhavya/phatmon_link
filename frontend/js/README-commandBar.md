@@ -1,7 +1,7 @@
 # CommandLineBar Component
 
 ## Overview
-The CommandLineBar component handles user input for the Phantom Link BBS terminal interface. It provides command history navigation, distinguishes between commands and messages, and manages input submission.
+The CommandLineBar component handles user input for the Obsidian BBS terminal interface. It provides command history navigation, distinguishes between commands and messages, and manages input submission.
 
 ## Usage
 

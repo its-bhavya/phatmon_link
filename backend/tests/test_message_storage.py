@@ -365,7 +365,7 @@ async def test_tag_storage(storage_service, sample_classification):
     with patch.object(storage_service, '_generate_embedding', return_value=mock_embedding):
         stored_msg = await storage_service.store_message(
             message_text="Kubernetes deployment config",
-            username="iris",
+            username="obsidian_user",
             user_id=666,
             room="Techline",
             classification=sample_classification,

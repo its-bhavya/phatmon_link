@@ -1,7 +1,7 @@
 """
 Vecna Module - Shared Services.
 
-This module provides shared services for the Phantom Link BBS,
+This module provides shared services for the Obsidian BBS,
 including Gemini AI service, sentiment analysis, and user profile tracking.
 These services are used by SysOp Brain and will be used by the Support Bot.
 """

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Phantom Link is a modern reimagining of the 1980s Bulletin Board System (BBS) that combines retro terminal aesthetics with real-time chat capabilities. This feature establishes the foundational BBS infrastructure, including a retro terminal user interface, multi-room chat system, real-time communication via WebSockets, and basic user commands. The system provides users with an immersive text-based environment reminiscent of classic BBS systems while leveraging modern web technologies.
+Obsidian BBS is a modern reimagining of the 1980s Bulletin Board System (BBS) that combines retro terminal aesthetics with real-time chat capabilities. This feature establishes the foundational BBS infrastructure, including a retro terminal user interface, multi-room chat system, real-time communication via WebSockets, and basic user commands. The system provides users with an immersive text-based environment reminiscent of classic BBS systems while leveraging modern web technologies.
 
 ## Glossary
 
@@ -12,7 +12,7 @@ Phantom Link is a modern reimagining of the 1980s Bulletin Board System (BBS) th
 - **Active Users List**: A real-time display of users currently connected to the system
 - **Command**: A text instruction prefixed with "/" that triggers system actions (e.g., /help, /rooms, /users, /clear)
 - **Chat Message**: A text communication sent by a user to a room that is broadcast to all participants in that room
-- **System**: The Phantom Link BBS application
+- **System**: The Obsidian BBS application
 - **User Credentials**: A username and password pair used to authenticate a user
 - **Session**: An authenticated user's active connection to the System
 

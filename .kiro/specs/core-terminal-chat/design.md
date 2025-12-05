@@ -2,7 +2,7 @@
 
 ## Overview
 
-Phantom Link's Core Terminal Chat + Rooms feature provides a modern BBS experience with retro aesthetics. The system uses a FastAPI backend for real-time WebSocket communication and user management, paired with a vanilla HTML/CSS/JS frontend (with optional Tailwind for layout utilities) that renders an authentic terminal interface with CRT effects.
+Obsidian BBS's Core Terminal Chat + Rooms feature provides a modern BBS experience with retro aesthetics. The system uses a FastAPI backend for real-time WebSocket communication and user management, paired with a vanilla HTML/CSS/JS frontend (with optional Tailwind for layout utilities) that renders an authentic terminal interface with CRT effects.
 
 The architecture separates concerns into three main layers:
 1. **Frontend**: Terminal UI rendering, user input handling, WebSocket client
@@ -222,7 +222,7 @@ class WebSocketClient {
 
 {
   type: "system",
-  content: "Welcome to Phantom Link BBS"
+  content: "Welcome to Obsidian BBS"
 }
 
 {
@@ -851,7 +851,7 @@ def test_full_chat_flow():
 ### File Structure
 
 ```
-phantom-link/
+obsidian-bbs/
 ├── backend/
 │   ├── main.py                 # FastAPI app entry point
 │   ├── config.py               # Configuration and environment variables
@@ -899,7 +899,7 @@ phantom-link/
 
 ```bash
 # .env
-DATABASE_URL=sqlite:///./phantom_link.db
+DATABASE_URL=sqlite:///./obsidian_bbs.db
 JWT_SECRET_KEY=your-secret-key-here-change-in-production
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=1

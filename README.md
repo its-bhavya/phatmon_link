@@ -1,4 +1,4 @@
-# Phantom Link BBS
+# Obsidian BBS
 
 A modern reimagining of the 1980s Bulletin Board System (BBS) that combines retro terminal aesthetics with real-time chat capabilities. Experience the nostalgia of classic BBS systems with modern web technologies, featuring CRT effects, multi-room chat, and real-time communication.
 
@@ -34,7 +34,7 @@ A modern reimagining of the 1980s Bulletin Board System (BBS) that combines retr
 ## Project Structure
 
 ```
-phantom-link/
+obsidian-bbs/
 ├── backend/
 │   ├── main.py                 # FastAPI app entry point
 │   ├── config.py               # Configuration and environment variables
@@ -105,7 +105,7 @@ phantom-link/
 
 ```bash
 git clone <repository-url>
-cd phantom-link
+cd obsidian-bbs
 ```
 
 ### 2. Create Python Virtual Environment
@@ -183,7 +183,7 @@ Configure these variables in your `.env` file:
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `ENVIRONMENT` | Environment mode (development/production) | `development` | No |
-| `DATABASE_URL` | SQLite database file path | `sqlite:///./phantom_link.db` | Yes |
+| `DATABASE_URL` | SQLite database file path | `sqlite:///./obsidian_bbs.db` | Yes |
 | `JWT_SECRET_KEY` | Secret key for JWT token signing | - | Yes |
 | `JWT_ALGORITHM` | JWT signing algorithm | `HS256` | Yes |
 | `JWT_EXPIRATION_HOURS` | Token expiration time in hours | `1` | Yes |
@@ -303,7 +303,7 @@ Connection requires a valid JWT token obtained from login/registration.
 ```json
 {
   "type": "system",
-  "content": "Welcome to Phantom Link BBS"
+  "content": "Welcome to Obsidian BBS"
 }
 ```
 
@@ -539,7 +539,7 @@ The system implements rate limiting to prevent abuse:
 **Reset Database:**
 ```bash
 # Delete the database file
-rm phantom_link.db
+rm obsidian_bbs.db
 
 # Restart the server (database will be recreated)
 python start_server.py

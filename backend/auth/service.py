@@ -1,5 +1,5 @@
 """
-Authentication service for Phantom Link BBS.
+Authentication service for Obsidian BBS.
 
 This module provides authentication functionality including:
 - Password hashing and verification using bcrypt

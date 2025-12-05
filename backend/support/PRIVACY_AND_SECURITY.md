@@ -461,7 +461,7 @@ Users can:
 ### 3. Reporting Security Issues
 
 **How to Report**:
-- Email: security@phantomlink.example (replace with actual email)
+- Email: security@obsidianbbs.example (replace with actual email)
 - Include detailed description of issue
 - Provide steps to reproduce if applicable
 - Responsible disclosure appreciated

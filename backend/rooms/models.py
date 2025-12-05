@@ -1,5 +1,5 @@
 """
-Room models for Phantom Link BBS.
+Room models for Obsidian BBS.
 
 This module defines the Room data structure for managing chat rooms.
 """
