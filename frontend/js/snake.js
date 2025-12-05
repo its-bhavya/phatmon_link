@@ -28,6 +28,10 @@ export class SnakeGame extends Game {
         this.gridWidth = Math.floor(canvas.width / this.gridSize);
         this.gridHeight = Math.floor(canvas.height / this.gridSize);
         
+        // Adjust canvas to exact grid size to avoid visual gaps
+        canvas.width = this.gridWidth * this.gridSize;
+        canvas.height = this.gridHeight * this.gridSize;
+        
         // Snake state
         this.snake = [];
         this.direction = { x: 1, y: 0 }; // Start moving right

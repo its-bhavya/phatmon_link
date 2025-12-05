@@ -93,6 +93,9 @@ export class GameManager {
             this.exitGame();
         }
         
+        // Set current game before creating canvas (needed for sizing)
+        this.currentGame = gameName.toLowerCase();
+        
         // Create canvas
         if (!this.createCanvas()) {
             console.error('Failed to create canvas');
@@ -101,7 +104,6 @@ export class GameManager {
         
         // Initialize game instance (will be implemented when games are created)
         try {
-            this.currentGame = gameName.toLowerCase();
             this.gameInstance = await this.createGameInstance(gameName);
             
             if (!this.gameInstance) {
@@ -284,15 +286,31 @@ export class GameManager {
                 return false;
             }
             
-            // Set canvas dimensions to match chat area
+            // Set canvas dimensions based on game type
             try {
                 const mainContent = document.querySelector('.main-content');
                 if (mainContent) {
-                    this.canvas.width = mainContent.clientWidth || 800;
-                    this.canvas.height = (mainContent.clientHeight || 600) - 65; // Subtract command bar height
+                    const availableHeight = (mainContent.clientHeight || 600) - 65; // Subtract command bar height
+                    const availableWidth = mainContent.clientWidth || 800;
+                    
+                    // Snake gets a square-ish centered canvas, others get full width
+                    if (this.currentGame === 'snake') {
+                        // Make canvas square-ish (use height as base, make width slightly narrower)
+                        this.canvas.height = availableHeight;
+                        this.canvas.width = Math.min(availableHeight * 0.8, availableWidth * 0.7); // 80% of height or 70% of width
+                        
+                        // Center the canvas
+                        const leftOffset = (availableWidth - this.canvas.width) / 2;
+                        this.canvas.style.left = `${leftOffset}px`;
+                    } else {
+                        // Tetris and Breakout get full width
+                        this.canvas.width = availableWidth;
+                        this.canvas.height = availableHeight;
+                        this.canvas.style.left = '0';
+                    }
                 } else {
                     // Fallback dimensions
-                    this.canvas.width = 800;
+                    this.canvas.width = this.currentGame === 'snake' ? 600 : 800;
                     this.canvas.height = 600;
                 }
                 
@@ -302,7 +320,7 @@ export class GameManager {
                 }
             } catch (error) {
                 console.error('Error setting canvas dimensions:', error);
-                this.canvas.width = 800;
+                this.canvas.width = this.currentGame === 'snake' ? 600 : 800;
                 this.canvas.height = 600;
             }
             

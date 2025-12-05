@@ -45,7 +45,7 @@ class RoomService:
         default_rooms = [
             ("Lobby", "Main gathering space - Welcome to Obsidian!"),
             ("Techline", "Technology and programming discussions"),
-            ("Arcade Hall", "Gaming and entertainment zone"),
+            ("Arcade Hall", "Play retro games (Snake, Tetris, Breakout)"),
             ("Archives", "Historical BBS content and nostalgia"),
             ("Support", "Private space for emotional support and listening")
         ]

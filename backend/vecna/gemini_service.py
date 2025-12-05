@@ -712,17 +712,18 @@ Available Rooms:
 IMPORTANT RULES:
 1. Simple greetings (hi, hello, hey, how are you, what's up, etc.) should STAY in the current room - do NOT route them
 2. Personal life topics (my day, feelings, food preferences, hobbies, weather, etc.) should go to Lobby
-3. Technical/specific topics should go to their appropriate specialized rooms (Techline, Arcade Hall, etc.)
-4. If in a specialized room (like Techline) and message is clearly off-topic, route to Lobby
-5. Be aggressive about routing off-topic messages from specialized rooms
+3. Technical/specific topics should go to Techline
+4. Arcade Hall is ONLY for playing games (Snake, Tetris, Breakout) - NOT for game discussions
+5. Entertainment topics (movies, books, music, TV shows, etc.) should CREATE_NEW room
+6. Specific interest topics (cooking, photography, fitness, etc.) should CREATE_NEW room
+7. If in a specialized room and message is clearly off-topic, route to appropriate room or CREATE_NEW
 
 Examples of Lobby topics:
 - "I had such a weird day today"
 - "What do you like to eat?"
 - "How's the weather?"
 - "I'm feeling tired"
-- Any general life/personal conversation
-- Random questions about daily life
+- General life/personal conversation
 
 Examples that should STAY in Techline:
 - Programming questions
@@ -730,7 +731,14 @@ Examples that should STAY in Techline:
 - Software discussions
 - Code help
 
-Determine which room best fits this message. If none fit well, suggest creating a new room.
+Examples that should CREATE_NEW:
+- "Anyone have movie recommendations?" → CREATE_NEW: Movies
+- "What books are you reading?" → CREATE_NEW: Books
+- "Best TV shows to watch?" → CREATE_NEW: TV Shows
+- "Anyone into photography?" → CREATE_NEW: Photography
+- "Cooking tips?" → CREATE_NEW: Cooking
+
+Determine which room best fits this message. Be AGGRESSIVE about creating new rooms for specific topics.
 
 Respond in this exact format:
 SUGGESTED_ROOM: room name or "CREATE_NEW" or "STAY"
