@@ -74,9 +74,14 @@ class MessageIndexer:
         
         Requirements: 6.1, 6.2, 6.3
         """
+        import time
+        start_time = time.time()
+        
         logger.info(
-            f"Starting indexing for room '{room_name}' "
-            f"({len(messages)} messages)"
+            f"[INDEXER] Starting indexing | "
+            f"room={room_name} "
+            f"total_messages={len(messages)} "
+            f"batch_size={self.batch_size}"
         )
         
         self.total_processed = 0
@@ -89,22 +94,40 @@ class MessageIndexer:
             batch_num = (i // self.batch_size) + 1
             total_batches = (len(messages) + self.batch_size - 1) // self.batch_size
             
+            batch_start = time.time()
             logger.info(
-                f"Processing batch {batch_num}/{total_batches} "
-                f"({len(batch)} messages)"
+                f"[INDEXER] Processing batch | "
+                f"batch={batch_num}/{total_batches} "
+                f"messages={len(batch)}"
             )
             
             await self._process_batch(room_name, batch)
             
+            batch_time = time.time() - batch_start
+            success_rate = (self.total_stored / self.total_processed * 100) if self.total_processed > 0 else 0
+            
             # Log progress
             logger.info(
-                f"Progress: {self.total_processed}/{len(messages)} processed, "
-                f"{self.total_stored} stored, {self.total_failed} failed"
+                f"[INDEXER] Batch complete | "
+                f"batch={batch_num}/{total_batches} "
+                f"processed={self.total_processed}/{len(messages)} "
+                f"stored={self.total_stored} "
+                f"failed={self.total_failed} "
+                f"success_rate={success_rate:.1f}% "
+                f"batch_time={batch_time:.3f}s"
             )
         
+        total_time = time.time() - start_time
+        success_rate = (self.total_stored / self.total_processed * 100) if self.total_processed > 0 else 0
+        
         logger.info(
-            f"Indexing complete for room '{room_name}': "
-            f"{self.total_stored}/{self.total_processed} messages stored successfully"
+            f"[INDEXER] Indexing complete | "
+            f"room={room_name} "
+            f"processed={self.total_processed} "
+            f"stored={self.total_stored} "
+            f"failed={self.total_failed} "
+            f"success_rate={success_rate:.1f}% "
+            f"total_time={total_time:.3f}s"
         )
         
         return {
@@ -138,14 +161,20 @@ class MessageIndexer:
                 
                 # Skip empty messages
                 if not message_text or not message_text.strip():
-                    logger.debug(f"Skipping empty message from {username}")
+                    logger.debug(
+                        f"[INDEXER] Skipping empty message | "
+                        f"user={username}"
+                    )
                     self.total_failed += 1
                     continue
                 
                 # Skip system messages
                 message_type = message_data.get("type", "")
                 if message_type in ["system", "error", "support_response", "instant_answer"]:
-                    logger.debug(f"Skipping {message_type} message")
+                    logger.debug(
+                        f"[INDEXER] Skipping system message | "
+                        f"type={message_type}"
+                    )
                     self.total_failed += 1
                     continue
                 
@@ -179,8 +208,21 @@ class MessageIndexer:
                 
                 self.total_stored += 1
                 
+                logger.debug(
+                    f"[INDEXER] Message indexed | "
+                    f"user={username} "
+                    f"type={classification.message_type.value} "
+                    f"progress={self.total_stored}/{self.total_processed}"
+                )
+                
             except Exception as e:
-                logger.error(f"Failed to process message: {e}")
+                logger.error(
+                    f"[INDEXER] Failed to process message | "
+                    f"error={str(e)} "
+                    f"user={username} "
+                    f"progress={self.total_processed}",
+                    exc_info=True
+                )
                 self.total_failed += 1
                 continue
     

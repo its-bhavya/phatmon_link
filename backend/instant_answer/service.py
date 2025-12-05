@@ -9,6 +9,7 @@ Requirements: 1.2, 1.4, 1.5, 10.1, 10.2, 8.1, 8.2, 8.3, 8.4, 8.5
 """
 
 import logging
+import time
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
@@ -148,6 +149,8 @@ class InstantAnswerService:
         
         Requirements: 1.2, 1.4, 1.5, 10.1, 10.2, 8.1, 8.2, 8.3, 8.4, 8.5
         """
+        start_time = time.time()
+        
         try:
             # Check if system is enabled
             if not self.config.enabled:
@@ -163,53 +166,110 @@ class InstantAnswerService:
                 return None
             
             logger.info(
-                f"Processing message from {user.username} in {room}: "
-                f"{message[:50]}..."
+                f"[INSTANT_ANSWER] Processing message | "
+                f"user={user.username} room={room} message_length={len(message)}"
             )
             print(f"[INSTANT ANSWER] Processing: {message[:50]}... (from {user.username})")
             
             # Step 1: Classify the message
+            classify_start = time.time()
             classification = await self._classify_message_with_fallback(message)
+            classify_time = time.time() - classify_start
+            
+            logger.info(
+                f"[INSTANT_ANSWER] Classification complete | "
+                f"type={classification.message_type.value} "
+                f"confidence={classification.confidence:.3f} "
+                f"contains_code={classification.contains_code} "
+                f"duration={classify_time:.3f}s"
+            )
             
             # Step 2: Tag the message
+            tag_start = time.time()
             tags = await self._tag_message_with_fallback(message)
+            tag_time = time.time() - tag_start
+            
+            logger.info(
+                f"[INSTANT_ANSWER] Tagging complete | "
+                f"topics={len(tags.topic_tags)} "
+                f"tech_keywords={len(tags.tech_keywords)} "
+                f"code_language={tags.code_language} "
+                f"duration={tag_time:.3f}s"
+            )
             
             # Step 3: Store the message (always store, even if other steps fail)
+            storage_start = time.time()
             await self._store_message_with_fallback(
                 message, user, room, classification, tags
+            )
+            storage_time = time.time() - storage_start
+            
+            logger.info(
+                f"[INSTANT_ANSWER] Storage complete | "
+                f"duration={storage_time:.3f}s"
             )
             
             # Step 4: If it's a question, search and generate instant answer
             if classification.message_type == MessageType.QUESTION:
-                logger.info(f"Question detected, initiating search and summary")
+                logger.info(
+                    f"[INSTANT_ANSWER] Question detected | "
+                    f"confidence={classification.confidence:.3f} "
+                    f"threshold={self.config.classification_confidence_threshold}"
+                )
                 
                 # Check confidence threshold
                 if classification.confidence < self.config.classification_confidence_threshold:
                     logger.warning(
-                        f"Classification confidence {classification.confidence:.2f} "
-                        f"below threshold {self.config.classification_confidence_threshold}, "
-                        f"skipping instant answer"
+                        f"[INSTANT_ANSWER] Low confidence | "
+                        f"confidence={classification.confidence:.3f} "
+                        f"threshold={self.config.classification_confidence_threshold} "
+                        f"action=skipping_instant_answer"
                     )
                     return None
                 
                 # Search for similar past messages
+                search_start = time.time()
                 search_results = await self._search_with_fallback(message, room)
+                search_time = time.time() - search_start
+                
+                logger.info(
+                    f"[INSTANT_ANSWER] Search complete | "
+                    f"results_found={len(search_results)} "
+                    f"duration={search_time:.3f}s"
+                )
                 
                 # Generate summary if we have results
                 if search_results:
+                    summary_start = time.time()
                     instant_answer = await self._generate_summary_with_fallback(
                         message, search_results
                     )
+                    summary_time = time.time() - summary_start
                     
                     if instant_answer:
+                        total_time = time.time() - start_time
                         logger.info(
-                            f"Generated instant answer with {len(instant_answer.source_messages)} "
-                            f"sources (confidence: {instant_answer.confidence:.2f})"
+                            f"[INSTANT_ANSWER] Summary generated | "
+                            f"sources={len(instant_answer.source_messages)} "
+                            f"confidence={instant_answer.confidence:.3f} "
+                            f"is_novel={instant_answer.is_novel_question} "
+                            f"summary_duration={summary_time:.3f}s "
+                            f"total_duration={total_time:.3f}s"
                         )
                         print(f"[INSTANT ANSWER] ✓ Generated answer with {len(instant_answer.source_messages)} sources (confidence: {instant_answer.confidence:.2f})")
                         return instant_answer
+                    else:
+                        logger.warning(
+                            f"[INSTANT_ANSWER] Summary generation returned None | "
+                            f"duration={summary_time:.3f}s"
+                        )
                 else:
-                    logger.info("No relevant search results found, returning novel question")
+                    total_time = time.time() - start_time
+                    logger.info(
+                        f"[INSTANT_ANSWER] Novel question | "
+                        f"no_results_found=true "
+                        f"total_duration={total_time:.3f}s"
+                    )
                     print(f"[INSTANT ANSWER] ℹ Novel question - no similar discussions found")
                     return InstantAnswer(
                         summary="This appears to be a novel question! No similar discussions found in the history.",
@@ -219,15 +279,25 @@ class InstantAnswerService:
                     )
             
             # Not a question, no instant answer needed
+            total_time = time.time() - start_time
             logger.debug(
-                f"Message classified as {classification.message_type.value}, "
-                f"no instant answer needed"
+                f"[INSTANT_ANSWER] Not a question | "
+                f"type={classification.message_type.value} "
+                f"total_duration={total_time:.3f}s"
             )
             return None
         
         except Exception as e:
             # Catch-all error handler to ensure we never crash
-            logger.error(f"Unexpected error in process_message: {e}", exc_info=True)
+            total_time = time.time() - start_time
+            logger.error(
+                f"[INSTANT_ANSWER] Unexpected error | "
+                f"error={str(e)} "
+                f"user={user.username} "
+                f"room={room} "
+                f"duration={total_time:.3f}s",
+                exc_info=True
+            )
             return None
     
     async def _classify_message_with_fallback(
@@ -251,14 +321,19 @@ class InstantAnswerService:
         try:
             classification = await self.classifier.classify(message)
             logger.debug(
-                f"Classified as {classification.message_type.value} "
-                f"(confidence: {classification.confidence:.2f})"
+                f"[INSTANT_ANSWER] Classification success | "
+                f"type={classification.message_type.value} "
+                f"confidence={classification.confidence:.3f} "
+                f"contains_code={classification.contains_code}"
             )
             return classification
         
         except Exception as e:
             logger.warning(
-                f"Classification failed, defaulting to DISCUSSION: {e}"
+                f"[INSTANT_ANSWER] Classification failed | "
+                f"error={str(e)} "
+                f"fallback=DISCUSSION "
+                f"message_preview={message[:50]}"
             )
             # Fallback to DISCUSSION type
             return MessageClassification(
@@ -288,13 +363,20 @@ class InstantAnswerService:
         try:
             tags = await self.tagger.tag_message(message)
             logger.debug(
-                f"Tagged with {len(tags.topic_tags)} topics, "
-                f"{len(tags.tech_keywords)} tech keywords"
+                f"[INSTANT_ANSWER] Tagging success | "
+                f"topics={tags.topic_tags} "
+                f"tech_keywords={tags.tech_keywords} "
+                f"code_language={tags.code_language}"
             )
             return tags
         
         except Exception as e:
-            logger.warning(f"Tagging failed, using empty tags: {e}")
+            logger.warning(
+                f"[INSTANT_ANSWER] Tagging failed | "
+                f"error={str(e)} "
+                f"fallback=empty_tags "
+                f"message_preview={message[:50]}"
+            )
             # Fallback to empty tags
             return MessageTags(
                 topic_tags=[],
@@ -335,13 +417,22 @@ class InstantAnswerService:
                 classification=classification,
                 tags=tags
             )
-            logger.debug(f"Stored message in ChromaDB")
+            logger.debug(
+                f"[INSTANT_ANSWER] Storage success | "
+                f"user={user.username} "
+                f"room={room} "
+                f"type={classification.message_type.value}"
+            )
             print(f"[INSTANT ANSWER] ✓ Message indexed in ChromaDB")
         
         except Exception as e:
             logger.error(
-                f"Failed to store message in ChromaDB: {e}. "
-                f"Message will still be posted normally."
+                f"[INSTANT_ANSWER] Storage failed | "
+                f"error={str(e)} "
+                f"user={user.username} "
+                f"room={room} "
+                f"action=continuing_with_message_post",
+                exc_info=True
             )
             # Don't raise - allow message posting to continue
     
@@ -372,11 +463,33 @@ class InstantAnswerService:
                 limit=self.config.max_search_results,
                 min_similarity=self.config.min_similarity_threshold
             )
-            logger.debug(f"Found {len(search_results)} search results")
+            
+            if search_results:
+                avg_similarity = sum(r.similarity_score for r in search_results) / len(search_results)
+                logger.info(
+                    f"[INSTANT_ANSWER] Search success | "
+                    f"results={len(search_results)} "
+                    f"avg_similarity={avg_similarity:.3f} "
+                    f"min_threshold={self.config.min_similarity_threshold} "
+                    f"query_preview={query[:50]}"
+                )
+            else:
+                logger.info(
+                    f"[INSTANT_ANSWER] Search no results | "
+                    f"min_threshold={self.config.min_similarity_threshold} "
+                    f"query_preview={query[:50]}"
+                )
+            
             return search_results
         
         except Exception as e:
-            logger.warning(f"Search failed, returning empty results: {e}")
+            logger.warning(
+                f"[INSTANT_ANSWER] Search failed | "
+                f"error={str(e)} "
+                f"fallback=empty_results "
+                f"query_preview={query[:50]}",
+                exc_info=True
+            )
             # Fallback to empty results
             return []
     
@@ -404,10 +517,30 @@ class InstantAnswerService:
                 question=question,
                 search_results=search_results
             )
-            logger.debug("Generated summary successfully")
+            
+            if instant_answer:
+                logger.info(
+                    f"[INSTANT_ANSWER] Summary generation success | "
+                    f"sources={len(instant_answer.source_messages)} "
+                    f"confidence={instant_answer.confidence:.3f} "
+                    f"is_novel={instant_answer.is_novel_question} "
+                    f"summary_length={len(instant_answer.summary)}"
+                )
+            else:
+                logger.warning(
+                    f"[INSTANT_ANSWER] Summary generation returned None | "
+                    f"search_results={len(search_results)}"
+                )
+            
             return instant_answer
         
         except Exception as e:
-            logger.warning(f"Summary generation failed: {e}")
+            logger.warning(
+                f"[INSTANT_ANSWER] Summary generation failed | "
+                f"error={str(e)} "
+                f"search_results={len(search_results)} "
+                f"question_preview={question[:50]}",
+                exc_info=True
+            )
             # Fallback to None - no instant answer will be sent
             return None

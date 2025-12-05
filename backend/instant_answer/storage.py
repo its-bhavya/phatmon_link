@@ -126,14 +126,33 @@ class MessageStorageService:
         
         Requirements: 6.1, 6.2, 6.3, 10.5
         """
+        import time
+        start_time = time.time()
+        
         try:
             # Generate message ID if not provided
             if message_id is None:
                 message_id = f"msg_{uuid.uuid4()}"
             
+            logger.debug(
+                f"[STORAGE] Starting storage | "
+                f"message_id={message_id} "
+                f"user={username} "
+                f"room={room} "
+                f"type={classification.message_type.value}"
+            )
+            
             # Generate embedding for the message
-            logger.info(f"Generating embedding for message {message_id}")
+            embed_start = time.time()
             embedding = await self._generate_embedding(message_text)
+            embed_time = time.time() - embed_start
+            
+            logger.debug(
+                f"[STORAGE] Embedding generated | "
+                f"message_id={message_id} "
+                f"dimensions={len(embedding)} "
+                f"duration={embed_time:.3f}s"
+            )
             
             # Create timestamp
             timestamp = datetime.now()
@@ -155,17 +174,36 @@ class MessageStorageService:
             )
             
             # Store in ChromaDB with retry logic
+            store_start = time.time()
             await self._store_in_chromadb(stored_message)
+            store_time = time.time() - store_start
             
+            total_time = time.time() - start_time
             logger.info(
-                f"Stored message {message_id} in ChromaDB "
-                f"(room: {room}, type: {classification.message_type.value})"
+                f"[STORAGE] Storage complete | "
+                f"message_id={message_id} "
+                f"user={username} "
+                f"room={room} "
+                f"type={classification.message_type.value} "
+                f"topics={len(tags.topic_tags)} "
+                f"keywords={len(tags.tech_keywords)} "
+                f"embed_time={embed_time:.3f}s "
+                f"store_time={store_time:.3f}s "
+                f"total_time={total_time:.3f}s"
             )
             
             return stored_message
         
         except Exception as e:
-            logger.error(f"Failed to store message: {e}")
+            total_time = time.time() - start_time
+            logger.error(
+                f"[STORAGE] Storage failed | "
+                f"error={str(e)} "
+                f"user={username} "
+                f"room={room} "
+                f"duration={total_time:.3f}s",
+                exc_info=True
+            )
             raise
     
     async def store_messages_batch(

@@ -89,10 +89,19 @@ class SummaryGenerator:
         
         Requirements: 4.2, 4.4, 4.5
         """
+        import time
+        start_time = time.time()
+        
         try:
+            logger.info(
+                f"[SUMMARY] Starting generation | "
+                f"question_length={len(question)} "
+                f"search_results={len(search_results)}"
+            )
+            
             # Check if this is a novel question (no relevant results)
             if not search_results:
-                logger.info("Novel question detected - no relevant search results")
+                logger.info("[SUMMARY] Novel question detected - no relevant search results")
                 return InstantAnswer(
                     summary="This appears to be a novel question! No similar discussions found in the history.",
                     source_messages=[],
@@ -103,16 +112,28 @@ class SummaryGenerator:
             # Extract code snippets from search results
             code_snippets = self._extract_code_snippets(search_results)
             
+            logger.debug(
+                f"[SUMMARY] Code extraction | "
+                f"snippets_found={len(code_snippets)}"
+            )
+            
             # Create summary prompt
             prompt = self._create_summary_prompt(question, search_results, code_snippets)
             
             # Call Gemini API with timeout (5 seconds) and retry (2 retries)
-            logger.info(f"Generating summary from {len(search_results)} search results")
+            api_start = time.time()
             response = await self.gemini_service._generate_content(
                 prompt,
                 operation="summary_generation",
                 timeout=5.0,
                 max_retries=2
+            )
+            api_time = time.time() - api_start
+            
+            logger.debug(
+                f"[SUMMARY] API response received | "
+                f"response_length={len(response)} "
+                f"api_time={api_time:.3f}s"
             )
             
             # Add source attribution
@@ -121,9 +142,14 @@ class SummaryGenerator:
             # Calculate confidence based on search result quality
             confidence = self._calculate_confidence(search_results)
             
+            total_time = time.time() - start_time
             logger.info(
-                f"Generated summary with confidence {confidence:.2f} "
-                f"from {len(search_results)} sources"
+                f"[SUMMARY] Generation complete | "
+                f"confidence={confidence:.3f} "
+                f"sources={len(search_results)} "
+                f"summary_length={len(summary_with_sources)} "
+                f"code_snippets={len(code_snippets)} "
+                f"total_time={total_time:.3f}s"
             )
             
             return InstantAnswer(
@@ -134,7 +160,15 @@ class SummaryGenerator:
             )
         
         except Exception as e:
-            logger.error(f"Summary generation failed: {e}")
+            total_time = time.time() - start_time
+            logger.error(
+                f"[SUMMARY] Generation failed | "
+                f"error={str(e)} "
+                f"search_results={len(search_results)} "
+                f"question_preview={question[:50]} "
+                f"duration={total_time:.3f}s",
+                exc_info=True
+            )
             raise
     
     def _extract_code_snippets(self, search_results: List[SearchResult]) -> List[str]:

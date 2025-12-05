@@ -113,14 +113,33 @@ class SemanticSearchEngine:
         
         Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 8.2, 8.4
         """
+        import time
+        start_time = time.time()
+        
         try:
+            logger.info(
+                f"[SEARCH] Starting search | "
+                f"query_length={len(query)} "
+                f"room={room_filter} "
+                f"type_filter={message_type_filter.value if message_type_filter else 'any'} "
+                f"limit={limit} "
+                f"min_similarity={min_similarity}"
+            )
+            
             # Generate embedding for the query with timeout (2 seconds)
-            logger.info(f"Generating embedding for query: {query[:50]}...")
+            embed_start = time.time()
             query_embedding = await with_timeout(
                 self.generate_embedding,
                 query,
                 timeout=2.0,
                 operation_name="embedding_generation"
+            )
+            embed_time = time.time() - embed_start
+            
+            logger.debug(
+                f"[SEARCH] Embedding generated | "
+                f"dimensions={len(query_embedding)} "
+                f"duration={embed_time:.3f}s"
             )
             
             # Build metadata filter with proper ChromaDB operators
@@ -134,12 +153,8 @@ class SemanticSearchEngine:
             else:
                 where_filter = {"room": {"$eq": room_filter}}
             
-            logger.info(
-                f"Searching ChromaDB with filters: room={room_filter}, "
-                f"message_type={message_type_filter.value if message_type_filter else 'any'}"
-            )
-            
             # Query ChromaDB for similar vectors with retry (1 retry, 0.5s delay)
+            query_start = time.time()
             results = await retry_with_backoff(
                 self._query_chromadb,
                 query_embedding,
@@ -149,6 +164,13 @@ class SemanticSearchEngine:
                 initial_delay=0.5,
                 operation_name="chromadb_query"
             )
+            query_time = time.time() - query_start
+            
+            logger.debug(
+                f"[SEARCH] ChromaDB query complete | "
+                f"raw_results={len(results.get('ids', [[]])[0]) if results else 0} "
+                f"duration={query_time:.3f}s"
+            )
             
             # Parse and rank results
             search_results = self._parse_search_results(results, min_similarity)
@@ -157,15 +179,38 @@ class SemanticSearchEngine:
             search_results.sort(key=lambda x: x.similarity_score, reverse=True)
             search_results = search_results[:limit]
             
-            logger.info(
-                f"Found {len(search_results)} results above similarity threshold "
-                f"{min_similarity}"
-            )
+            total_time = time.time() - start_time
+            
+            if search_results:
+                avg_similarity = sum(r.similarity_score for r in search_results) / len(search_results)
+                top_similarity = search_results[0].similarity_score if search_results else 0
+                logger.info(
+                    f"[SEARCH] Search complete | "
+                    f"results={len(search_results)} "
+                    f"avg_similarity={avg_similarity:.3f} "
+                    f"top_similarity={top_similarity:.3f} "
+                    f"threshold={min_similarity} "
+                    f"total_time={total_time:.3f}s"
+                )
+            else:
+                logger.info(
+                    f"[SEARCH] Search complete | "
+                    f"results=0 "
+                    f"threshold={min_similarity} "
+                    f"total_time={total_time:.3f}s"
+                )
             
             return search_results
         
         except Exception as e:
-            logger.error(f"Search failed: {e}")
+            total_time = time.time() - start_time
+            logger.error(
+                f"[SEARCH] Search failed | "
+                f"error={str(e)} "
+                f"query_preview={query[:50]} "
+                f"duration={total_time:.3f}s",
+                exc_info=True
+            )
             raise
     
     async def _query_chromadb(

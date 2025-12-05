@@ -82,27 +82,43 @@ class MessageClassifier:
         
         Requirements: 2.1, 2.2, 2.3, 2.5, 8.1, 8.4
         """
+        import time
+        start_time = time.time()
+        
         try:
             # Detect code blocks first (independent of AI classification)
             contains_code = self._detect_code_blocks(message)
+            
+            logger.debug(
+                f"[CLASSIFIER] Starting classification | "
+                f"message_length={len(message)} "
+                f"contains_code={contains_code}"
+            )
             
             # Create classification prompt
             prompt = self._create_classification_prompt(message)
             
             # Call Gemini API with timeout (3 seconds) and retry (2 retries)
+            api_start = time.time()
             response = await self.gemini_service._generate_content(
                 prompt,
                 operation="message_classification",
                 timeout=3.0,
                 max_retries=2
             )
+            api_time = time.time() - api_start
             
             # Parse the response
             message_type, confidence, reasoning = self._parse_classification_response(response)
             
+            total_time = time.time() - start_time
             logger.info(
-                f"Classified message as {message_type.value} "
-                f"(confidence: {confidence:.2f}, contains_code: {contains_code})"
+                f"[CLASSIFIER] Classification complete | "
+                f"type={message_type.value} "
+                f"confidence={confidence:.3f} "
+                f"contains_code={contains_code} "
+                f"api_time={api_time:.3f}s "
+                f"total_time={total_time:.3f}s"
             )
             
             return MessageClassification(
@@ -113,7 +129,14 @@ class MessageClassifier:
             )
         
         except Exception as e:
-            logger.error(f"Classification failed: {e}")
+            total_time = time.time() - start_time
+            logger.error(
+                f"[CLASSIFIER] Classification failed | "
+                f"error={str(e)} "
+                f"message_preview={message[:50]} "
+                f"duration={total_time:.3f}s",
+                exc_info=True
+            )
             raise
     
     def _detect_code_blocks(self, message: str) -> bool:
