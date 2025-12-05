@@ -41,6 +41,113 @@ The Phantom Link BBS application uses environment variables for configuration ma
   - Default: `8000`
   - Must be between 1 and 65535
 
+### Gemini AI Configuration
+
+- **GEMINI_API_KEY**: API key for Google Gemini AI service
+  - Default: None (must be set)
+  - Get your API key from: https://makersuite.google.com/app/apikey
+
+- **GEMINI_MODEL**: Gemini model to use
+  - Default: `gemini-2.0-flash`
+  - Example: `gemini-pro`, `gemini-2.0-flash`
+
+- **GEMINI_TEMPERATURE**: Temperature for AI generation (controls randomness)
+  - Default: `0.5`
+  - Must be between 0.0 and 2.0
+  - Lower values = more deterministic, Higher values = more creative
+
+- **GEMINI_MAX_TOKENS**: Maximum tokens for AI responses
+  - Default: `500`
+  - Must be a positive integer
+
+### Profile Tracking Configuration
+
+- **PROFILE_RETENTION_DAYS**: Days to retain user profile data
+  - Default: `30`
+  - Must be a positive integer
+
+- **PROFILE_CACHE_TTL_SECONDS**: Cache TTL for profile data in seconds
+  - Default: `300` (5 minutes)
+  - Must be non-negative
+
+### Support Bot Configuration
+
+- **SUPPORT_BOT_ENABLED**: Enable/disable the empathetic support bot
+  - Default: `true`
+  - Valid values: `true`, `false`, `1`, `0`, `yes`, `no`
+
+- **SUPPORT_SENTIMENT_THRESHOLD**: Sentiment threshold for support bot activation
+  - Default: `0.6`
+  - Must be between 0.0 and 1.0
+  - Lower values = more sensitive to negative sentiment
+
+- **SUPPORT_CRISIS_DETECTION_ENABLED**: Enable/disable crisis detection
+  - Default: `true`
+  - Valid values: `true`, `false`, `1`, `0`, `yes`, `no`
+
+### Instant Answer Recall Configuration
+
+The Instant Answer Recall system provides AI-powered contextual help by searching historical conversations in the Techline room.
+
+- **INSTANT_ANSWER_ENABLED**: Enable/disable the instant answer system
+  - Default: `true`
+  - Valid values: `true`, `false`, `1`, `0`, `yes`, `no`
+  - When disabled, messages are processed normally without instant answers
+
+- **INSTANT_ANSWER_MIN_SIMILARITY**: Minimum similarity threshold for search results
+  - Default: `0.7`
+  - Must be between 0.0 and 1.0
+  - Higher values = more strict matching (fewer but more relevant results)
+  - Lower values = more lenient matching (more results but potentially less relevant)
+  - Recommended range: 0.6 - 0.8
+
+- **INSTANT_ANSWER_MAX_RESULTS**: Maximum number of search results to use for summary
+  - Default: `5`
+  - Must be a positive integer
+  - Higher values = more comprehensive summaries but slower generation
+  - Lower values = faster but potentially less complete summaries
+  - Recommended range: 3 - 10
+
+- **INSTANT_ANSWER_CONFIDENCE_THRESHOLD**: Minimum confidence for message classification
+  - Default: `0.6`
+  - Must be between 0.0 and 1.0
+  - Higher values = only high-confidence classifications trigger instant answers
+  - Lower values = more messages may trigger instant answers
+  - Recommended range: 0.5 - 0.7
+
+- **INSTANT_ANSWER_MAX_SUMMARY_TOKENS**: Maximum tokens for AI-generated summaries
+  - Default: `300`
+  - Must be a positive integer
+  - Higher values = longer, more detailed summaries
+  - Lower values = shorter, more concise summaries
+  - Recommended range: 200 - 500
+
+- **CHROMADB_HOST**: ChromaDB server hostname
+  - Default: `localhost`
+  - Example: `chromadb.example.com`
+  - Used for vector database connection
+
+- **CHROMADB_PORT**: ChromaDB server port
+  - Default: `8001`
+  - Must be between 1 and 65535
+  - Standard ChromaDB port is 8000, but 8001 avoids conflict with FastAPI
+
+- **CHROMADB_COLLECTION_NAME**: Name of the ChromaDB collection for messages
+  - Default: `techline_messages`
+  - Must be non-empty
+  - Collection is created automatically if it doesn't exist
+
+- **INSTANT_ANSWER_TARGET_ROOM**: Room where instant answers are active
+  - Default: `Techline`
+  - Must be non-empty
+  - Only messages in this room trigger instant answer processing
+
+- **INSTANT_ANSWER_AUTO_INDEX_ON_STARTUP**: Auto-index historical messages on startup
+  - Default: `false`
+  - Valid values: `true`, `false`, `1`, `0`, `yes`, `no`
+  - When enabled, indexes all historical Techline messages on application startup
+  - Warning: Can be slow for large message histories
+
 ## Usage
 
 ### Loading Configuration
@@ -118,6 +225,46 @@ ConfigurationError: Configuration validation failed:
   - PORT must be between 1 and 65535, got: 70000
 ```
 
+## Instant Answer System Tuning
+
+The instant answer system can be tuned for different use cases:
+
+### High Precision (Fewer but more relevant results)
+```bash
+INSTANT_ANSWER_MIN_SIMILARITY=0.8
+INSTANT_ANSWER_CONFIDENCE_THRESHOLD=0.7
+INSTANT_ANSWER_MAX_RESULTS=3
+```
+
+### Balanced (Recommended for most cases)
+```bash
+INSTANT_ANSWER_MIN_SIMILARITY=0.7
+INSTANT_ANSWER_CONFIDENCE_THRESHOLD=0.6
+INSTANT_ANSWER_MAX_RESULTS=5
+```
+
+### High Recall (More results, potentially less precise)
+```bash
+INSTANT_ANSWER_MIN_SIMILARITY=0.6
+INSTANT_ANSWER_CONFIDENCE_THRESHOLD=0.5
+INSTANT_ANSWER_MAX_RESULTS=8
+```
+
+### ChromaDB Setup
+
+The instant answer system requires ChromaDB to be running. You can start ChromaDB using Docker:
+
+```bash
+docker run -d -p 8001:8000 chromadb/chroma
+```
+
+Or install and run locally:
+
+```bash
+pip install chromadb
+chroma run --host localhost --port 8001
+```
+
 ## Production Deployment
 
 For production deployment:
@@ -130,7 +277,8 @@ For production deployment:
 3. Set all required environment variables
 4. Use a production-grade database (PostgreSQL recommended)
 5. Configure CORS_ORIGINS to only include your production domains
-6. Consider using a secrets management service (AWS Secrets Manager, HashiCorp Vault, etc.)
+6. Set up ChromaDB with persistent storage for instant answer system
+7. Consider using a secrets management service (AWS Secrets Manager, HashiCorp Vault, etc.)
 
 ## Security Considerations
 
@@ -173,3 +321,39 @@ Check the error message for specific validation failures. Common issues:
 ### Configuration not updating
 
 If you change environment variables while the application is running, you need to restart the application. The configuration is loaded once at startup.
+
+### ChromaDB connection errors
+
+If you see errors about ChromaDB connection:
+- Ensure ChromaDB is running on the configured host and port
+- Check `CHROMADB_HOST` and `CHROMADB_PORT` are correct
+- Verify network connectivity to ChromaDB server
+- Check ChromaDB logs for errors
+
+### Instant answers not appearing
+
+If instant answers are not being generated:
+- Verify `INSTANT_ANSWER_ENABLED=true`
+- Check that you're in the configured `INSTANT_ANSWER_TARGET_ROOM` (default: Techline)
+- Ensure `GEMINI_API_KEY` is set and valid
+- Check that ChromaDB is running and accessible
+- Review application logs for classification or search errors
+- Try lowering `INSTANT_ANSWER_MIN_SIMILARITY` threshold
+- Try lowering `INSTANT_ANSWER_CONFIDENCE_THRESHOLD`
+
+### Too many or irrelevant instant answers
+
+If instant answers are too frequent or not relevant:
+- Increase `INSTANT_ANSWER_MIN_SIMILARITY` (try 0.75 or 0.8)
+- Increase `INSTANT_ANSWER_CONFIDENCE_THRESHOLD` (try 0.7)
+- Reduce `INSTANT_ANSWER_MAX_RESULTS` to focus on top matches
+- Check that historical messages are properly indexed
+
+### Slow instant answer generation
+
+If instant answers are taking too long:
+- Reduce `INSTANT_ANSWER_MAX_RESULTS` (try 3)
+- Reduce `INSTANT_ANSWER_MAX_SUMMARY_TOKENS` (try 200)
+- Check ChromaDB performance and indexing
+- Verify network latency to Gemini API
+- Consider using a faster Gemini model

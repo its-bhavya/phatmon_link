@@ -284,7 +284,12 @@
   - Ensure instant answers appear before public question
   - _Requirements: 7.1, 7.2, 7.4_
 
-- [ ] 12. Add configuration and environment variables
+- [x] 12. Add configuration and environment variables
+
+
+
+
+
   - Add INSTANT_ANSWER_ENABLED to .env.example
   - Add INSTANT_ANSWER_MIN_SIMILARITY to .env.example
   - Add INSTANT_ANSWER_MAX_RESULTS to .env.example
