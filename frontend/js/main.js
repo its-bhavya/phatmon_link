@@ -95,33 +95,30 @@ function init() {
  */
 function startDialUpSequence() {
     const dialUpLines = [
-        '  ██████   █████  ████████ ███████ ██   ██ ███████ ███████ ██████  ███████ ██████  ',
-        ' ██       ██   ██    ██    ██      ██  ██  ██      ██      ██   ██ ██      ██   ██ ',
-        ' ██   ███ ███████    ██    █████   █████   █████   █████   ██████  █████   ██████  ',
-        ' ██    ██ ██   ██    ██    ██      ██  ██  ██      ██      ██      ██      ██   ██ ',
-        '  ██████  ██   ██    ██    ███████ ██   ██ ███████ ███████ ██      ███████ ██   ██ ',
         '═══════════════════════════════════════════════════════════════════',
         'INITIALIZING MODEM...',
         'ATZ',
         'OK',
-        'ATDT 555-GATEKEEPER',
-        '♪♫♪ DIALING... ♪♫♪',
+        'ATDT 555-OBSIDIAN',
+        'DIALING...',
         'CONNECTING...',
         '.',
         '..',
         '...',
         '....',
+        '.....',
+        '......',
+        '.......',
+        '........',
+        '.........',
+        '..........',
         '✓ CARRIER DETECTED',
         '✓ NEGOTIATING PROTOCOL...',
         '✓ HANDSHAKE COMPLETE',
         'CONNECTED AT 14400 BAUD',
         '═══════════════════════════════════════════════════════════════════',
-        '  ██████   ██████  ████████ ████████ ██   ██ ████████ ████████ ██████  ████████ ██████  ',
-        ' ██       ██    ██    ██    ██       ██  ██  ██       ██       ██   ██ ██       ██   ██ ',
-        ' ██   ███ ████████    ██    ██████   █████   ██████   ██████   ██████  ██████   ██████  ',
-        ' ██    ██ ██    ██    ██    ██       ██  ██  ██       ██       ██      ██       ██   ██ ',
-        '  ██████  ██    ██    ██    ████████ ██   ██ ████████ ████████ ██      ████████ ██   ██ ',
-        '                        ⚠  SECURE CONNECTION ESTABLISHED  ⚠',
+        '                    ⚠  SECURE CONNECTION ESTABLISHED  ⚠',
+        '                         Welcome to OBSIDIAN BBS: A retro terminal experience for the modern digital wanderer',
         '═══════════════════════════════════════════════════════════════════'
     ];
     
@@ -129,27 +126,31 @@ function startDialUpSequence() {
     
     function showNextLine() {
         if (lineIndex < dialUpLines.length) {
+            const line = dialUpLines[lineIndex];
+
+            // Detect message type
+            const isSeparator = /^═+$/.test(line.trim()); // Line with only ═ characters
+            const isAsciiArt = /[█▓▒░║╔╗╚╝]/.test(line) || /\*{3,}/.test(line);
+            const messageType = isSeparator ? 'separator' : (isAsciiArt ? 'ascii_art' : 'system');
+
             chatDisplay.addMessage({
-                type: 'system',
-                content: dialUpLines[lineIndex]
+                type: messageType,
+                content: line
             });
+
             lineIndex++;
-            
-            const line = dialUpLines[lineIndex - 1];
-            const delay = line === '' ? 50 : 
-                         line.includes('♪') ? 800 :
-                         line === '.' ? 200 :
-                         line === '..' ? 200 :
-                         line === '...' ? 200 :
-                         line === '....' ? 400 :
-                         line.includes('═══') ? 100 :
-                         line.includes('██') ? 80 :
-                         200;
-            
+
+            const delay = line === '' ? 50 :
+                        line.includes('♪') ? 800 :
+                        ['.', '..', '...'].includes(line) ? 200 :
+                        line === '....' ? 400 :
+                        line.includes('═') ? 100 :
+                        line.includes('█') ? 80 :
+                        200;
+
             setTimeout(showNextLine, delay);
         }
     }
-    
     showNextLine();
 }
 
@@ -901,7 +902,7 @@ function handleWebSocketDisconnect(event) {
         chatDisplay.clear();
         chatDisplay.addMessage({
             type: 'system',
-            content: 'GATEKEEPER'
+            content: 'OBSIDIAN'
         });
         chatDisplay.addMessage({
             type: 'system',

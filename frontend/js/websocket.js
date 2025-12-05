@@ -1,5 +1,5 @@
 /**
- * WebSocket Client for GATEKEEPER BBS
+ * WebSocket Client for OBSIDIAN BBS
  * Manages WebSocket connection with automatic reconnection and exponential backoff
  */
 class WebSocketClient {
@@ -60,7 +60,7 @@ class WebSocketClient {
     this.isManualDisconnect = false;
     
     // Notify connection status
-    this.notifyStatus('Connected to GATEKEEPER');
+    this.notifyStatus('Connected to OBSIDIAN');
     
     // Call connect callbacks
     this.connectCallbacks.forEach(callback => {

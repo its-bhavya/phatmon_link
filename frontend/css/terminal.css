@@ -5,6 +5,8 @@
 
 /* Import retro terminal font */
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Mono:wght@400;700&display=swap');
+
 
 /* Root variables - Monochrome retro theme */
 :root {
@@ -163,6 +165,22 @@ body,
     text-shadow: none;
     font-weight: normal;
     white-space: pre-line;
+}
+
+.message.ascii-art, 
+.message.ascii-art pre, 
+.ascii-block {
+    font-family: "Noto Sans Mono", monospace !important;
+    white-space: pre !important;
+    letter-spacing: 0 !important;
+    line-height: 1.05;
+}
+
+/* Separator lines - no prefix, just the line */
+.message.separator {
+    color: var(--terminal-white);
+    text-align: left;
+    margin: 5px 0;
 }
 
 /* Error messages in white */

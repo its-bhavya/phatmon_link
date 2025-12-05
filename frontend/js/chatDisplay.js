@@ -68,6 +68,15 @@ export class ChatDisplay {
         if (message.type === 'system') {
             div.classList.add('system');
             div.innerHTML = `<span class="timestamp">${timestamp}</span> <span>* SYSTEM: ${this.escapeHtml(message.content)}</span>`;
+        } else if (message.type === 'ascii_art') {
+            div.classList.add('ascii-art');
+            div.innerHTML = `
+            <div class="timestamp">${timestamp}</div>
+            <pre class="ascii-block">* SYSTEM: ${this.escapeHtml(message.content)}</pre>
+        `;
+        } else if (message.type === 'separator') {
+            div.classList.add('separator');
+            div.innerHTML = `<span>${this.escapeHtml(message.content)}</span>`;
         } else if (message.type === 'room_change') {
             div.classList.add('room_change');
             div.innerHTML = `<span class="timestamp">${timestamp}</span> <span>* ROOM: ${this.escapeHtml(message.content)}</span>`;

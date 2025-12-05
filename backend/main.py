@@ -465,7 +465,7 @@ async def register(
     return AuthResponse(
         token=token,
         user=UserResponse.from_orm(user),
-        message=f"Welcome to Gatekeeper, {user.username}!"
+        message=f"Welcome to Obsidian, {user.username}!"
     )
 
 
@@ -537,7 +537,7 @@ async def login(
         last_login_str = user.last_login.strftime("%Y-%m-%d %H:%M:%S UTC")
         welcome_message = f"Welcome back, {user.username}! Last login: {last_login_str}"
     else:
-        welcome_message = f"Welcome to Gatekeeper, {user.username}!"
+        welcome_message = f"Welcome to Obsidian, {user.username}!"
     
     return AuthResponse(
         token=token,
@@ -740,9 +740,9 @@ async def websocket_endpoint(
         else:
             if user.last_login:
                 last_login_str = user.last_login.strftime("%Y-%m-%d %H:%M:%S UTC")
-                welcome_message = f"Welcome to Gatekeeper, {user.username}! Last login: {last_login_str}"
+                welcome_message = f"Welcome to Obsidian, {user.username}! Last login: {last_login_str}"
             else:
-                welcome_message = f"Welcome to Gatekeeper, {user.username}!"
+                welcome_message = f"Welcome to Obsidian, {user.username}!"
         
         await app.state.websocket_manager.send_to_user(websocket, {
             "type": "system",
