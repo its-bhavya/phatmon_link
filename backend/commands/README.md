@@ -152,7 +152,7 @@ print(response["content"])
 # Available Rooms:
 #   Lobby (3 users) - Main gathering space
 #   Techline (1 users) - Technology discussions
-#   Archives (0 users) - Historical content
+#   Arcade Hall (0 users) - Gaming and entertainment
 
 # Access structured data
 for room in response["rooms"]:
@@ -363,7 +363,7 @@ Available Rooms:
   Lobby (5 users) - Main gathering space
   Techline (2 users) - Technology discussions
   Arcade Hall (0 users) - Gaming and entertainment
-  Archives (1 users) - Historical content
+  Support (0 users) - Private space for emotional support
 ```
 
 ---
@@ -377,11 +377,10 @@ Shows all active users and their current room assignments.
 
 **Example Output:**
 ```
-Active Users (8):
+Active Users (7):
   alice - in Lobby
   bob - in Techline
   charlie - in Lobby
-  dave - in Archives
   eve - in Lobby
   frank - in Techline
   grace - in Arcade Hall
@@ -403,7 +402,7 @@ Switches the user to a different room.
 **Examples:**
 ```
 /join Techline          # Join the Techline room
-/join Archives          # Join the Archives room
+/join Arcade Hall       # Join the Arcade Hall room
 /join Lobby             # Return to the Lobby
 ```
 

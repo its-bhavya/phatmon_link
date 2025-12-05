@@ -5,7 +5,7 @@ A modern reimagining of the 1980s Bulletin Board System (BBS) that combines retr
 ## Features
 
 - **Retro Terminal UI**: Authentic CRT monitor effects including scanlines, phosphor glow, and subtle flicker
-- **Multi-Room Chat**: Navigate between different themed rooms (Lobby, Techline, Arcade Hall, Archives)
+- **Multi-Room Chat**: Navigate between different themed rooms (Lobby, Techline, Arcade Hall)
 - **Real-Time Communication**: WebSocket-based instant messaging with sub-100ms latency
 - **Instant Answer Recall**: AI-powered knowledge system that searches historical conversations and provides immediate, contextually relevant answers in Techline
 - **Empathetic Support Bot**: AI-powered emotional support that detects distress and provides compassionate assistance
@@ -355,7 +355,6 @@ Commands are prefixed with `/` and entered in the command line bar:
 - **Lobby**: Main gathering space, default entry point for all users
 - **Techline**: Technology and programming discussions
 - **Arcade Hall**: Gaming and entertainment
-- **Archives**: Historical BBS content and nostalgia
 - **Support Rooms**: Private rooms created automatically when emotional distress is detected
 
 ## Instant Answer Recall

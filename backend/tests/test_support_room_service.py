@@ -233,7 +233,7 @@ class TestSupportRoomService:
         
         room1 = support_service.create_support_room(user1, previous_room="Lobby")
         room2 = support_service.create_support_room(user2, previous_room="Techline")
-        room3 = support_service.create_support_room(user3, previous_room="Archives")
+        room3 = support_service.create_support_room(user3, previous_room="Arcade Hall")
         
         # All sessions should be tracked
         assert len(support_service.active_support_rooms) == 3
@@ -244,7 +244,7 @@ class TestSupportRoomService:
         # All previous rooms should be tracked
         assert support_service.previous_rooms[1] == "Lobby"
         assert support_service.previous_rooms[2] == "Techline"
-        assert support_service.previous_rooms[3] == "Archives"
+        assert support_service.previous_rooms[3] == "Arcade Hall"
         
         # All rooms should exist
         assert room1 in room_service.rooms

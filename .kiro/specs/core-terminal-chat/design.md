@@ -309,7 +309,6 @@ class Room:
 - **Lobby**: Main gathering space, default entry point
 - **Techline**: Technology and programming discussions
 - **Arcade Hall**: Gaming and entertainment
-- **Archives**: Historical BBS content and nostalgia
 
 #### 4. Command Handler
 Processes user commands and returns appropriate responses.
@@ -402,8 +401,7 @@ active_connections: Dict[WebSocket, ActiveUser] = {}
 rooms: Dict[str, Room] = {
     "lobby": Room(name="Lobby", description="Main gathering space", users=set()),
     "techline": Room(name="Techline", description="Tech discussions", users=set()),
-    "arcade_hall": Room(name="Arcade Hall", description="Gaming zone", users=set()),
-    "archives": Room(name="Archives", description="BBS history", users=set())
+    "arcade_hall": Room(name="Arcade Hall", description="Gaming zone", users=set())
 }
 
 # User to WebSocket mapping
@@ -694,7 +692,7 @@ def test_invalid_username_rejected(username):
 # Feature: core-terminal-chat, Property 10: Message isolation by room
 @given(
     st.text(min_size=1, max_size=100),  # message content
-    st.sampled_from(["lobby", "techline", "arcade_hall", "archives"])  # rooms
+    st.sampled_from(["lobby", "techline", "arcade_hall"])  # rooms
 )
 def test_message_isolation(message_content, target_room):
     """For any message sent to a room, only users in that room receive it"""

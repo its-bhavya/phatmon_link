@@ -36,15 +36,13 @@ def mock_room_service():
     # Create default rooms
     lobby = Room("Lobby", "Main gathering space")
     techline = Room("Techline", "Technology discussions")
-    archives = Room("Archives", "Historical content")
     
     service.rooms = {
         "Lobby": lobby,
-        "Techline": techline,
-        "Archives": archives
+        "Techline": techline
     }
     
-    service.get_rooms = Mock(return_value=[lobby, techline, archives])
+    service.get_rooms = Mock(return_value=[lobby, techline])
     service.get_room = Mock(side_effect=lambda name: service.rooms.get(name))
     
     return service
@@ -66,7 +64,7 @@ def mock_user_profile():
         user_id=1,
         interests=["programming", "technology"],
         frequent_rooms={"Lobby": 10, "Techline": 5},
-        recent_rooms=["Lobby", "Techline", "Archives"],
+        recent_rooms=["Lobby", "Techline"],
         command_history=[],
         unfinished_boards=[],
         activity_baseline={},

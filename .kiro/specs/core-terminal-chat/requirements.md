@@ -7,7 +7,7 @@ Phantom Link is a modern reimagining of the 1980s Bulletin Board System (BBS) th
 ## Glossary
 
 - **Terminal UI**: The text-based user interface component that renders ANSI colors, CRT effects, and command line interactions
-- **Room**: A distinct chat space or board where users can gather and communicate (e.g., Lobby, Techline, Arcade Hall, Archives)
+- **Room**: A distinct chat space or board where users can gather and communicate (e.g., Lobby, Techline, Arcade Hall)
 - **WebSocket Connection**: A persistent bidirectional communication channel between the client and server for real-time message delivery
 - **Active Users List**: A real-time display of users currently connected to the system
 - **Command**: A text instruction prefixed with "/" that triggers system actions (e.g., /help, /rooms, /users, /clear)
@@ -62,7 +62,7 @@ Phantom Link is a modern reimagining of the 1980s Bulletin Board System (BBS) th
 
 #### Acceptance Criteria
 
-1. WHEN the System initializes THEN the System SHALL create four default rooms: Lobby, Techline, Arcade Hall, and Archives
+1. WHEN the System initializes THEN the System SHALL create three default rooms: Lobby, Techline, and Arcade Hall
 2. WHEN an authenticated user enters the System THEN the System SHALL place the user in the Lobby room
 3. WHEN an authenticated user requests to change rooms THEN the System SHALL move the user to the specified room and notify other users
 4. WHEN an authenticated user enters a room THEN the System SHALL display the room name and description to the user

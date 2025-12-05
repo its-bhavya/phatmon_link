@@ -74,22 +74,22 @@ def test_get_profile_caches(profile_service, test_user):
 
 def test_record_room_visit(profile_service, test_user):
     """Test recording room visits."""
-    profile_service.record_room_visit(test_user.id, "Archives")
+    profile_service.record_room_visit(test_user.id, "Techline")
     profile = profile_service.get_profile(test_user.id)
     
     # Check recent rooms
-    assert "Archives" in profile.recent_rooms
-    assert profile.recent_rooms[0] == "Archives"
+    assert "Techline" in profile.recent_rooms
+    assert profile.recent_rooms[0] == "Techline"
     
     # Check frequent rooms
-    assert profile.frequent_rooms["Archives"] == 1
+    assert profile.frequent_rooms["Techline"] == 1
     
     # Visit again
-    profile_service.record_room_visit(test_user.id, "Archives")
+    profile_service.record_room_visit(test_user.id, "Techline")
     profile = profile_service.get_profile(test_user.id)
     
     # Count should increment
-    assert profile.frequent_rooms["Archives"] == 2
+    assert profile.frequent_rooms["Techline"] == 2
 
 
 def test_record_room_visit_recent_limit(profile_service, test_user):
@@ -127,13 +127,13 @@ def test_record_room_visit_moves_to_front(profile_service, test_user):
 
 def test_record_command(profile_service, test_user, db_session):
     """Test recording command execution."""
-    profile_service.record_command(test_user.id, "/join Archives")
+    profile_service.record_command(test_user.id, "/join Techline")
     
     profile = profile_service.get_profile(test_user.id)
     
     # Check command history in profile
     assert len(profile.command_history) == 1
-    assert profile.command_history[0][0] == "/join Archives"
+    assert profile.command_history[0][0] == "/join Techline"
     assert isinstance(profile.command_history[0][1], datetime)
     
     # Check database
@@ -141,7 +141,7 @@ def test_record_command(profile_service, test_user, db_session):
         CommandHistory.user_id == test_user.id
     ).first()
     assert command_record is not None
-    assert command_record.command == "/join Archives"
+    assert command_record.command == "/join Techline"
 
 
 def test_record_command_history_limit(profile_service, test_user):
@@ -331,7 +331,7 @@ def test_detect_command_repetition_no_repetition(profile_service, test_user):
     
     now = datetime.utcnow()
     profile.command_history = [
-        ("/join Archives", now),
+        ("/join Techline", now),
         ("/list", now - timedelta(seconds=10)),
         ("/help", now - timedelta(seconds=20))
     ]
@@ -397,7 +397,7 @@ def test_update_activity_baseline(profile_service, test_user):
 def test_profile_persistence(profile_service, test_user, db_session):
     """Test that profile changes are persisted to database."""
     # Make changes to profile
-    profile_service.record_room_visit(test_user.id, "Archives")
+    profile_service.record_room_visit(test_user.id, "Techline")
     profile_service.update_interests(test_user.id, "testing database persistence")
     
     # Clear cache
@@ -407,5 +407,5 @@ def test_profile_persistence(profile_service, test_user, db_session):
     profile = profile_service.get_profile(test_user.id)
     
     # Changes should be persisted
-    assert "Archives" in profile.recent_rooms
-    assert profile.frequent_rooms["Archives"] == 1
+    assert "Techline" in profile.recent_rooms
+    assert profile.frequent_rooms["Techline"] == 1

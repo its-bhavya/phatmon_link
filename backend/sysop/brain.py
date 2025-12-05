@@ -267,13 +267,28 @@ class SysOpBrain:
             
             # Generate board description using AI
             profile_data = {"interests": [], "frequent_rooms": {}}
-            description_prompt = f"Generate a brief, engaging description (1 sentence) for a BBS board about: {topic}"
+            description_prompt = f"""Generate ONLY a brief, engaging description (1 sentence, max 100 characters) for a BBS board about: {topic}
+
+RULES:
+- Output ONLY the description sentence
+- Do NOT include greetings like "Hey there"
+- Do NOT include suggestions or recommendations
+- Just describe what the room is for
+- Keep it under 100 characters
+- Do not attempt to explain any other rooms or any other thing.
+
+Example: "Discuss your favorite books and literary adventures"
+"""
             
             try:
                 description = await self.gemini.generate_sysop_suggestion(
                     user_profile=profile_data,
                     context=description_prompt
                 )
+                # Clean up any extra text - take only first sentence
+                description = description.split('.')[0].strip()
+                if len(description) > 100:
+                    description = description[:97] + "..."
             except Exception as e:
                 logger.warning(f"Failed to generate AI description: {e}")
                 description = f"Discussion board for {topic}"

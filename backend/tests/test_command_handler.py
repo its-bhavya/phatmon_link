@@ -69,14 +69,13 @@ class TestCommandHandler:
         assert "content" in response
         assert "rooms" in response
         assert isinstance(response["rooms"], list)
-        assert len(response["rooms"]) == 5
+        assert len(response["rooms"]) == 4
         
         # Check that all default rooms are present
         room_names = [room["name"] for room in response["rooms"]]
         assert "Lobby" in room_names
         assert "Techline" in room_names
         assert "Arcade Hall" in room_names
-        assert "Archives" in room_names
         assert "Support" in room_names
         
         # Check room structure
@@ -103,7 +102,6 @@ class TestCommandHandler:
         assert rooms_dict["Lobby"]["count"] == 2
         assert rooms_dict["Techline"]["count"] == 1
         assert rooms_dict["Arcade Hall"]["count"] == 0
-        assert rooms_dict["Archives"]["count"] == 0
         assert rooms_dict["Support"]["count"] == 0
     
     def test_users_command_no_users(self, command_handler, test_user):

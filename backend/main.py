@@ -913,27 +913,30 @@ async def websocket_endpoint(
                                 app.state.websocket_manager.update_user_room(websocket, suggested_room)
                                 current_room = suggested_room
                                 
-                                # Send room_change message FIRST to update side panel
-                                await app.state.websocket_manager.send_to_user(websocket, {
-                                    "type": "room_change",
-                                    "room": suggested_room,
-                                    "content": f"You are now in: {suggested_room}"
-                                })
-                                
-                                # Send room entry message to user
+                                # Send messages in correct order
                                 room = app.state.room_service.get_room(suggested_room)
                                 if room:
+                                    # 1. First: Moving message
                                     await app.state.websocket_manager.send_to_user(websocket, {
                                         "type": "system",
                                         "content": f"\n[SYSOP] Moving you to {suggested_room} - better fit for your message."
                                     })
                                     
+                                    # 2. Second: Room header
                                     await app.state.websocket_manager.send_to_user(websocket, {
                                         "type": "system",
                                         "content": f"\n=== {room.name} ===\n{room.description}\n"
                                     })
-                                    
-                                    # Send recent message history
+                                
+                                # 3. Third: Update side panel (silent, no message displayed)
+                                await app.state.websocket_manager.send_to_user(websocket, {
+                                    "type": "room_change",
+                                    "room": suggested_room,
+                                    "content": ""  # Empty content so it doesn't display
+                                })
+                                
+                                # Send recent message history
+                                if room:
                                     recent_messages = room.get_recent_messages(limit=20)
                                     if recent_messages:
                                         await app.state.websocket_manager.send_to_user(websocket, {
@@ -942,10 +945,10 @@ async def websocket_endpoint(
                                         })
                                         for msg in recent_messages:
                                             await app.state.websocket_manager.send_to_user(websocket, msg)
-                                    
-                                    # Notify new room of user entry
-                                    await app.state.websocket_manager.broadcast_to_room(
-                                        suggested_room,
+                                
+                                # Notify new room of user entry
+                                await app.state.websocket_manager.broadcast_to_room(
+                                    suggested_room,
                                         {
                                             "type": "system",
                                             "content": f"* {user.username} has entered the room"

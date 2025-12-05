@@ -41,7 +41,7 @@
 - [x] 5. Implement room service and models
   - Create rooms/service.py with RoomService class
   - Define Room model with name, description, users set
-  - Implement create_default_rooms() for Lobby, Techline, Arcade Hall, Archives
+  - Implement create_default_rooms() for Lobby, Techline, Arcade Hall
   - Implement get_rooms() to list all rooms
   - Implement join_room() to add user to room
   - Implement leave_room() to remove user from room

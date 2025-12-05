@@ -17,7 +17,7 @@ class RoomService:
     Room service handling room creation, user assignments, and room state.
     
     This service provides:
-    - Default room creation (Lobby, Techline, Arcade Hall, Archives)
+    - Default room creation (Lobby, Techline, Arcade Hall)
     - Room listing and retrieval
     - User joining and leaving rooms
     - Room member queries
@@ -37,7 +37,6 @@ class RoomService:
         - Lobby: Main gathering space, default entry point
         - Techline: Technology and programming discussions
         - Arcade Hall: Gaming and entertainment
-        - Archives: Historical BBS content and nostalgia
         - Support: Empathetic support bot for emotional support
         
         This method is idempotent - calling it multiple times won't create duplicates.
@@ -46,7 +45,6 @@ class RoomService:
             ("Lobby", "Main gathering space - Welcome to Obsidian!"),
             ("Techline", "Technology and programming discussions"),
             ("Arcade Hall", "Play retro games (Snake, Tetris, Breakout)"),
-            ("Archives", "Historical BBS content and nostalgia"),
             ("Support", "Private space for emotional support and listening")
         ]
         

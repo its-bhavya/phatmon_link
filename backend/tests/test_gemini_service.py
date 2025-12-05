@@ -136,7 +136,7 @@ async def test_generate_hostile_response_fallback(mock_genai):
 async def test_generate_psychic_grip_narrative_success(mock_genai):
     """Test successful Psychic Grip narrative generation."""
     mock_response = Mock()
-    mock_response.text = "...I see you return to the Archives... again and again..."
+    mock_response.text = "...I see you return to the Techline... again and again..."
     
     mock_model = Mock()
     mock_model.generate_content = Mock(return_value=mock_response)
@@ -145,8 +145,8 @@ async def test_generate_psychic_grip_narrative_success(mock_genai):
     service = GeminiService(api_key="test-key")
     
     user_profile = {
-        "frequent_rooms": {"Archives": 15},
-        "recent_rooms": ["Archives", "Lobby", "Archives"],
+        "frequent_rooms": {"Techline": 15},
+        "recent_rooms": ["Techline", "Lobby", "Techline"],
         "unfinished_boards": ["Project X"],
         "command_history": [("help", "2024-01-01"), ("list", "2024-01-01")]
     }
@@ -155,7 +155,7 @@ async def test_generate_psychic_grip_narrative_success(mock_genai):
     
     # Result is a list of strings
     result_text = " ".join(result)
-    assert "Archives" in result_text or "..." in result_text
+    assert "Techline" in result_text or "..." in result_text
 
 
 @patch('backend.vecna.gemini_service.genai')
@@ -225,7 +225,7 @@ def test_fallback_psychic_grip_with_rooms(mock_genai):
     service = GeminiService(api_key="test-key")
     
     user_profile = {
-        "frequent_rooms": {"Archives": 20}
+        "frequent_rooms": {"Techline": 20}
     }
     
     # Test with mskr username to get personalized messages with room names
@@ -233,7 +233,7 @@ def test_fallback_psychic_grip_with_rooms(mock_genai):
     
     # Result is a list of strings
     result_text = " ".join(result)
-    assert "Archives" in result_text
+    assert "Techline" in result_text
     assert "..." in result_text
 
 
