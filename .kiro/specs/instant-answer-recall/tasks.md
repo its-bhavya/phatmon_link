@@ -257,7 +257,12 @@
   - **Property 24: Original message preservation**
   - **Validates: Requirements 7.4**
 
-- [ ] 10. Add background message indexing for existing messages
+- [x] 10. Add background message indexing for existing messages
+
+
+
+
+
   - Create background task to index historical Techline messages
   - Implement batch processing for efficiency
   - Add progress logging
@@ -268,7 +273,7 @@
 - [ ] 11. Implement frontend instant answer display
   - Add handling for "instant_answer" message type in websocket.js
   - Create styled display for instant answers in chatDisplay.js
-  - Add visual distinction between instant answers and regular messages
+  - Add visual distinction between instant answers and regular messages, with the instant answers following a presentation similar to the support messages in the support room. 
   - Display source attribution (authors and timestamps)
   - Add disclaimer text to instant answer display
   - Ensure instant answers appear before public question

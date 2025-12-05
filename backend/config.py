@@ -68,6 +68,7 @@ class Config:
     CHROMADB_PORT: int
     CHROMADB_COLLECTION_NAME: str
     INSTANT_ANSWER_TARGET_ROOM: str
+    INSTANT_ANSWER_AUTO_INDEX_ON_STARTUP: bool
     
     def __init__(self):
         """Initialize configuration from environment variables."""
@@ -230,6 +231,10 @@ class Config:
         
         self.CHROMADB_COLLECTION_NAME = os.getenv("CHROMADB_COLLECTION_NAME", "techline_messages")
         self.INSTANT_ANSWER_TARGET_ROOM = os.getenv("INSTANT_ANSWER_TARGET_ROOM", "Techline")
+        
+        # Parse Instant Answer auto-index on startup
+        instant_answer_auto_index_str = os.getenv("INSTANT_ANSWER_AUTO_INDEX_ON_STARTUP", "false")
+        self.INSTANT_ANSWER_AUTO_INDEX_ON_STARTUP = instant_answer_auto_index_str.lower() in ("true", "1", "yes")
     
     def _validate_config(self):
         """

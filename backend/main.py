@@ -45,6 +45,7 @@ from backend.instant_answer.chroma_client import (
     close_chromadb_client
 )
 from backend.instant_answer.service import InstantAnswerService, User as InstantAnswerUser
+from backend.instant_answer.indexer import index_historical_messages
 
 
 @asynccontextmanager
@@ -129,6 +130,18 @@ async def lifespan(app: FastAPI):
                                 config=app.state.instant_answer_config
                             )
                             print(f"Instant Answer Recall system initialized for room: {config.INSTANT_ANSWER_TARGET_ROOM}")
+                            
+                            # Auto-index historical messages on startup if configured
+                            if config.INSTANT_ANSWER_AUTO_INDEX_ON_STARTUP:
+                                print(f"Starting automatic indexing of historical messages from {config.INSTANT_ANSWER_TARGET_ROOM}...")
+                                asyncio.create_task(
+                                    index_historical_messages(
+                                        instant_answer_service=app.state.instant_answer_service,
+                                        room_service=app.state.room_service,
+                                        target_room=config.INSTANT_ANSWER_TARGET_ROOM,
+                                        batch_size=10
+                                    )
+                                )
                         else:
                             print("Warning: ChromaDB collection initialization failed")
                             app.state.chromadb_client = None
@@ -542,6 +555,65 @@ async def login(
         user=UserResponse.from_orm(user),
         message=welcome_message
     )
+
+
+@app.post(
+    "/api/instant-answer/index",
+    responses={
+        200: {"description": "Indexing started successfully"},
+        403: {"model": ErrorResponse, "description": "Unauthorized"},
+        500: {"model": ErrorResponse, "description": "Internal server error"}
+    }
+)
+async def index_messages(
+    request: Request,
+    token: str = Query(..., description="JWT authentication token"),
+    room: str = Query("Techline", description="Room to index"),
+    db: Session = Depends(get_db)
+):
+    """
+    Trigger background indexing of historical messages.
+    
+    This endpoint:
+    1. Validates JWT token
+    2. Checks if instant answer service is enabled
+    3. Starts background indexing of historical messages from specified room
+    4. Returns immediately with status
+    
+    Requirements: 6.1, 6.2, 6.3
+    """
+    # Validate token
+    auth_service = AuthService(db)
+    user = auth_service.get_user_from_token(token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or expired token"
+        )
+    
+    # Check if instant answer service is available
+    instant_answer_service = getattr(app.state, 'instant_answer_service', None)
+    if not instant_answer_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Instant Answer service is not enabled"
+        )
+    
+    # Start background indexing task
+    asyncio.create_task(
+        index_historical_messages(
+            instant_answer_service=instant_answer_service,
+            room_service=app.state.room_service,
+            target_room=room,
+            batch_size=10
+        )
+    )
+    
+    return {
+        "status": "indexing_started",
+        "room": room,
+        "message": f"Background indexing started for room '{room}'"
+    }
 
 
 async def cleanup_expired_sessions(app: FastAPI):
